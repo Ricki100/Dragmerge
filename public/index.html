@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 40px);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 50px;
+        }
+
+        .sidebar-header {
+            background: #007bff;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header h1 {
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .toggle-sidebar {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 5px;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .sidebar.collapsed .sidebar-content {
+            display: none;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            font-size: 11px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .file-input {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: border-color 0.3s;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
+        .file-input:hover {
+            border-color: #007bff;
+        }
+
+        .file-input input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-bottom: 6px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status-items {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #dc3545;
+        }
+
+        .status-indicator.loaded {
+            background: #28a745;
+        }
+
+        .reset-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-top: 10px;
+        }
+
+        .reset-btn:hover {
+            background: #c82333;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            position: relative;
+        }
+
+        .content-header {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-header h3 {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .editor-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .editor-btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .editor-btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .editor-btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .editor-btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .editor-btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .editor-btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .editor-btn-success:hover {
+            background: #1e7e34;
+        }
+
+        .editor-btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .editor-btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .editor-btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .editor-btn-danger:hover {
+            background: #c82333;
+        }
+
+        .editor-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .viewer-container {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 20px;
+            position: relative;
+        }
+
+        .no-pdf {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+        }
+
+        .no-pdf h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        #viewer {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background: white;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .csv-preview {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #ddd;
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 12px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+
+        .csv-preview.expanded {
+            transform: translateY(0);
+        }
+
+        .csv-toggle {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .csv-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+        }
+
+        .csv-table th,
+        .csv-table td {
+            border: 1px solid #ddd;
+            padding: 3px;
+            text-align: left;
+        }
+
+        .csv-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .csv-info {
+            color: #666;
+            font-size: 9px;
+            margin-top: 4px;
+        }
+
+        /* Layout Editor Styles */
+        .editor-sidebar {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 250px;
+            background: white;
+            border-left: 1px solid #ddd;
+            padding: 15px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+        }
+
+        .editor-sidebar.active {
+            display: block;
+        }
+
+        .editor-sidebar h4 {
+            font-size: 12px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .editor-form-group {
+            margin-bottom: 10px;
+        }
+
+        .editor-form-group label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .editor-form-group input, .editor-form-group select, .editor-form-group textarea {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        .editor-form-group textarea {
+            height: 40px;
+            resize: vertical;
+        }
+
+        .grid-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 6px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .grid-toggle label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .grid-toggle input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .editor-status {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        /* Fabric.js canvas styling */
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        #editorCanvas {
+            border: 1px solid #ddd;
+            background: transparent;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        /* Visual feedback for placement mode */
+        .placement-mode {
+            background: rgba(0, 123, 255, 0.1) !important;
+            border: 2px dashed #007bff !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>PDF Viewer</h1>
+                <button class="toggle-sidebar" onclick="toggleSidebar()">≡</button>
+            </div>
+            <div class="sidebar-content">
+                <div class="section">
+                    <h2 class="section-header">File Uploads</h2>
+                    <label class="file-input" for="pdfFile">
+                        <input type="file" id="pdfFile" accept="application/pdf">
+                        <div id="fileLabel">Click to select PDF file</div>
+                    </label>
+                    
+                    <label class="file-input" for="csvFile">
+                        <input type="file" id="csvFile" accept=".csv,text/csv">
+                        <div id="csvLabel">Click to select CSV file</div>
+                    </label>
+                    
+                    <button id="generateSampleBtn" class="btn btn-secondary" onclick="generateSamplePDF()">
+                        Generate Sample PDF
+                    </button>
+                    
+                    <button id="generateFromTemplateBtn" class="btn btn-primary" onclick="generateFromTemplate()" disabled>
+                        Generate From Template
+                    </button>
+                    
+                    <div id="downloadLink" style="display: none;">
+                        <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Download Original PDF</a>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-header">Status</h2>
+                    <div class="status-items">
+                        <div class="status-item">
+                            <span class="status-indicator" id="templateIndicator"></span>
+                            <span id="templateStatus">Template: None</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-indicator" id="csvIndicator"></span>
+                            <span id="csvStatus">CSV: None</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-indicator" id="layoutIndicator"></span>
+                            <span id="layoutStatus">Layout: None</span>
+                        </div>
+                    </div>
+                    <button class="reset-btn" onclick="resetSession()">Reset Session</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="content-header">
+                <h3>PDF Viewer</h3>
+                <div class="editor-controls">
+                    <button class="editor-btn editor-btn-primary" onclick="addText()">Add Text</button>
+                    <button class="editor-btn editor-btn-primary" onclick="addImagePlaceholder()">Add Image</button>
+                    <button class="editor-btn editor-btn-secondary" onclick="duplicateObject()" id="duplicateBtn" disabled>Duplicate</button>
+                    <button class="editor-btn editor-btn-warning" onclick="toggleLock()" id="lockBtn" disabled>Lock</button>
+                    <button class="editor-btn editor-btn-danger" onclick="deleteObject()" id="deleteBtn" disabled>Delete</button>
+                    <button class="editor-btn editor-btn-secondary" onclick="clearCanvas()">Clear All</button>
+                    <button class="editor-btn editor-btn-success" onclick="saveLayout()">Save Layout</button>
+                </div>
+            </div>
+
+            <div class="viewer-container">
+                <div id="noPdf" class="no-pdf">
+                    <h3>No PDF selected</h3>
+                    <p>Choose a PDF file to start viewing</p>
+                </div>
+
+                <div id="loadingPdf" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Loading PDF...</p>
+                </div>
+
+                <canvas id="viewer" style="display: none;"></canvas>
+                <canvas id="editorCanvas" style="display: none;"></canvas>
+            </div>
+
+            <div id="csvPreview" class="csv-preview">
+                <h4>CSV Preview (First 5 rows)</h4>
+                <div id="csvTableContainer"></div>
+                <div id="csvInfo" class="csv-info"></div>
+            </div>
+
+            <button class="csv-toggle" onclick="toggleCSVPreview()">CSV Preview</button>
+
+            <!-- Editor Properties Sidebar -->
+            <div id="editorSidebar" class="editor-sidebar">
+                <h4>Object Properties</h4>
+                
+                <div class="editor-form-group">
+                    <label>Bind to CSV Field:</label>
+                    <select id="bindField">
+                        <option value="">None (Static)</option>
+                        <option value="title">Title</option>
+                        <option value="subtitle">Subtitle</option>
+                        <option value="price">Price</option>
+                        <option value="features">Features</option>
+                        <option value="image">Image</option>
+                    </select>
+                </div>
+
+                <div class="editor-form-group">
+                    <label>Static Content:</label>
+                    <textarea id="staticContent" placeholder="Enter static text content..."></textarea>
+                </div>
+
+                <div class="editor-form-group">
+                    <label>Position X:</label>
+                    <input type="number" id="posX" step="1">
+                </div>
+
+                <div class="editor-form-group">
+                    <label>Position Y:</label>
+                    <input type="number" id="posY" step="1">
+                </div>
+
+                <div class="editor-form-group">
+                    <label>Width:</label>
+                    <input type="number" id="width" step="1">
+                </div>
+
+                <div class="editor-form-group">
+                    <label>Height:</label>
+                    <input type="number" id="height" step="1">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let currentPdf = null;
+        let currentFile = null;
+        let serverPdfUrl = null;
+
+        // Session state management
+        let sessionState = {
+            templatePdf: null,
+            templatePdfBytes: null,
+            csv: null,
+            csvRows: [],
+            layout: null
+        };
+
+        // Initialize status indicators
+        function updateStatusIndicators() {
+            const templateLoaded = sessionState.templatePdf !== null;
+            const csvLoaded = sessionState.csvRows.length > 0;
+            const layoutLoaded = sessionState.layout !== null;
+
+            // Update status bar text and indicators
+            document.getElementById('templateStatus').textContent = `Template: ${templateLoaded ? 'Loaded' : 'None'}`;
+            document.getElementById('csvStatus').textContent = `CSV: ${csvLoaded ? sessionState.csvRows.length + ' rows' : 'None'}`;
+            document.getElementById('layoutStatus').textContent = `Layout: ${layoutLoaded ? 'Loaded' : 'None'}`;
+
+            document.getElementById('templateIndicator').classList.toggle('loaded', templateLoaded);
+            document.getElementById('csvIndicator').classList.toggle('loaded', csvLoaded);
+            document.getElementById('layoutIndicator').classList.toggle('loaded', layoutLoaded);
+        }
+
+        // File input handler
+        document.getElementById('pdfFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                currentFile = file;
+                document.getElementById('fileLabel').textContent = file.name;
+                
+                // Hide download link
+                document.getElementById('downloadLink').style.display = 'none';
+                serverPdfUrl = null;
+
+                // Automatically load and preview the PDF
+                loadPdf(file);
+            }
+        });
+
+        async function loadPdf(file) {
+            try {
+                // Show loading state
+                document.getElementById('noPdf').style.display = 'none';
+                document.getElementById('viewer').style.display = 'none';
+                document.getElementById('loadingPdf').style.display = 'block';
+
+                // Read file as ArrayBuffer
+                const arrayBuffer = await file.arrayBuffer();
+
+                // Create a separate copy for PDF-lib BEFORE loading with PDF.js
+                const templateBytes = new Uint8Array(arrayBuffer).slice();
+
+                // Load PDF document
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                
+                // Store PDF info
+                currentPdf = pdf;
+
+                // Update session state with the separate copy
+                sessionState.templatePdf = pdf;
+                sessionState.templatePdfBytes = templateBytes;
+                updateStatusIndicators();
+
+                // Enable Generate From Template button
+                document.getElementById('generateFromTemplateBtn').disabled = false;
+
+                // Render the page (always page 1 for single-page PDFs)
+                await renderPage(1);
+
+                // Initialize editor canvas after PDF is loaded
+                initEditorCanvas();
+
+                // Hide loading
+                document.getElementById('loadingPdf').style.display = 'none';
+
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                document.getElementById('loadingPdf').style.display = 'none';
+                document.getElementById('noPdf').style.display = 'block';
+                document.getElementById('noPdf').innerHTML = `
+                    <h3>Error loading PDF</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+
+        async function loadPdfFromUrl(url) {
+            try {
+                // Fetch PDF from server
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch PDF from server');
+                }
+                
+                const arrayBuffer = await response.arrayBuffer();
+
+                // Load PDF document
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                
+                // Store PDF info
+                currentPdf = pdf;
+
+                // Update session state
+                sessionState.templatePdf = pdf;
+                sessionState.templatePdfBytes = arrayBuffer.slice(0); // Create a copy to avoid detachment
+                updateStatusIndicators();
+
+                // Render the page (always page 1 for single-page PDFs)
+                await renderPage(1);
+
+                // Hide loading
+                document.getElementById('loadingPdf').style.display = 'none';
+
+            } catch (error) {
+                console.error('Error loading PDF from URL:', error);
+                document.getElementById('loadingPdf').style.display = 'none';
+                document.getElementById('noPdf').style.display = 'block';
+                document.getElementById('noPdf').innerHTML = `
+                    <h3>Error loading PDF</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+
+        async function renderPage(pageNumber) {
+            if (!currentPdf) return;
+
+            try {
+                // Get page
+                const page = await currentPdf.getPage(pageNumber);
+
+                // Set up canvas
+                const canvas = document.getElementById('viewer');
+                const context = canvas.getContext('2d');
+
+                // Calculate scale to fit in viewer
+                const viewerWidth = document.querySelector('.viewer-container').clientWidth - 40;
+                const viewerHeight = document.querySelector('.viewer-container').clientHeight - 40;
+
+                const viewport = page.getViewport({scale: 1});
+                const scaleX = viewerWidth / viewport.width;
+                const scaleY = viewerHeight / viewport.height;
+                const scale = Math.min(scaleX, scaleY, 1.5); // Max 1.5x zoom
+
+                const scaledViewport = page.getViewport({scale: scale});
+
+                // Set canvas dimensions
+                canvas.width = scaledViewport.width;
+                canvas.height = scaledViewport.height;
+
+                // Show canvas
+                canvas.style.display = 'block';
+
+                // Render page
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: scaledViewport
+                };
+
+                await page.render(renderContext).promise;
+
+                // Update editor canvas size to match the rendered PDF
+                if (editorCanvas) {
+                    updateEditorPageSize();
+                }
+
+            } catch (error) {
+                console.error('Error rendering page:', error);
+            }
+        }
+
+        // Drag and drop support
+        const uploadArea = document.querySelector('.sidebar');
+        const fileInput = document.getElementById('pdfFile');
+
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '#e3f2fd';
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '';
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                fileInput.files = files;
+                currentFile = files[0];
+                document.getElementById('fileLabel').textContent = files[0].name;
+                
+                // Hide download link
+                document.getElementById('downloadLink').style.display = 'none';
+                serverPdfUrl = null;
+
+                // Automatically load and preview the PDF
+                loadPdf(files[0]);
+            }
+        });
+
+        // Initialize status indicators on page load
+        updateStatusIndicators();
+
+        // Layout Editor Variables
+        let editorCanvas;
+        let selectedEditorObject = null;
+        let gridSize = 10;
+        let isEditorMode = false;
+
+        // Page size definitions (in points)
+        const PAGE_SIZES = {
+            'A4': { width: 595, height: 842 },
+            'A5': { width: 420, height: 595 },
+            'A6': { width: 298, height: 420 }
+        };
+
+        // Initialize editor canvas when PDF is loaded
+        function initEditorCanvas() {
+            if (editorCanvas) return; // Already initialized
+
+            // Create Fabric.js canvas
+            editorCanvas = new fabric.Canvas('editorCanvas', {
+                selection: true,
+                preserveObjectStacking: true,
+                allowTouchScrolling: true
+            });
+
+            // Event listeners
+            editorCanvas.on('selection:created', onEditorObjectSelected);
+            editorCanvas.on('selection:updated', onEditorObjectSelected);
+            editorCanvas.on('selection:cleared', onEditorObjectDeselected);
+            editorCanvas.on('object:modified', onEditorObjectModified);
+            editorCanvas.on('object:moving', onEditorObjectMoving);
+            editorCanvas.on('object:scaling', onEditorObjectScaling);
+
+            // Set canvas size to match PDF
+            updateEditorPageSize();
+
+            updateEditorStatus('Editor canvas initialized - ready for text and image placement');
+        }
+
+        function toggleEditorMode() {
+            isEditorMode = !isEditorMode;
+            const viewer = document.getElementById('viewer');
+            const editorCanvasElement = document.getElementById('editorCanvas');
+            
+            if (isEditorMode) {
+                // Show both PDF and editor canvas
+                viewer.style.display = 'block';
+                editorCanvasElement.style.display = 'block';
+                
+                if (editorCanvas) {
+                    editorCanvas.renderAll();
+                }
+            } else {
+                // Hide editor canvas, keep PDF visible
+                editorCanvasElement.style.display = 'none';
+                viewer.style.display = 'block';
+            }
+        }
+
+        function updateEditorPageSize() {
+            if (!editorCanvas || !currentPdf) return;
+
+            try {
+                // Get PDF dimensions
+                currentPdf.getPage(1).then(page => {
+                    const viewport = page.getViewport({scale: 1});
+                    
+                    // Get the actual displayed PDF size
+                    const viewer = document.getElementById('viewer');
+                    const viewerWidth = viewer.width;
+                    const viewerHeight = viewer.height;
+                    
+                    // Set canvas to match PDF display size exactly
+                    editorCanvas.setWidth(viewerWidth);
+                    editorCanvas.setHeight(viewerHeight);
+                    editorCanvas.setZoom(1); // No scaling needed since we match the display size
+                    editorCanvas.renderAll();
+
+                    updateEditorStatus(`Editor canvas: ${viewerWidth}x${viewerHeight}px`);
+                });
+            } catch (error) {
+                console.error('Error updating editor page size:', error);
+            }
+        }
+
+        function addText() {
+            if (!editorCanvas) {
+                // Initialize editor canvas if not already done
+                initEditorCanvas();
+                setTimeout(() => addText(), 100);
+                return;
+            }
+
+            // Switch to editor mode
+            if (!isEditorMode) {
+                toggleEditorMode();
+            }
+
+            // Enable click-to-place mode
+            editorCanvas.defaultCursor = 'crosshair';
+            editorCanvas.selection = false;
+            
+            // Add visual feedback
+            const editorCanvasElement = document.getElementById('editorCanvas');
+            editorCanvasElement.classList.add('placement-mode');
+            
+            // Add click event listener for placing text
+            const clickHandler = function(e) {
+                const pointer = editorCanvas.getPointer(e.e);
+                
+                const text = new fabric.Text('Sample Text', {
+                    left: pointer.x,
+                    top: pointer.y,
+                    fontSize: 16,
+                    fill: '#000000',
+                    fontFamily: 'Arial',
+                    originX: 'left',
+                    originY: 'top',
+                    selectable: true,
+                    evented: true,
+                    hasControls: true,
+                    hasBorders: true,
+                    lockRotation: false,
+                    lockScalingX: false,
+                    lockScalingY: false,
+                    lockMovementX: false,
+                    lockMovementY: false
+                });
+                
+                editorCanvas.add(text);
+                editorCanvas.setActiveObject(text);
+                
+                // Reset cursor and remove click handler
+                editorCanvas.defaultCursor = 'default';
+                editorCanvas.selection = true;
+                editorCanvas.off('mouse:down', clickHandler);
+                
+                // Remove visual feedback
+                editorCanvasElement.classList.remove('placement-mode');
+                
+                // Show the properties sidebar for the new text object
+                selectedEditorObject = text;
+                updateEditorSidebar();
+                updateEditorButtonStates(true);
+                
+                updateEditorStatus('Text object added - you can now drag, resize, and edit it');
+            };
+            
+            editorCanvas.on('mouse:down', clickHandler);
+            updateEditorStatus('Click on PDF to place text box');
+        }
+
+        function addImagePlaceholder() {
+            if (!editorCanvas) {
+                // Initialize editor canvas if not already done
+                initEditorCanvas();
+                setTimeout(() => addImagePlaceholder(), 100);
+                return;
+            }
+
+            // Switch to editor mode
+            if (!isEditorMode) {
+                toggleEditorMode();
+            }
+
+            // Enable click-to-place mode
+            editorCanvas.defaultCursor = 'crosshair';
+            editorCanvas.selection = false;
+            
+            // Add visual feedback
+            const editorCanvasElement = document.getElementById('editorCanvas');
+            editorCanvasElement.classList.add('placement-mode');
+            
+            // Add click event listener for placing image placeholder
+            const clickHandler = function(e) {
+                const pointer = editorCanvas.getPointer(e.e);
+                
+                const rect = new fabric.Rect({
+                    left: pointer.x,
+                    top: pointer.y,
+                    width: 100,
+                    height: 100,
+                    fill: '#f0f0f0',
+                    stroke: '#999',
+                    strokeWidth: 1,
+                    originX: 'left',
+                    originY: 'top'
+                });
+
+                const text = new fabric.Text('IMAGE', {
+                    left: pointer.x + 50,
+                    top: pointer.y + 50,
+                    width: 100,
+                    height: 100,
+                    fontSize: 12,
+                    fill: '#666',
+                    fontFamily: 'Arial',
+                    textAlign: 'center',
+                    originX: 'center',
+                    originY: 'center'
+                });
+
+                const group = new fabric.Group([rect, text], {
+                    left: pointer.x,
+                    top: pointer.y,
+                    originX: 'left',
+                    originY: 'top',
+                    selectable: true,
+                    evented: true,
+                    hasControls: true,
+                    hasBorders: true,
+                    lockRotation: false,
+                    lockScalingX: false,
+                    lockScalingY: false,
+                    lockMovementX: false,
+                    lockMovementY: false
+                });
+
+                editorCanvas.add(group);
+                editorCanvas.setActiveObject(group);
+                
+                // Reset cursor and remove click handler
+                editorCanvas.defaultCursor = 'default';
+                editorCanvas.selection = true;
+                editorCanvas.off('mouse:down', clickHandler);
+                
+                // Remove visual feedback
+                editorCanvasElement.classList.remove('placement-mode');
+                
+                // Show the properties sidebar for the new image placeholder
+                selectedEditorObject = group;
+                updateEditorSidebar();
+                updateEditorButtonStates(true);
+                
+                updateEditorStatus('Image placeholder added - you can now drag, resize, and edit it');
+            };
+            
+            editorCanvas.on('mouse:down', clickHandler);
+            updateEditorStatus('Click on PDF to place image placeholder');
+        }
+
+        function duplicateObject() {
+            if (!selectedEditorObject || !editorCanvas) return;
+
+            const clone = fabric.util.object.clone(selectedEditorObject);
+            clone.set({
+                left: selectedEditorObject.left + 20,
+                top: selectedEditorObject.top + 20
+            });
+
+            editorCanvas.add(clone);
+            editorCanvas.setActiveObject(clone);
+            updateEditorStatus('Object duplicated');
+        }
+
+        function toggleLock() {
+            if (!selectedEditorObject) return;
+
+            selectedEditorObject.selectable = !selectedEditorObject.selectable;
+            selectedEditorObject.evented = !selectedEditorObject.evented;
+            
+            const lockBtn = document.getElementById('lockBtn');
+            if (selectedEditorObject.selectable) {
+                lockBtn.textContent = 'Lock';
+                lockBtn.className = 'editor-btn editor-btn-warning';
+            } else {
+                lockBtn.textContent = 'Unlock';
+                lockBtn.className = 'editor-btn editor-btn-success';
+            }
+
+            updateEditorStatus(selectedEditorObject.selectable ? 'Object unlocked' : 'Object locked');
+        }
+
+        function deleteObject() {
+            if (!selectedEditorObject || !editorCanvas) return;
+
+            editorCanvas.remove(selectedEditorObject);
+            editorCanvas.discardActiveObject();
+            updateEditorStatus('Object deleted');
+        }
+
+        function clearCanvas() {
+            if (!editorCanvas) return;
+
+            if (confirm('Are you sure you want to clear all objects?')) {
+                editorCanvas.clear();
+                updateEditorStatus('Canvas cleared');
+            }
+        }
+
+        function onEditorObjectSelected(e) {
+            selectedEditorObject = e.target;
+            updateEditorSidebar();
+            updateEditorButtonStates(true);
+            updateEditorStatus('Object selected');
+        }
+
+        function onEditorObjectDeselected() {
+            selectedEditorObject = null;
+            document.getElementById('editorSidebar').classList.remove('active');
+            updateEditorButtonStates(false);
+            updateEditorStatus('No object selected');
+        }
+
+        function onEditorObjectModified(e) {
+            updateEditorSidebar();
+            updateEditorStatus('Object modified');
+        }
+
+        function onEditorObjectMoving(e) {
+            if (gridSize > 0) {
+                const obj = e.target;
+                obj.set({
+                    left: Math.round(obj.left / gridSize) * gridSize,
+                    top: Math.round(obj.top / gridSize) * gridSize
+                });
+            }
+        }
+
+        function onEditorObjectScaling(e) {
+            if (gridSize > 0) {
+                const obj = e.target;
+                obj.set({
+                    width: Math.round(obj.width / gridSize) * gridSize,
+                    height: Math.round(obj.height / gridSize) * gridSize
+                });
+            }
+        }
+
+        function updateEditorSidebar() {
+            if (!selectedEditorObject) return;
+
+            document.getElementById('editorSidebar').classList.add('active');
+
+            // Get object metadata
+            const meta = selectedEditorObject.meta || {};
+
+            // Update form fields
+            document.getElementById('bindField').value = meta.bind || '';
+            document.getElementById('staticContent').value = meta.static || '';
+            document.getElementById('posX').value = Math.round(selectedEditorObject.left);
+            document.getElementById('posY').value = Math.round(selectedEditorObject.top);
+            document.getElementById('width').value = Math.round(selectedEditorObject.width || selectedEditorObject.scaleX * 100);
+            document.getElementById('height').value = Math.round(selectedEditorObject.height || selectedEditorObject.scaleY * 100);
+
+            // Add event listeners for form changes
+            document.getElementById('bindField').onchange = updateEditorObjectMeta;
+            document.getElementById('staticContent').oninput = updateEditorObjectMeta;
+            document.getElementById('posX').onchange = updateEditorObjectPosition;
+            document.getElementById('posY').onchange = updateEditorObjectPosition;
+            document.getElementById('width').onchange = updateEditorObjectSize;
+            document.getElementById('height').onchange = updateEditorObjectSize;
+        }
+
+        function updateEditorObjectMeta() {
+            if (!selectedEditorObject) return;
+
+            selectedEditorObject.meta = {
+                bind: document.getElementById('bindField').value,
+                static: document.getElementById('staticContent').value
+            };
+
+            // Update text content if it's a text object
+            if (selectedEditorObject.type === 'text' && document.getElementById('staticContent').value) {
+                selectedEditorObject.set('text', document.getElementById('staticContent').value);
+            }
+
+            editorCanvas.renderAll();
+        }
+
+        function updateEditorObjectPosition() {
+            if (!selectedEditorObject) return;
+
+            selectedEditorObject.set({
+                left: parseInt(document.getElementById('posX').value),
+                top: parseInt(document.getElementById('posY').value)
+            });
+
+            editorCanvas.renderAll();
+        }
+
+        function updateEditorObjectSize() {
+            if (!selectedEditorObject) return;
+
+            const width = parseInt(document.getElementById('width').value);
+            const height = parseInt(document.getElementById('height').value);
+
+            if (selectedEditorObject.type === 'text') {
+                selectedEditorObject.set('fontSize', Math.min(width, height) / 2);
+            } else {
+                selectedEditorObject.set({
+                    width: width,
+                    height: height
+                });
+            }
+
+            editorCanvas.renderAll();
+        }
+
+        function updateEditorButtonStates(enabled) {
+            document.getElementById('duplicateBtn').disabled = !enabled;
+            document.getElementById('lockBtn').disabled = !enabled;
+            document.getElementById('deleteBtn').disabled = !enabled;
+        }
+
+        function updateEditorStatus(message) {
+            // Create status element if it doesn't exist
+            let statusElement = document.getElementById('editorStatus');
+            if (!statusElement) {
+                statusElement = document.createElement('div');
+                statusElement.id = 'editorStatus';
+                statusElement.className = 'editor-status';
+                document.querySelector('.viewer-container').appendChild(statusElement);
+            }
+            statusElement.textContent = message;
+        }
+
+        function saveLayout() {
+            if (!editorCanvas) return;
+
+            const layout = {
+                page: {
+                    size: 'A4',
+                    orient: 'portrait'
+                },
+                objects: []
+            };
+
+            // Collect all objects
+            editorCanvas.getObjects().forEach(obj => {
+                const objectData = {
+                    type: obj.type,
+                    left: Math.round(obj.left),
+                    top: Math.round(obj.top),
+                    width: Math.round(obj.width || obj.scaleX * 100),
+                    height: Math.round(obj.height || obj.scaleY * 100),
+                    meta: obj.meta || {}
+                };
+
+                // Add type-specific properties
+                if (obj.type === 'text') {
+                    objectData.text = obj.text;
+                    objectData.fontSize = obj.fontSize;
+                    objectData.fontFamily = obj.fontFamily;
+                    objectData.fill = obj.fill;
+                } else if (obj.type === 'group') {
+                    objectData.groupType = 'imagePlaceholder';
+                }
+
+                layout.objects.push(objectData);
+            });
+
+            // Create and download JSON file
+            const jsonString = JSON.stringify(layout, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `layout-A4-portrait-${Date.now()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            URL.revokeObjectURL(url);
+            
+            updateEditorStatus('Layout saved as JSON');
+        }
+
+        // Generate Sample PDF function
+        async function generateSamplePDF() {
+            try {
+                // Create a new PDF document
+                const pdfDoc = await PDFLib.PDFDocument.create();
+                
+                // Add a page
+                const page = pdfDoc.addPage([595, 842]); // A4 size
+                
+                // Get the current ISO timestamp
+                const timestamp = new Date().toISOString();
+                
+                // Add text to the page
+                page.drawText(`Generated at ${timestamp}`, {
+                    x: 50,
+                    y: 750,
+                    size: 20,
+                    color: PDFLib.rgb(0, 0, 0)
+                });
+                
+                // Add some sample content
+                page.drawText('This is a sample PDF generated by PDF-lib', {
+                    x: 50,
+                    y: 700,
+                    size: 14,
+                    color: PDFLib.rgb(0.2, 0.2, 0.2)
+                });
+                
+                page.drawText('You can use this as a template for testing', {
+                    x: 50,
+                    y: 670,
+                    size: 12,
+                    color: PDFLib.rgb(0.4, 0.4, 0.4)
+                });
+                
+                // Save the PDF as bytes
+                const pdfBytes = await pdfDoc.save();
+                
+                // Create a blob and download link
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                
+                // Create and trigger download
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `sample-${Date.now()}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up the URL
+                URL.revokeObjectURL(url);
+                
+            } catch (error) {
+                console.error('Error generating sample PDF:', error);
+                alert('Error generating sample PDF: ' + error.message);
+            }
+        }
+
+        // Generate From Template function
+        async function generateFromTemplate() {
+            try {
+                if (!sessionState.templatePdfBytes) {
+                    alert('Please select a PDF template first');
+                    return;
+                }
+
+                // Load the template PDF using the Uint8Array copy
+                const pdfDoc = await PDFLib.PDFDocument.load(sessionState.templatePdfBytes);
+                
+                // Embed the Helvetica Bold font
+                const helveticaBoldFont = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+                
+                // Get the first page
+                const pages = pdfDoc.getPages();
+                if (pages.length === 0) {
+                    throw new Error('Template PDF has no pages');
+                }
+                
+                const page = pages[0];
+                
+                // Get current timestamp for demo data
+                const timestamp = new Date().toISOString();
+                const dateStr = new Date().toLocaleDateString();
+                
+                // Add text overlay at fixed positions
+                page.drawText('TICKET #12345', {
+                    x: 100,
+                    y: 700,
+                    size: 16,
+                    font: helveticaBoldFont,
+                    color: PDFLib.rgb(0, 0, 0)
+                });
+                
+                page.drawText(`Date: ${dateStr}`, {
+                    x: 100,
+                    y: 650,
+                    size: 12,
+                    font: helveticaBoldFont,
+                    color: PDFLib.rgb(0.2, 0.2, 0.2)
+                });
+                
+                page.drawText(`Generated: ${timestamp}`, {
+                    x: 100,
+                    y: 620,
+                    size: 10,
+                    font: helveticaBoldFont,
+                    color: PDFLib.rgb(0.4, 0.4, 0.4)
+                });
+                
+                // Add some sample fields
+                page.drawText('Customer: John Doe', {
+                    x: 100,
+                    y: 580,
+                    size: 12,
+                    font: helveticaBoldFont,
+                    color: PDFLib.rgb(0, 0, 0)
+                });
+                
+                page.drawText('Amount: $99.99', {
+                    x: 100,
+                    y: 550,
+                    size: 14,
+                    font: helveticaBoldFont,
+                    color: PDFLib.rgb(0.8, 0, 0)
+                });
+                
+                page.drawText('Status: PAID', {
+                    x: 100,
+                    y: 520,
+                    size: 12,
+                    font: helveticaBoldFont,
+                    color: PDFLib.rgb(0, 0.6, 0)
+                });
+                
+                // Save the modified PDF
+                const pdfBytes = await pdfDoc.save();
+                
+                // Create a blob and download link
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                
+                // Create and trigger download
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `template-generated-${Date.now()}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up the URL
+                URL.revokeObjectURL(url);
+                
+            } catch (error) {
+                console.error('Error generating from template:', error);
+                alert('Error generating from template: ' + error.message);
+            }
+        }
+
+        // CSV file input handler
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                parseCSVFile(file);
+            }
+        });
+
+        function parseCSVFile(file) {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    if (results.errors.length > 0) {
+                        console.error('CSV parsing errors:', results.errors);
+                        alert('Error parsing CSV file. Please check the file format.');
+                        return;
+                    }
+
+                    // Store CSV data in session state
+                    sessionState.csv = file;
+                    sessionState.csvRows = results.data;
+                    
+                    // Update status indicators
+                    updateStatusIndicators();
+                    
+                    // Display preview
+                    displayCSVPreview(results.data);
+                    
+                    // Update file label
+                    document.getElementById('csvLabel').textContent = file.name;
+                },
+                error: function(error) {
+                    console.error('CSV parsing error:', error);
+                    alert('Error reading CSV file: ' + error.message);
+                }
+            });
+        }
+
+        function displayCSVPreview(data) {
+            if (!data || data.length === 0) {
+                document.getElementById('csvPreview').style.display = 'none';
+                return;
+            }
+
+            const container = document.getElementById('csvTableContainer');
+            const headers = Object.keys(data[0]);
+            const previewRows = data.slice(0, 5); // First 5 rows
+
+            // Create table HTML
+            let tableHTML = '<table class="csv-table"><thead><tr>';
+            
+            // Add headers
+            headers.forEach(header => {
+                tableHTML += `<th>${header}</th>`;
+            });
+            tableHTML += '</tr></thead><tbody>';
+            
+            // Add data rows
+            previewRows.forEach(row => {
+                tableHTML += '<tr>';
+                headers.forEach(header => {
+                    const value = row[header] || '';
+                    tableHTML += `<td>${value}</td>`;
+                });
+                tableHTML += '</tr>';
+            });
+            
+            tableHTML += '</tbody></table>';
+            
+            container.innerHTML = tableHTML;
+            
+            // Update info text
+            const totalRows = data.length;
+            const shownRows = Math.min(5, totalRows);
+            document.getElementById('csvInfo').textContent = 
+                `Showing ${shownRows} of ${totalRows} rows. Headers: ${headers.join(', ')}`;
+            
+            // Show preview
+            document.getElementById('csvPreview').style.display = 'block';
+        }
+
+        function toggleCSVPreview() {
+            const csvPreview = document.getElementById('csvPreview');
+            const csvToggle = document.querySelector('.csv-toggle');
+            csvPreview.classList.toggle('expanded');
+            csvToggle.textContent = csvPreview.classList.contains('expanded') ? 'Hide CSV' : 'CSV Preview';
+        }
+
+        function resetSession() {
+            // Clear session state
+            sessionState = {
+                templatePdf: null,
+                templatePdfBytes: null,
+                csv: null,
+                csvRows: [],
+                layout: null
+            };
+
+            // Clear current variables
+            currentPdf = null;
+            currentFile = null;
+            serverPdfUrl = null;
+
+            // Reset UI
+            document.getElementById('fileLabel').textContent = 'Click to select PDF file';
+            document.getElementById('downloadLink').style.display = 'none';
+            document.getElementById('noPdf').style.display = 'block';
+            document.getElementById('noPdf').innerHTML = `
+                <h3>No PDF selected</h3>
+                <p>Choose a PDF file to start viewing</p>
+            `;
+            document.getElementById('loadingPdf').style.display = 'none';
+            document.getElementById('viewer').style.display = 'none';
+
+            // Clear file inputs
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('csvFile').value = '';
+            document.getElementById('csvLabel').textContent = 'Click to select CSV file';
+            document.getElementById('csvPreview').style.display = 'none';
+
+            // Disable Generate From Template button
+            document.getElementById('generateFromTemplateBtn').disabled = true;
+
+            // Update status indicators
+            updateStatusIndicators();
+
+            // Revoke any ObjectURLs if they exist
+            if (serverPdfUrl && serverPdfUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(serverPdfUrl);
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+    </script>
+</body>
+</html>
