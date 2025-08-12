@@ -790,6 +790,12 @@
             z-index: 20;
             transition: all 0.1s ease;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            word-wrap: break-word;
+            white-space: normal;
         }
 
         .draggable-text-box:hover {
@@ -1852,8 +1858,6 @@
             document.getElementById('boxColumnSelect').onchange = function() {
                 box.csvColumn = this.value;
                 updateTextBoxContent(box);
-                // Auto-resize after CSV data change
-                setTimeout(() => autoResizeTextBox(box), 10);
                 updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
             };
 
@@ -1862,24 +1866,18 @@
                 document.getElementById('boxTextInput').oninput = function() {
                     box.staticText = this.value;
                     updateTextBoxContent(box);
-                    // Auto-resize after text content change
-                    setTimeout(() => autoResizeTextBox(box), 10);
                 };
 
                 document.getElementById('boxFontSize').oninput = function() {
                     const size = parseInt(this.value);
                     box.fontSize = size;
                     updateTextBoxFont(box);
-                    // Auto-resize after a short delay to ensure font is applied
-                    setTimeout(() => autoResizeTextBox(box), 10);
                 };
 
                 document.getElementById('boxFontFamily').onchange = function() {
                     const family = this.value;
                     box.fontFamily = family;
                     updateTextBoxFont(box);
-                    // Auto-resize after font change
-                    setTimeout(() => autoResizeTextBox(box), 10);
                 };
 
                 document.getElementById('boxTextColor').oninput = function() {
@@ -2965,10 +2963,14 @@
                 element.style.fontWeight = box.bold ? 'bold' : 'normal';
                 element.style.fontStyle = box.italic ? 'italic' : 'normal';
                 element.style.textDecoration = box.underline ? 'underline' : 'none';
-                element.style.textAlign = box.textAlign || 'center';
                 
-                // Auto-resize the text box to fit content
-                autoResizeTextBox(box);
+                // Set text alignment and flex properties for consistent positioning
+                element.style.textAlign = box.textAlign || 'center';
+                element.style.justifyContent = box.textAlign === 'left' ? 'flex-start' : 
+                                             box.textAlign === 'right' ? 'flex-end' : 'center';
+                
+                // Don't auto-resize - let user manually resize to reveal hidden text
+                // This keeps text position consistent regardless of content length
             }
         }
 
