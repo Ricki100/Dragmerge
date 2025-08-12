@@ -188,6 +188,100 @@
             color: #666;
         }
 
+        /* Font Upload Styles */
+        .font-upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .font-upload-area:hover {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+
+        .font-upload-area.dragover {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+
+        .font-upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .font-upload-content span {
+            font-size: 20px;
+        }
+
+        .font-upload-content p {
+            font-size: 10px;
+            margin: 0;
+            color: #666;
+        }
+
+        .google-font-input {
+            display: flex;
+            gap: 4px;
+        }
+
+        .google-font-input input {
+            flex: 1;
+            font-size: 10px;
+        }
+
+        .google-font-input button {
+            font-size: 10px;
+            padding: 4px 8px;
+            white-space: nowrap;
+        }
+
+        .font-status {
+            font-size: 9px;
+            margin-top: 4px;
+            min-height: 12px;
+        }
+
+        .font-status.success {
+            color: #28a745;
+        }
+
+        .font-status.error {
+            color: #dc3545;
+        }
+
+        .font-status.warning {
+            color: #ffc107;
+        }
+
+        .style-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .style-checkboxes .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+        }
+
+        .style-checkboxes .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .style-checkboxes .checkbox-item span {
+            color: #666;
+        }
+
         .box-actions {
             display: flex;
             gap: 4px;
@@ -653,7 +747,7 @@
         /* Enhanced text box styles */
         .draggable-text-box {
             position: absolute;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.1);
             border: 2px solid #007bff;
             padding: 5px;
             cursor: move;
@@ -706,9 +800,7 @@
                         <div id="csvLabel">Click to select CSV file</div>
                     </label>
                     
-                    <button id="generateSampleBtn" class="btn btn-secondary" onclick="generateSamplePDF()">
-                        Generate Sample PDF
-                    </button>
+
                     
                     <button id="generateFromTemplateBtn" class="btn btn-primary" onclick="generateFromTemplate()" disabled>
                         Generate From Template
@@ -743,39 +835,50 @@
                                     <input type="text" id="boxTextInput" placeholder="Enter text or leave empty for CSV data">
                                 </div>
                                 
+                                <!-- Font Upload Section -->
+                                <div class="form-group">
+                                    <label>Upload Custom Font:</label>
+                                    <div class="font-upload-area" id="fontUploadArea">
+                                        <input type="file" id="fontUploadInput" accept=".ttf,.otf" style="display: none;">
+                                        <div class="font-upload-content">
+                                            <span>📁</span>
+                                            <p>Drop TTF/OTF file here or click to browse</p>
+                                        </div>
+                                    </div>
+                                    <div id="fontUploadStatus" class="font-status"></div>
+                                </div>
+                                
+                                <!-- Google Fonts Section -->
+                                <div class="form-group">
+                                    <label>Add Google Font:</label>
+                                    <div class="google-font-input">
+                                        <input type="text" id="fontUrlInput" placeholder="Paste Google Fonts URL">
+                                        <button type="button" id="addFontUrlBtn" class="btn btn-secondary">Add</button>
+                                    </div>
+                                    <div id="fontUrlStatus" class="font-status"></div>
+                                </div>
+                                
+                                <!-- Font Selection -->
+                                <div class="form-group">
+                                    <label>Font Family:</label>
+                                    <select id="boxFontFamily">
+                                        <option value="Arial">Arial</option>
+                                        <option value="Times New Roman">Times New Roman</option>
+                                        <option value="Helvetica">Helvetica</option>
+                                        <option value="Georgia">Georgia</option>
+                                        <option value="Verdana">Verdana</option>
+                                        <option value="Courier New">Courier New</option>
+                                    </select>
+                                </div>
+                                
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label>Font Size:</label>
                                         <input type="number" id="boxFontSize" value="16" min="8" max="72">
                                     </div>
                                     <div class="form-group">
-                                        <label>Font Family:</label>
-                                        <select id="boxFontFamily">
-                                            <option value="Arial">Arial</option>
-                                            <option value="Times New Roman">Times New Roman</option>
-                                            <option value="Helvetica">Helvetica</option>
-                                            <option value="Courier New">Courier New</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Text Color:</label>
-                                    <input type="color" id="boxTextColor" value="#000000">
-                                </div>
-                                
-                                <div class="checkbox-group">
-                                    <div class="checkbox-item">
-                                        <input type="checkbox" id="boxBold">
-                                        <label for="boxBold">Bold</label>
-                                    </div>
-                                    <div class="checkbox-item">
-                                        <input type="checkbox" id="boxItalic">
-                                        <label for="boxItalic">Italic</label>
-                                    </div>
-                                    <div class="checkbox-item">
-                                        <input type="checkbox" id="boxUnderline">
-                                        <label for="boxUnderline">Underline</label>
+                                        <label>Text Color:</label>
+                                        <input type="color" id="boxTextColor" value="#000000">
                                     </div>
                                 </div>
                                 
@@ -786,6 +889,24 @@
                                         <option value="center" selected>Center</option>
                                         <option value="right">Right</option>
                                     </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Text Styling:</label>
+                                    <div class="style-checkboxes">
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" id="boxBold">
+                                            <span>Bold</span>
+                                        </label>
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" id="boxItalic">
+                                            <span>Italic</span>
+                                        </label>
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" id="boxUnderline">
+                                            <span>Underline</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -867,15 +988,6 @@
         <div class="main-content">
             <div class="content-header">
                 <h3>PDF Viewer</h3>
-                <div class="editor-controls">
-                    <button class="editor-btn editor-btn-primary" onclick="addText()">Add Text</button>
-                    <button class="editor-btn editor-btn-primary" onclick="addImagePlaceholder()">Add Image</button>
-                    <button class="editor-btn editor-btn-secondary" onclick="duplicateObject()" id="duplicateBtn" disabled>Duplicate</button>
-                    <button class="editor-btn editor-btn-warning" onclick="toggleLock()" id="lockBtn" disabled>Lock</button>
-                    <button class="editor-btn editor-btn-danger" onclick="deleteObject()" id="deleteBtn" disabled>Delete</button>
-                    <button class="editor-btn editor-btn-secondary" onclick="clearCanvas()">Clear All</button>
-                    <button class="editor-btn editor-btn-success" onclick="saveLayout()">Save Layout</button>
-                </div>
             </div>
 
             <div class="viewer-container">
@@ -894,6 +1006,7 @@
                         <button class="pdf-control-btn" onclick="resetView()" title="Reset View">⌂</button>
                         <button class="pdf-control-btn" onclick="zoomIn()" title="Zoom In">+</button>
                         <button class="pdf-control-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                        <button class="pdf-control-btn" onclick="togglePDFLock()" title="Toggle PDF Lock" id="pdfLockBtn">🔒</button>
                         <div class="zoom-display" id="zoomDisplay">100%</div>
                     </div>
                     
@@ -971,6 +1084,11 @@
         // Enhanced box management system
         let boxCounter = 0;
         let currentBoxId = null;
+        
+        // Font management system
+        let availableFonts = ['Arial', 'Times New Roman', 'Helvetica', 'Georgia', 'Verdana', 'Courier New'];
+        let loadedFonts = {};
+        let defaultFontFamily = 'Arial';
 
         // Initialize status indicators
         function updateStatusIndicators() {
@@ -1046,6 +1164,9 @@
                 
                 // Initialize PDF dragging functionality
                 initPDFDragging();
+                
+                // Initialize PDF lock status
+                updatePDFLockStatus();
 
             } catch (error) {
                 console.error('Error loading PDF:', error);
@@ -1185,6 +1306,9 @@
 
         // Initialize status indicators on page load
         updateStatusIndicators();
+        
+        // Initialize font handling
+        initializeFontHandling();
 
         // Layout Editor Variables
         let selectedBox = null;
@@ -1280,7 +1404,7 @@
                 height: 40px;
                 min-width: 80px;
                 min-height: 25px;
-                background: rgba(255, 255, 255, 0.95);
+                background: rgba(255, 255, 255, 0.1);
                 border: 2px solid #007bff;
                 padding: 5px;
                 cursor: move;
@@ -1306,18 +1430,35 @@
             // Make it draggable
             makeDraggable(textBox);
             
+            // Add click handler for selection
+            textBox.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Remove selection from all boxes
+                document.querySelectorAll('.draggable-text-box').forEach(box => {
+                    box.style.border = '2px solid #007bff';
+                });
+                
+                // Select this box
+                textBox.style.border = '2px solid #28a745';
+                sessionState.selectedBox = boxData;
+                updateBoxEditor();
+                updateBoxEditorValues(boxData);
+            });
+            
             // Add to session state
             const boxData = {
                 id: boxCounter,
                 element: textBox,
                 type: 'text',
+                boxType: 'text',
                 csvColumn: '',
                 staticText: 'Sample Text',
                 bold: false,
                 italic: false,
                 underline: false,
                 fontSize: 16,
-                fontFamily: 'Arial',
+                fontFamily: defaultFontFamily,
                 color: '#000000',
                 textAlign: 'center',
                 x: centerX,
@@ -1677,46 +1818,45 @@
                     const size = parseInt(this.value);
                     box.fontSize = size;
                     box.set('fontSize', size);
-                    editorCanvas.renderAll();
+                    updateTextBoxFont(box);
                 };
 
                 document.getElementById('boxFontFamily').onchange = function() {
                     const family = this.value;
                     box.fontFamily = family;
                     box.set('fontFamily', family);
-                    editorCanvas.renderAll();
+                    updateTextBoxFont(box);
                 };
 
                 document.getElementById('boxTextColor').onchange = function() {
                     const color = this.value;
-                    box.fill = color;
+                    box.color = color;
                     box.set('fill', color);
-                    editorCanvas.renderAll();
+                    updateTextBoxFont(box);
                 };
 
                 document.getElementById('boxBold').onchange = function() {
                     box.bold = this.checked;
                     box.set('fontWeight', this.checked ? 'bold' : 'normal');
-                    editorCanvas.renderAll();
+                    updateTextBoxFont(box);
                 };
 
                 document.getElementById('boxItalic').onchange = function() {
                     box.italic = this.checked;
                     box.set('fontStyle', this.checked ? 'italic' : 'normal');
-                    editorCanvas.renderAll();
+                    updateTextBoxFont(box);
                 };
 
                 document.getElementById('boxUnderline').onchange = function() {
                     box.underline = this.checked;
-                    // Note: Fabric.js doesn't have built-in underline, but we can add it later
-                    editorCanvas.renderAll();
+                    updateTextBoxFont(box);
                 };
 
                 document.getElementById('boxTextAlign').onchange = function() {
                     const align = this.value;
                     box.textAlign = align;
                     box.set('textAlign', align);
-                    editorCanvas.renderAll();
+                    updateTextBoxFont(box);
                 };
             }
 
@@ -1996,6 +2136,7 @@
         let currentTransform = { x: 0, y: 0, scale: 1 };
         let pdfViewer = null;
         let pdfContent = null;
+        let pdfLocked = true; // PDF is locked by default when uploaded
 
         function initPDFDragging() {
             pdfViewer = document.getElementById('pdfViewer');
@@ -2022,8 +2163,8 @@
         }
 
         function startDragging(e) {
-            // Don't start dragging if clicking on controls or if we're in editor mode
-            if (e.target.closest('.pdf-controls') || isEditorMode) return;
+            // Don't start dragging if clicking on controls, if we're in editor mode, or if PDF is locked
+            if (e.target.closest('.pdf-controls') || isEditorMode || pdfLocked) return;
             
             isDragging = true;
             lastMousePos = { x: e.clientX, y: e.clientY };
@@ -2032,7 +2173,7 @@
         }
 
         function startDraggingTouch(e) {
-            if (e.target.closest('.pdf-controls') || isEditorMode) return;
+            if (e.target.closest('.pdf-controls') || isEditorMode || pdfLocked) return;
             
             isDragging = true;
             lastMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -2076,7 +2217,7 @@
         }
 
         function handleWheel(e) {
-            if (isEditorMode) return; // Don't zoom when editing
+            if (isEditorMode || pdfLocked) return; // Don't zoom when editing or if PDF is locked
             
             e.preventDefault();
             
@@ -2111,6 +2252,49 @@
             if (editorCanvas) {
                 editorCanvas.setZoom(currentTransform.scale);
                 editorCanvas.renderAll();
+            }
+        }
+
+        function togglePDFLock() {
+            pdfLocked = !pdfLocked;
+            
+            // Update cursor style
+            if (pdfViewer) {
+                pdfViewer.style.cursor = pdfLocked ? 'default' : 'grab';
+            }
+            
+            // Update lock status display
+            updatePDFLockStatus();
+        }
+
+        function updatePDFLockStatus() {
+            // Create or update lock status indicator
+            let lockIndicator = document.getElementById('pdfLockIndicator');
+            if (!lockIndicator) {
+                lockIndicator = document.createElement('div');
+                lockIndicator.id = 'pdfLockIndicator';
+                lockIndicator.style.cssText = `
+                    position: absolute;
+                    top: 10px;
+                    left: 10px;
+                    background: rgba(0, 0, 0, 0.7);
+                    color: white;
+                    padding: 4px 8px;
+                    border-radius: 3px;
+                    font-size: 10px;
+                    z-index: 100;
+                `;
+                document.querySelector('.pdf-viewer').appendChild(lockIndicator);
+            }
+            
+            lockIndicator.textContent = pdfLocked ? 'PDF Locked' : 'PDF Unlocked';
+            lockIndicator.style.background = pdfLocked ? 'rgba(220, 53, 69, 0.8)' : 'rgba(40, 167, 69, 0.8)';
+            
+            // Update lock button
+            const lockBtn = document.getElementById('pdfLockBtn');
+            if (lockBtn) {
+                lockBtn.textContent = pdfLocked ? '🔒' : '🔓';
+                lockBtn.title = pdfLocked ? 'Unlock PDF' : 'Lock PDF';
             }
         }
 
@@ -2509,6 +2693,222 @@
         function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
             sidebar.classList.toggle('collapsed');
+        }
+
+        // Font Management Functions
+        function initializeFontHandling() {
+            const fontUploadArea = document.getElementById('fontUploadArea');
+            const fontUploadInput = document.getElementById('fontUploadInput');
+            const addFontUrlBtn = document.getElementById('addFontUrlBtn');
+            const fontUrlInput = document.getElementById('fontUrlInput');
+
+            if (fontUploadArea && fontUploadInput) {
+                fontUploadArea.addEventListener('click', () => fontUploadInput.click());
+                fontUploadArea.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    fontUploadArea.classList.add('dragover');
+                });
+                fontUploadArea.addEventListener('dragleave', e => {
+                    e.preventDefault();
+                    fontUploadArea.classList.remove('dragover');
+                });
+                fontUploadArea.addEventListener('drop', e => {
+                    e.preventDefault();
+                    fontUploadArea.classList.remove('dragover');
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        handleFontUpload(e.dataTransfer.files[0]);
+                    }
+                });
+                fontUploadInput.addEventListener('change', e => {
+                    if (fontUploadInput.files && fontUploadInput.files[0]) {
+                        handleFontUpload(fontUploadInput.files[0]);
+                    }
+                });
+            }
+
+            if (addFontUrlBtn && fontUrlInput) {
+                addFontUrlBtn.addEventListener('click', handleGoogleFontUrl);
+            }
+        }
+
+        function handleFontUpload(file) {
+            const status = document.getElementById('fontUploadStatus');
+            
+            if (!file.name.match(/\.(ttf|otf)$/i)) {
+                status.textContent = 'Only .ttf and .otf files are allowed.';
+                status.className = 'font-status error';
+                return;
+            }
+            
+            status.textContent = 'Processing font...';
+            status.className = 'font-status';
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const base64 = e.target.result.split(',')[1];
+                    const fontName = file.name.replace(/\.(ttf|otf)$/i, '');
+                    const fileExtension = file.name.match(/\.(ttf|otf)$/i)[1].toLowerCase();
+                    const format = fileExtension === 'ttf' ? 'truetype' : 'opentype';
+                    
+                    // Remove existing font-face if it exists
+                    const existingStyle = document.getElementById(`font-face-${fontName}`);
+                    if (existingStyle) {
+                        existingStyle.remove();
+                    }
+                    
+                    // Create @font-face rule with data URL
+                    const style = document.createElement('style');
+                    style.id = `font-face-${fontName}`;
+                    style.textContent = `
+                        @font-face {
+                            font-family: '${fontName}';
+                            src: url(data:font/${fileExtension};base64,${base64}) format('${format}');
+                            font-display: swap;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                    
+                    // Add to available fonts if not already present
+                    if (!availableFonts.includes(fontName)) {
+                        availableFonts.push(fontName);
+                        updateFontDropdown();
+                    }
+                    
+                    // Set as default font for new text boxes
+                    defaultFontFamily = fontName;
+                    
+                    // Update current text box if selected
+                    if (sessionState.selectedBox && sessionState.selectedBox.type === 'text') {
+                        sessionState.selectedBox.fontFamily = fontName;
+                        updateTextBoxFont(sessionState.selectedBox);
+                    }
+                    
+                    status.textContent = `Font "${fontName}" loaded successfully!`;
+                    status.className = 'font-status success';
+                    
+                } catch (error) {
+                    console.error('Error processing font:', error);
+                    status.textContent = 'Error processing font file.';
+                    status.className = 'font-status error';
+                }
+            };
+            
+            reader.onerror = function() {
+                status.textContent = 'Error reading font file.';
+                status.className = 'font-status error';
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        async function handleGoogleFontUrl() {
+            const urlInput = document.getElementById('fontUrlInput');
+            const status = document.getElementById('fontUrlStatus');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                status.textContent = 'Please paste a Google Fonts URL.';
+                status.className = 'font-status error';
+                return;
+            }
+            
+            if (url.includes('fonts.google.com/share')) {
+                status.textContent = 'This is a share link. Please use the "Use on the web" link from Google Fonts.';
+                status.className = 'font-status error';
+                return;
+            }
+            
+            status.textContent = 'Adding font...';
+            status.className = 'font-status';
+            
+            if (url.startsWith('http') && url.includes('fonts.googleapis.com')) {
+                let fontName = await getFontFamilyFromGoogleFontsUrl(url);
+                if (!fontName) {
+                    status.textContent = 'Could not determine font name. Please check the URL.';
+                    status.className = 'font-status error';
+                    return;
+                }
+                
+                if (!document.querySelector(`link[href="${url}"]`)) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = url;
+                    document.head.appendChild(link);
+                }
+                
+                if (!availableFonts.includes(fontName)) {
+                    availableFonts.push(fontName);
+                    updateFontDropdown();
+                }
+                
+                // Update current text box if selected
+                if (sessionState.selectedBox && sessionState.selectedBox.type === 'text') {
+                    sessionState.selectedBox.fontFamily = fontName;
+                    updateTextBoxFont(sessionState.selectedBox);
+                }
+                
+                status.textContent = `Font "${fontName}" added successfully!`;
+                status.className = 'font-status success';
+                urlInput.value = '';
+                
+            } else {
+                status.textContent = 'Please enter a valid Google Fonts URL.';
+                status.className = 'font-status error';
+            }
+        }
+
+        async function getFontFamilyFromGoogleFontsUrl(url) {
+            try {
+                const res = await fetch(url);
+                const css = await res.text();
+                const match = css.match(/font-family:\s*'([^']+)'/);
+                if (match) {
+                    return match[1];
+                }
+            } catch (e) {
+                console.warn('Could not fetch Google Fonts CSS:', e);
+            }
+            
+            // Fallback: try to parse from URL
+            const urlMatch = url.match(/family=([^:&]+)/);
+            if (urlMatch) {
+                return decodeURIComponent(urlMatch[1]).replace(/\+/g, ' ').split(':')[0];
+            }
+            return '';
+        }
+
+        function updateFontDropdown() {
+            const fontSelect = document.getElementById('boxFontFamily');
+            if (!fontSelect) return;
+            
+            // Store current selection
+            const currentValue = fontSelect.value;
+            
+            // Clear and rebuild options
+            fontSelect.innerHTML = '';
+            availableFonts.forEach(font => {
+                const option = document.createElement('option');
+                option.value = font;
+                option.textContent = font;
+                option.selected = font === currentValue;
+                fontSelect.appendChild(option);
+            });
+        }
+
+        function updateTextBoxFont(box) {
+            if (!box || box.type !== 'text') return;
+            
+            const element = box.element;
+            if (element) {
+                element.style.fontFamily = `'${box.fontFamily}', Arial, sans-serif`;
+                element.style.fontSize = (box.fontSize || 16) + 'px';
+                element.style.color = box.color || '#000000';
+                element.style.fontWeight = box.bold ? 'bold' : 'normal';
+                element.style.fontStyle = box.italic ? 'italic' : 'normal';
+                element.style.textDecoration = box.underline ? 'underline' : 'none';
+                element.style.textAlign = box.textAlign || 'center';
+            }
         }
     </script>
 </body>
