@@ -857,13 +857,6 @@
                         <div id="boxEditor" class="box-editor">
                             <h4 id="boxEditorTitle">Text Box Properties</h4>
                             
-                            <div class="form-group">
-                                <label>CSV Column:</label>
-                                <select id="boxColumnSelect">
-                                    <option value="">Select CSV column...</option>
-                                </select>
-                            </div>
-                            
                             <div id="textProperties" style="display: none;">
                                 <div class="form-group">
                                     <label>CSV Column:</label>
@@ -3023,8 +3016,8 @@
             const row = csvData[currentRecord];
             const text = row[box.csvColumn] || '';
             
-            // Update the text content
-            box.element.textContent = text;
+            // Update the text content while preserving resize handles
+            updateTextBoxContentSafely(box.element, text);
             
             // Apply formatting
             updateTextBoxFont(box);
@@ -3043,8 +3036,23 @@
                 text = box.staticText || 'Sample Text';
             }
             
-            box.element.textContent = text;
+            updateTextBoxContentSafely(box.element, text);
             updateTextBoxFont(box);
+        }
+
+        function updateTextBoxContentSafely(element, text) {
+            if (!element) return;
+            
+            // Store resize handles
+            const resizeHandles = Array.from(element.querySelectorAll('.resize-handle'));
+            
+            // Update text content
+            element.textContent = text;
+            
+            // Restore resize handles
+            resizeHandles.forEach(handle => {
+                element.appendChild(handle);
+            });
         }
 
         function autoResizeTextBox(box) {
