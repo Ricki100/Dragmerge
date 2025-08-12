@@ -282,6 +282,35 @@
             color: #666;
         }
 
+        /* Record Navigation Styles */
+        .record-navigation {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .nav-controls button {
+            padding: 4px 8px;
+            font-size: 10px;
+            min-width: 30px;
+        }
+
+        .nav-controls span {
+            font-size: 10px;
+            color: #666;
+            flex: 1;
+            text-align: center;
+        }
+
         .box-actions {
             display: flex;
             gap: 4px;
@@ -831,8 +860,15 @@
                             
                             <div id="textProperties" style="display: none;">
                                 <div class="form-group">
-                                    <label>Text Content:</label>
-                                    <input type="text" id="boxTextInput" placeholder="Enter text or leave empty for CSV data">
+                                    <label>CSV Column:</label>
+                                    <select id="boxColumnSelect">
+                                        <option value="">Select CSV column...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Static Text (if no CSV column selected):</label>
+                                    <input type="text" id="boxTextInput" placeholder="Enter static text or leave empty for CSV data">
                                 </div>
                                 
                                 <!-- Font Upload Section -->
@@ -957,6 +993,16 @@
 
                 <div class="section">
                     <h2 class="section-header">CSV Data</h2>
+                    
+                    <!-- Record Navigation -->
+                    <div id="recordNavigation" class="record-navigation" style="display: none;">
+                        <div class="nav-controls">
+                            <button id="prevRecord" class="btn btn-secondary">‹</button>
+                            <span id="recordInfo">Record 1 of 1</span>
+                            <button id="nextRecord" class="btn btn-secondary">›</button>
+                        </div>
+                    </div>
+                    
                     <div id="csvPreview" class="csv-preview">
                         <h4>CSV Preview (First 5 rows)</h4>
                         <div id="csvTableContainer"></div>
@@ -1089,6 +1135,10 @@
         let availableFonts = ['Arial', 'Times New Roman', 'Helvetica', 'Georgia', 'Verdana', 'Courier New'];
         let loadedFonts = {};
         let defaultFontFamily = 'Arial';
+        
+        // CSV data management
+        let currentRecord = 0;
+        let csvData = null;
 
         // Initialize status indicators
         function updateStatusIndicators() {
@@ -1421,7 +1471,7 @@
                 transition: all 0.1s ease;
             `;
             textBox.textContent = 'Sample Text';
-            textBox.contentEditable = true;
+            textBox.contentEditable = false; // Disable direct editing since we use the panel
             
             // Add to overlay container
             const overlayContainer = document.getElementById('overlayContainer');
@@ -1744,8 +1794,8 @@
             const columnSelect = document.getElementById('boxColumnSelect');
             columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
             
-            if (sessionState.csvRows.length > 0) {
-                const columns = Object.keys(sessionState.csvRows[0]);
+            if (csvData && csvData.length > 0) {
+                const columns = Object.keys(csvData[0]);
                 columns.forEach(column => {
                     const option = document.createElement('option');
                     option.value = column;
@@ -1801,6 +1851,9 @@
             // CSV Column change
             document.getElementById('boxColumnSelect').onchange = function() {
                 box.csvColumn = this.value;
+                updateTextBoxContent(box);
+                // Auto-resize after CSV data change
+                setTimeout(() => autoResizeTextBox(box), 10);
                 updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
             };
 
@@ -1808,20 +1861,25 @@
             if (box.boxType === 'text') {
                 document.getElementById('boxTextInput').oninput = function() {
                     box.staticText = this.value;
-                    box.element.textContent = this.value;
-                    updateTextBoxFont(box);
+                    updateTextBoxContent(box);
+                    // Auto-resize after text content change
+                    setTimeout(() => autoResizeTextBox(box), 10);
                 };
 
                 document.getElementById('boxFontSize').oninput = function() {
                     const size = parseInt(this.value);
                     box.fontSize = size;
                     updateTextBoxFont(box);
+                    // Auto-resize after a short delay to ensure font is applied
+                    setTimeout(() => autoResizeTextBox(box), 10);
                 };
 
                 document.getElementById('boxFontFamily').onchange = function() {
                     const family = this.value;
                     box.fontFamily = family;
                     updateTextBoxFont(box);
+                    // Auto-resize after font change
+                    setTimeout(() => autoResizeTextBox(box), 10);
                 };
 
                 document.getElementById('boxTextColor').oninput = function() {
@@ -2545,15 +2603,20 @@
                         return;
                     }
 
-                    // Store CSV data in session state
+                    // Store CSV data in session state and global variable
                     sessionState.csv = file;
                     sessionState.csvRows = results.data;
+                    csvData = results.data;
+                    currentRecord = 0;
                     
                     // Update status indicators
                     updateStatusIndicators();
                     
                     // Display preview
                     displayCSVPreview(results.data);
+                    
+                    // Show record navigation
+                    showRecordNavigation();
                     
                     // Update file label
                     document.getElementById('csvLabel').textContent = file.name;
@@ -2562,6 +2625,9 @@
                     if (sessionState.selectedBox) {
                         updateBoxEditorValues(sessionState.selectedBox);
                     }
+                    
+                    // Update all text boxes with CSV data
+                    updateAllTextBoxesWithCSVData();
                 },
                 error: function(error) {
                     console.error('CSV parsing error:', error);
@@ -2900,7 +2966,135 @@
                 element.style.fontStyle = box.italic ? 'italic' : 'normal';
                 element.style.textDecoration = box.underline ? 'underline' : 'none';
                 element.style.textAlign = box.textAlign || 'center';
+                
+                // Auto-resize the text box to fit content
+                autoResizeTextBox(box);
             }
+        }
+
+        // CSV Data Binding Functions
+        function showRecordNavigation() {
+            const nav = document.getElementById('recordNavigation');
+            if (csvData && csvData.length > 0) {
+                nav.style.display = 'block';
+                updateRecordInfo();
+                
+                // Add event listeners
+                document.getElementById('prevRecord').onclick = () => {
+                    if (currentRecord > 0) {
+                        currentRecord--;
+                        updateRecordInfo();
+                        updateAllTextBoxesWithCSVData();
+                    }
+                };
+                
+                document.getElementById('nextRecord').onclick = () => {
+                    if (currentRecord < csvData.length - 1) {
+                        currentRecord++;
+                        updateRecordInfo();
+                        updateAllTextBoxesWithCSVData();
+                    }
+                };
+            } else {
+                nav.style.display = 'none';
+            }
+        }
+
+        function updateRecordInfo() {
+            const recordInfo = document.getElementById('recordInfo');
+            if (csvData && csvData.length > 0) {
+                recordInfo.textContent = `Record ${currentRecord + 1} of ${csvData.length}`;
+            }
+        }
+
+        function updateAllTextBoxesWithCSVData() {
+            sessionState.boxes.forEach(box => {
+                if (box.type === 'text' && box.csvColumn) {
+                    updateTextBoxWithCSVData(box);
+                }
+            });
+        }
+
+        function updateTextBoxWithCSVData(box) {
+            if (!box || !box.element || !csvData || !csvData[currentRecord]) return;
+            
+            const row = csvData[currentRecord];
+            const text = row[box.csvColumn] || '';
+            
+            // Update the text content
+            box.element.textContent = text;
+            
+            // Apply formatting
+            updateTextBoxFont(box);
+        }
+
+        function updateTextBoxContent(box) {
+            if (!box || !box.element) return;
+            
+            let text = '';
+            
+            if (box.csvColumn && csvData && csvData[currentRecord]) {
+                // Use CSV data
+                text = csvData[currentRecord][box.csvColumn] || '';
+            } else {
+                // Use static text
+                text = box.staticText || 'Sample Text';
+            }
+            
+            box.element.textContent = text;
+            updateTextBoxFont(box);
+        }
+
+        function autoResizeTextBox(box) {
+            if (!box || !box.element) return;
+            
+            const element = box.element;
+            const text = element.textContent;
+            
+            if (!text) return;
+            
+            // Create a temporary element to measure text dimensions
+            const tempElement = document.createElement('div');
+            tempElement.style.cssText = `
+                position: absolute;
+                visibility: hidden;
+                white-space: nowrap;
+                font-family: ${element.style.fontFamily || 'Arial, sans-serif'};
+                font-size: ${element.style.fontSize || '16px'};
+                font-weight: ${element.style.fontWeight || 'normal'};
+                font-style: ${element.style.fontStyle || 'normal'};
+                padding: ${element.style.padding || '5px'};
+                box-sizing: border-box;
+            `;
+            tempElement.textContent = text;
+            
+            document.body.appendChild(tempElement);
+            
+            // Get the measured dimensions
+            const textWidth = tempElement.offsetWidth;
+            const textHeight = tempElement.offsetHeight;
+            
+            // Remove the temporary element
+            document.body.removeChild(tempElement);
+            
+            // Calculate new box dimensions with some padding
+            const padding = 10;
+            const newWidth = Math.max(80, textWidth + padding * 2);
+            const newHeight = Math.max(25, textHeight + padding * 2);
+            
+            // Update the box dimensions
+            element.style.width = newWidth + 'px';
+            element.style.height = newHeight + 'px';
+            
+            // Update the box data
+            box.width = newWidth;
+            box.height = newHeight;
+            
+            // Update the position inputs in the editor
+            const widthInput = document.getElementById('boxWidth');
+            const heightInput = document.getElementById('boxHeight');
+            if (widthInput) widthInput.value = newWidth;
+            if (heightInput) heightInput.value = newHeight;
         }
     </script>
 </body>
