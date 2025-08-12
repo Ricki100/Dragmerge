@@ -1808,42 +1808,35 @@
             if (box.boxType === 'text') {
                 document.getElementById('boxTextInput').oninput = function() {
                     box.staticText = this.value;
-                    if (box.text !== this.value) {
-                        box.set('text', this.value);
-                        editorCanvas.renderAll();
-                    }
+                    box.element.textContent = this.value;
+                    updateTextBoxFont(box);
                 };
 
-                document.getElementById('boxFontSize').onchange = function() {
+                document.getElementById('boxFontSize').oninput = function() {
                     const size = parseInt(this.value);
                     box.fontSize = size;
-                    box.set('fontSize', size);
                     updateTextBoxFont(box);
                 };
 
                 document.getElementById('boxFontFamily').onchange = function() {
                     const family = this.value;
                     box.fontFamily = family;
-                    box.set('fontFamily', family);
                     updateTextBoxFont(box);
                 };
 
-                document.getElementById('boxTextColor').onchange = function() {
+                document.getElementById('boxTextColor').oninput = function() {
                     const color = this.value;
                     box.color = color;
-                    box.set('fill', color);
                     updateTextBoxFont(box);
                 };
 
                 document.getElementById('boxBold').onchange = function() {
                     box.bold = this.checked;
-                    box.set('fontWeight', this.checked ? 'bold' : 'normal');
                     updateTextBoxFont(box);
                 };
 
                 document.getElementById('boxItalic').onchange = function() {
                     box.italic = this.checked;
-                    box.set('fontStyle', this.checked ? 'italic' : 'normal');
                     updateTextBoxFont(box);
                 };
 
@@ -1855,7 +1848,6 @@
                 document.getElementById('boxTextAlign').onchange = function() {
                     const align = this.value;
                     box.textAlign = align;
-                    box.set('textAlign', align);
                     updateTextBoxFont(box);
                 };
             }
@@ -2120,11 +2112,7 @@
                 const width = element.offsetWidth;
                 const height = element.offsetHeight;
                 
-                // Calculate font size based on box dimensions
-                const fontSize = Math.min(width / 8, height / 2);
-                element.style.fontSize = Math.max(12, Math.min(48, fontSize)) + 'px';
-                
-                // Adjust padding to maintain text centering
+                // Only adjust padding to maintain text centering, don't resize font
                 const padding = Math.max(5, Math.min(width, height) / 10);
                 element.style.padding = padding + 'px';
             }
@@ -2782,6 +2770,8 @@
                     if (sessionState.selectedBox && sessionState.selectedBox.type === 'text') {
                         sessionState.selectedBox.fontFamily = fontName;
                         updateTextBoxFont(sessionState.selectedBox);
+                        // Update the dropdown to show the new font
+                        document.getElementById('boxFontFamily').value = fontName;
                     }
                     
                     status.textContent = `Font "${fontName}" loaded successfully!`;
@@ -2846,6 +2836,8 @@
                 if (sessionState.selectedBox && sessionState.selectedBox.type === 'text') {
                     sessionState.selectedBox.fontFamily = fontName;
                     updateTextBoxFont(sessionState.selectedBox);
+                    // Update the dropdown to show the new font
+                    document.getElementById('boxFontFamily').value = fontName;
                 }
                 
                 status.textContent = `Font "${fontName}" added successfully!`;
