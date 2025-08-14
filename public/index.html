@@ -8,6 +8,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" id="jszip-cdn"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -259,6 +262,8 @@
         .font-status.warning {
             color: #ffc107;
         }
+        
+
 
         .style-checkboxes {
             display: flex;
@@ -429,6 +434,15 @@
             background: #545b62;
         }
 
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+
         .btn:disabled {
             background: #ccc;
             cursor: not-allowed;
@@ -578,6 +592,20 @@
 
         .pdf-viewer.dragging {
             cursor: grabbing;
+        }
+        
+        .pdf-area-outline {
+            position: absolute;
+            border: 2px dashed #ff6b6b;
+            background: transparent;
+            pointer-events: none;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .pdf-area-outline.active {
+            border-color: #4ecdc4;
+            background: transparent;
         }
 
         .pdf-content {
@@ -841,9 +869,15 @@
                         Generate From Template
                     </button>
                     
+                    <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled>
+                        Download PDFs
+                    </button>
+                    
                     <div id="downloadLink" style="display: none;">
                         <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Download Original PDF</a>
                     </div>
+                    
+
                 </div>
 
                 <div class="section">
@@ -883,16 +917,7 @@
                                     <div id="fontUploadStatus" class="font-status"></div>
                                 </div>
                                 
-                                <!-- Google Fonts Section -->
-                                <div class="form-group">
-                                    <label>Add Google Font:</label>
-                                    <div class="google-font-input">
-                                        <input type="text" id="fontUrlInput" placeholder="Paste Google Fonts URL">
-                                        <button type="button" id="addFontUrlBtn" class="btn btn-secondary">Add</button>
-                                    </div>
-                                    <div id="fontUrlStatus" class="font-status"></div>
-                                </div>
-                                
+
                                 <!-- Font Selection -->
                                 <div class="form-group">
                                     <label>Font Family:</label>
@@ -1057,6 +1082,7 @@
                     
                                     <div class="pdf-content" id="pdfContent">
                     <canvas id="viewer"></canvas>
+                    <div id="pdfAreaOutline" class="pdf-area-outline" style="display: none;"></div>
                 </div>
                 </div>
             </div>
@@ -1171,6 +1197,8 @@
             }
         });
 
+
+
         async function loadPdf(file) {
             try {
                 console.log('Loading PDF file:', file.name);
@@ -1199,6 +1227,9 @@
 
                 // Enable Generate From Template button
                 document.getElementById('generateFromTemplateBtn').disabled = false;
+                
+                // Enable Download PDFs button if CSV and boxes are also loaded
+                updateDownloadButtonState();
 
                 // Render the page (always page 1 for single-page PDFs)
                 await renderPage(1);
@@ -1216,6 +1247,9 @@
                 
                 // Initialize PDF lock status
                 updatePDFLockStatus();
+                
+                // Update PDF area outline
+                updatePdfAreaOutline();
 
             } catch (error) {
                 console.error('Error loading PDF:', error);
@@ -1282,28 +1316,36 @@
                 const canvas = document.getElementById('viewer');
                 const context = canvas.getContext('2d');
 
-                // Calculate scale to fit in viewer
-                const viewerWidth = document.querySelector('.viewer-container').clientWidth;
-                const viewerHeight = document.querySelector('.viewer-container').clientHeight;
+                // Render PDF at original quality without scaling down
+                const viewport = page.getViewport({scale: 1.0});
+                
+                // Enable high-quality rendering
+                context.imageSmoothingEnabled = true;
+                context.imageSmoothingQuality = 'high';
 
-                const viewport = page.getViewport({scale: 1});
-                const scaleX = viewerWidth / viewport.width;
-                const scaleY = viewerHeight / viewport.height;
-                const scale = Math.min(scaleX, scaleY, 1.5); // Max 1.5x zoom
-
-                const scaledViewport = page.getViewport({scale: scale});
-
-                // Set canvas dimensions
-                canvas.width = scaledViewport.width;
-                canvas.height = scaledViewport.height;
+                // Set canvas dimensions to original PDF size
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                // Set canvas display size to fit viewer while maintaining aspect ratio
+                const viewerContainer = document.querySelector('.viewer-container');
+                const containerWidth = viewerContainer.clientWidth;
+                const containerHeight = viewerContainer.clientHeight;
+                
+                const scaleX = containerWidth / viewport.width;
+                const scaleY = containerHeight / viewport.height;
+                const displayScale = Math.min(scaleX, scaleY, 1.0); // Don't scale up, only down
+                
+                canvas.style.width = (viewport.width * displayScale) + 'px';
+                canvas.style.height = (viewport.height * displayScale) + 'px';
 
                 // Make sure canvas is visible
                 canvas.style.display = 'block';
 
-                // Render page
+                // Render page at original quality
                 const renderContext = {
                     canvasContext: context,
-                    viewport: scaledViewport
+                    viewport: viewport
                 };
 
                 await page.render(renderContext).promise;
@@ -1313,7 +1355,7 @@
                     updateEditorPageSize();
                 }
 
-                console.log('PDF rendered successfully:', scaledViewport.width, 'x', scaledViewport.height);
+                console.log('PDF rendered at original quality:', viewport.width, 'x', viewport.height);
 
             } catch (error) {
                 console.error('Error rendering page:', error);
@@ -1355,6 +1397,47 @@
 
         // Initialize status indicators on page load
         updateStatusIndicators();
+        
+        // Function to update download button state
+        function updateDownloadButtonState() {
+            const hasTemplate = sessionState.templatePdfBytes !== null;
+            const hasCSV = sessionState.csvRows.length > 0;
+            const hasBoxes = sessionState.boxes.length > 0;
+            
+            const downloadBtn = document.getElementById('downloadPdfsBtn');
+            if (downloadBtn) {
+                downloadBtn.disabled = !(hasTemplate && hasCSV && hasBoxes);
+            }
+        }
+        
+        // Function to update PDF area outline
+        function updatePdfAreaOutline() {
+            const canvas = document.getElementById('viewer');
+            const outline = document.getElementById('pdfAreaOutline');
+            
+            if (!canvas || !outline) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const viewerRect = document.getElementById('pdfViewer').getBoundingClientRect();
+            
+            // Calculate position relative to the viewer
+            const left = rect.left - viewerRect.left;
+            const top = rect.top - viewerRect.top;
+            
+            outline.style.left = left + 'px';
+            outline.style.top = top + 'px';
+            outline.style.width = rect.width + 'px';
+            outline.style.height = rect.height + 'px';
+            outline.style.display = 'block';
+            
+            console.log(`PDF area outline updated: ${rect.width}x${rect.height} at (${left}, ${top})`);
+            console.log(`Canvas actual size: ${canvas.width}x${canvas.height}, Display size: ${rect.width}x${rect.height}`);
+        }
+        
+        // Update outline when zoom changes
+        function updateOutlineOnZoom() {
+            setTimeout(updatePdfAreaOutline, 100); // Small delay to ensure zoom is applied
+        }
         
         // Initialize font handling
         initializeFontHandling();
@@ -1453,8 +1536,8 @@
                 height: 40px;
                 min-width: 80px;
                 min-height: 25px;
-                background: rgba(255, 255, 255, 0.1);
-                border: 2px solid #007bff;
+                background: transparent;
+                border: none;
                 padding: 5px;
                 cursor: move;
                 pointer-events: auto;
@@ -1466,7 +1549,7 @@
                 user-select: none;
                 box-sizing: border-box;
                 overflow: hidden;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                box-shadow: none;
                 transition: all 0.1s ease;
             `;
             textBox.textContent = 'Sample Text';
@@ -1483,13 +1566,13 @@
             textBox.addEventListener('click', function(e) {
                 e.stopPropagation();
                 
-                // Remove selection from all boxes
+                // Remove selection from all boxes (no borders)
                 document.querySelectorAll('.draggable-text-box').forEach(box => {
-                    box.style.border = '2px solid #007bff';
+                    box.style.border = 'none';
                 });
                 
-                // Select this box
-                textBox.style.border = '2px solid #28a745';
+                // Select this box (no border)
+                textBox.style.border = 'none';
                 sessionState.selectedBox = boxData;
                 updateBoxEditor();
                 updateBoxEditorValues(boxData);
@@ -1523,6 +1606,9 @@
             // Update box editor
             updateBoxEditor();
             updateBoxEditorValues(boxData);
+            
+            // Update download button state
+            updateDownloadButtonState();
             
             // Select the text box immediately for editing
             textBox.focus();
@@ -2326,6 +2412,7 @@
             
             lockIndicator.textContent = pdfLocked ? 'PDF Locked' : 'PDF Unlocked';
             lockIndicator.style.background = pdfLocked ? 'rgba(220, 53, 69, 0.8)' : 'rgba(40, 167, 69, 0.8)';
+            lockIndicator.style.display = 'none'; // Hide lock indicator by default
             
             // Update lock button
             const lockBtn = document.getElementById('pdfLockBtn');
@@ -2344,12 +2431,14 @@
             const newScale = Math.min(5, currentTransform.scale * 1.2);
             currentTransform.scale = newScale;
             updatePDFTransform();
+            updateOutlineOnZoom();
         }
 
         function zoomOut() {
             const newScale = Math.max(0.1, currentTransform.scale / 1.2);
             currentTransform.scale = newScale;
             updatePDFTransform();
+            updateOutlineOnZoom();
         }
 
         function updateEditorStatus(message) {
@@ -2472,6 +2561,292 @@
             } catch (error) {
                 console.error('Error generating sample PDF:', error);
                 alert('Error generating sample PDF: ' + error.message);
+            }
+        }
+
+        // Download PDFs function - High Resolution Image Capture Approach
+        async function downloadPdfs() {
+            try {
+                console.log('=== HIGH RESOLUTION PDF GENERATION ===');
+                
+                // Step 1: Validate inputs
+                console.log('Step 1: Validating inputs...');
+                if (!sessionState.templatePdfBytes) {
+                    throw new Error('No PDF template loaded');
+                }
+                if (!sessionState.csvRows || sessionState.csvRows.length === 0) {
+                    throw new Error('No CSV data loaded');
+                }
+                if (!sessionState.boxes || sessionState.boxes.length === 0) {
+                    throw new Error('No text boxes configured');
+                }
+                console.log(`✓ Inputs valid: ${sessionState.csvRows.length} CSV rows, ${sessionState.boxes.length} text boxes`);
+
+                const downloadBtn = document.getElementById('downloadPdfsBtn');
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = 'Generating PDFs...';
+
+                // Step 2: Load JSZip and jsPDF
+                console.log('Step 2: Loading libraries...');
+                const JSZipScript = document.getElementById('jszip-cdn');
+                if (!window.JSZip && !JSZipScript) {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                    script.id = 'jszip-cdn';
+                    document.body.appendChild(script);
+                    await new Promise(res => { script.onload = res; });
+                } else if (!window.JSZip && JSZipScript) {
+                    await new Promise(res => { JSZipScript.onload = res; });
+                }
+                console.log('✓ JSZip loaded');
+
+                const zip = new JSZip();
+                const originalRecord = currentRecord;
+
+                try {
+                    // Step 3: Process each CSV record
+                    for (let i = 0; i < sessionState.csvRows.length; i++) {
+                        console.log(`\n--- Processing Record ${i + 1} ---`);
+                        currentRecord = i;
+                        
+                        // Step 3a: Update text boxes with current record data
+                        console.log('Step 3a: Updating text boxes with CSV data...');
+                        updateAllTextBoxesWithCSVData();
+                        await new Promise(r => setTimeout(r, 100)); // Wait for DOM update
+                        console.log('✓ Text boxes updated');
+
+                        // Step 3b: High-resolution capture of PDF area only
+                        console.log('Step 3b: Capturing high-resolution image of PDF area...');
+                        const pdfViewer = document.getElementById('pdfViewer');
+                        const canvas = document.getElementById('viewer');
+                        
+                        if (!pdfViewer || !canvas) {
+                            throw new Error('PDF viewer not found');
+                        }
+                        
+                        // Get the exact PDF area dimensions (use actual canvas size, not display size)
+                        const canvasRect = canvas.getBoundingClientRect();
+                        const viewerRect = pdfViewer.getBoundingClientRect();
+                        
+                        // Calculate PDF area position relative to viewer
+                        const pdfAreaX = canvasRect.left - viewerRect.left;
+                        const pdfAreaY = canvasRect.top - viewerRect.top;
+                        const pdfAreaWidth = canvasRect.width;
+                        const pdfAreaHeight = canvasRect.height;
+                        
+                        console.log(`PDF area display: ${pdfAreaWidth}x${pdfAreaHeight} at (${pdfAreaX}, ${pdfAreaY})`);
+                        console.log(`Canvas actual size: ${canvas.width}x${canvas.height}`);
+                        
+                        // Use actual canvas dimensions for capture to maintain full quality
+                        const actualWidth = canvas.width;
+                        const actualHeight = canvas.height;
+                        
+                        // Calculate high-quality scale factor to maintain original PDF quality
+                        // Use higher scale to ensure crisp text and maintain quality
+                        let scale = 6; // Start with high quality
+                        
+                        // If the original PDF has high resolution, use even higher scale
+                        const img = canvas.querySelector('img');
+                        if (img && img.naturalWidth && img.width) {
+                            const originalScale = img.naturalWidth / img.width;
+                            scale = Math.max(6, originalScale * 1.5); // Maintain original quality + extra for crispness
+                        }
+                        
+                        // Ensure minimum scale of 4x for quality, maximum of 12x for performance
+                        scale = Math.max(4, Math.min(12, scale));
+                        
+                        console.log(`Using scale factor: ${scale} for high quality output`);
+                        
+                        // Configure html2canvas for PDF area capture only
+                        const options = {
+                            scale: scale,
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: null,
+                            logging: false,
+                            x: pdfAreaX,
+                            y: pdfAreaY,
+                            width: pdfAreaWidth,
+                            height: pdfAreaHeight,
+                            onclone: (clonedDoc) => {
+                                const clonedViewer = clonedDoc.getElementById('pdfViewer');
+                                if (clonedViewer) {
+                                    // Hide PDF area outline during capture
+                                    const outline = clonedDoc.getElementById('pdfAreaOutline');
+                                    if (outline) {
+                                        outline.style.display = 'none';
+                                    }
+                                    
+                                    // Hide PDF lock indicator
+                                    const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
+                                    if (lockIndicator) {
+                                        lockIndicator.style.display = 'none';
+                                    }
+                                    
+                                    // Remove selection styling for clean capture
+                                    const selectedBoxes = clonedViewer.querySelectorAll('.selected');
+                                    selectedBoxes.forEach(box => box.classList.remove('selected'));
+                                    
+                                    // Remove ALL borders and backgrounds from text boxes
+                                    const allBoxes = clonedViewer.querySelectorAll('.draggable-box');
+                                    allBoxes.forEach(box => {
+                                        box.style.border = 'none';
+                                        box.style.background = 'transparent';
+                                        box.style.boxShadow = 'none';
+                                        box.style.outline = 'none';
+                                    });
+                                    
+                                    // Also remove any blue selection outlines
+                                    const allElements = clonedViewer.querySelectorAll('*');
+                                    allElements.forEach(element => {
+                                        if (element.style.outline && element.style.outline.includes('blue')) {
+                                            element.style.outline = 'none';
+                                        }
+                                    });
+                                }
+                            }
+                        };
+                        
+                        // Wait for fonts and DOM to be ready
+                        await document.fonts.ready;
+                        await new Promise(requestAnimationFrame);
+                        
+                        // Capture only the PDF area at high resolution
+                        const capturedCanvas = await html2canvas(pdfViewer, options);
+                        console.log('✓ High-resolution PDF area captured');
+                        console.log(`Image dimensions: ${capturedCanvas.width} x ${capturedCanvas.height} pixels`);
+
+                        // Step 3c: Convert to high-quality image data
+                        console.log('Step 3c: Converting to high-quality image...');
+                        
+                        // Always use PNG for maximum quality and crisp text
+                        let imgData = capturedCanvas.toDataURL('image/png', 1.0); // Maximum quality PNG
+                        let imgElement = new Image();
+                        imgElement.src = imgData;
+                        
+                        // Wait for image to load
+                        await new Promise((resolve) => {
+                            imgElement.onload = resolve;
+                        });
+                        
+                        // Check file size
+                        const imgBlob = await fetch(imgData).then(r => r.blob());
+                        const fileSizeMB = imgBlob.size / (1024 * 1024);
+                        console.log(`Initial file size: ${fileSizeMB.toFixed(2)} MB`);
+                        
+                        // If file is too small, increase quality by using higher scale
+                        if (fileSizeMB < 1.0) {
+                            console.log('File too small, increasing quality...');
+                            // Re-capture with higher scale
+                            const higherScale = Math.min(12, scale * 1.5);
+                            console.log(`Re-capturing with higher scale: ${higherScale}`);
+                            
+                            const highQualityOptions = {
+                                ...options,
+                                scale: higherScale
+                            };
+                            
+                            const highQualityCanvas = await html2canvas(pdfViewer, highQualityOptions);
+                            imgData = highQualityCanvas.toDataURL('image/png', 1.0);
+                            imgElement = new Image();
+                            imgElement.src = imgData;
+                            await new Promise((resolve) => { imgElement.onload = resolve; });
+                            
+                            const newBlob = await fetch(imgData).then(r => r.blob());
+                            const newSizeMB = newBlob.size / (1024 * 1024);
+                            console.log(`High quality file size: ${newSizeMB.toFixed(2)} MB`);
+                        }
+                        
+                        // If file is too large, use JPEG with high quality
+                        if (fileSizeMB > 1.5) {
+                            console.log('File too large, using high-quality JPEG...');
+                            imgData = capturedCanvas.toDataURL('image/jpeg', 0.95); // Very high quality JPEG
+                            imgElement = new Image();
+                            imgElement.src = imgData;
+                            await new Promise((resolve) => { imgElement.onload = resolve; });
+                            
+                            const jpegBlob = await fetch(imgData).then(r => r.blob());
+                            const jpegSizeMB = jpegBlob.size / (1024 * 1024);
+                            console.log(`JPEG file size: ${jpegSizeMB.toFixed(2)} MB`);
+                        }
+                        
+                        // Step 3d: Create PDF using jsPDF with exact dimensions
+                        console.log('Step 3d: Creating PDF from high-resolution image...');
+                        const { jsPDF } = window.jspdf;
+                        
+                        // Get the original PDF dimensions to maintain aspect ratio
+                        const originalPdf = await PDFLib.PDFDocument.load(sessionState.templatePdfBytes);
+                        const originalPage = originalPdf.getPages()[0];
+                        const originalWidth = originalPage.getWidth();
+                        const originalHeight = originalPage.getHeight();
+                        
+                        // Convert points to mm (1 point = 0.3528 mm)
+                        const pointsToMm = 0.3528;
+                        const pdfWidthMm = originalWidth * pointsToMm;
+                        const pdfHeightMm = originalHeight * pointsToMm;
+                        
+                        console.log(`Original PDF dimensions: ${pdfWidthMm} x ${pdfHeightMm} mm`);
+                        
+                        // Create PDF with exact original dimensions
+                        const pdf = new jsPDF('p', 'mm', [pdfWidthMm, pdfHeightMm]);
+                        
+                        // Calculate image dimensions to fit the PDF exactly
+                        const imgAspectRatio = imgElement.width / imgElement.height;
+                        const pdfAspectRatio = pdfWidthMm / pdfHeightMm;
+                        
+                        let imgWidth, imgHeight;
+                        if (imgAspectRatio > pdfAspectRatio) {
+                            imgWidth = pdfWidthMm;
+                            imgHeight = pdfWidthMm / imgAspectRatio;
+                        } else {
+                            imgHeight = pdfHeightMm;
+                            imgWidth = pdfHeightMm * imgAspectRatio;
+                        }
+                        
+                        // Center image on page
+                        const x = (pdfWidthMm - imgWidth) / 2;
+                        const y = (pdfHeightMm - imgHeight) / 2;
+                        
+                        // Add optimized image to PDF
+                        const imageFormat = imgData.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+                        pdf.addImage(imgData, imageFormat, x, y, imgWidth, imgHeight);
+                        
+                        // Step 3e: Save high-quality PDF to zip
+                        console.log('Step 3e: Saving high-quality PDF...');
+                        const pdfBytes = pdf.output('blob');
+                        const fileName = `record_${i + 1}.pdf`;
+                        zip.file(fileName, pdfBytes);
+                        console.log(`✓ High-quality PDF saved: ${fileName}`);
+                    }
+
+                    // Step 4: Generate and download
+                    console.log('\nStep 4: Generating download...');
+                    const content = await zip.generateAsync({type: 'blob'});
+                    const url = URL.createObjectURL(content);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = sessionState.csvRows.length === 1 ? 'generated.pdf' : 'generated_pdfs.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    console.log('=== HIGH RESOLUTION PDF GENERATION COMPLETE ===');
+                    alert('High-quality PDFs generated successfully!');
+
+                } finally {
+                    currentRecord = originalRecord;
+                    updateAllTextBoxesWithCSVData();
+                }
+
+            } catch (error) {
+                console.error('=== PDF GENERATION ERROR ===');
+                console.error('Error:', error);
+                alert('Error generating PDFs: ' + error.message);
+            } finally {
+                const downloadBtn = document.getElementById('downloadPdfsBtn');
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = 'Download PDFs';
             }
         }
 
@@ -2619,6 +2994,9 @@
                     
                     // Update all text boxes with CSV data
                     updateAllTextBoxesWithCSVData();
+                    
+                    // Update download button state
+                    updateDownloadButtonState();
                 },
                 error: function(error) {
                     console.error('CSV parsing error:', error);
@@ -2725,6 +3103,12 @@
 
             // Disable Generate From Template button
             document.getElementById('generateFromTemplateBtn').disabled = true;
+            
+            // Disable Download PDFs button
+            const downloadBtn = document.getElementById('downloadPdfsBtn');
+            if (downloadBtn) {
+                downloadBtn.disabled = true;
+            }
 
             // Update status indicators
             updateStatusIndicators();
