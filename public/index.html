@@ -607,6 +607,73 @@
             border-color: #4ecdc4;
             background: transparent;
         }
+        
+        .simple-multiple-records {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .simple-multiple-records h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .records-info {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .multiple-textboxes-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .multiple-textboxes-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .multiple-textboxes-section h4 {
+            margin: 10px 0 10px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .textbox-mapping-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .textbox-mapping-item label {
+            font-size: 12px;
+            color: #666;
+            min-width: 80px;
+        }
+        
+        .textbox-mapping-item select {
+            flex: 1;
+            font-size: 12px;
+            padding: 4px;
+        }
 
         .pdf-content {
             position: absolute;
@@ -877,7 +944,53 @@
                         <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Download Original PDF</a>
                     </div>
                     
-
+                    <!-- Simple Multiple Records -->
+                    <div class="simple-multiple-records">
+                        <h3 class="section-header">Multiple Records</h3>
+                        
+                        <div class="form-group">
+                            <label for="recordsCountSelect">Number of Records:</label>
+                            <select id="recordsCountSelect" class="form-control" style="margin-bottom: 10px;">
+                                <option value="2">2 Records</option>
+                                <option value="3">3 Records</option>
+                                <option value="4" selected>4 Records</option>
+                                <option value="5">5 Records</option>
+                                <option value="6">6 Records</option>
+                                <option value="8">8 Records</option>
+                                <option value="10">10 Records</option>
+                            </select>
+                            
+                            <button id="createMultipleRecordsBtn" class="btn btn-success" onclick="createMultipleRecords()" style="width: 100%; padding: 15px; font-size: 16px; font-weight: bold; margin-bottom: 10px;" disabled>
+                                🎯 CREATE RECORDS
+                            </button>
+                            <div style="font-size: 12px; color: #666; text-align: center;">
+                                Select a text box with a field first, then click to create multiple copies
+                            </div>
+                        </div>
+                        
+                        <div id="recordsInfo" class="records-info">
+                            Total records: 0 | Records created: 0
+                        </div>
+                        
+                        <!-- Page Navigation -->
+                        <div id="pageNavigation" class="page-navigation" style="display: none; margin-top: 15px;">
+                            <h4 style="margin: 0 0 10px 0; font-size: 14px;">Page Navigation</h4>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button id="prevPageBtn" class="btn btn-secondary" onclick="previousPage()" style="flex: 1;">
+                                    ← Previous Page
+                                </button>
+                                <span id="pageInfo" style="font-size: 12px; color: #666;">
+                                    Page 1 of 1
+                                </span>
+                                <button id="nextPageBtn" class="btn btn-secondary" onclick="nextPage()" style="flex: 1;">
+                                    Next Page →
+                                </button>
+                            </div>
+                            <div id="pageRecordsInfo" style="font-size: 11px; color: #888; margin-top: 5px; text-align: center;">
+                                Showing records 1-4
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="section">
@@ -1230,6 +1343,9 @@
                 
                 // Enable Download PDFs button if CSV and boxes are also loaded
                 updateDownloadButtonState();
+                
+                // Update records info
+                updateRecordsInfo();
 
                 // Render the page (always page 1 for single-page PDFs)
                 await renderPage(1);
@@ -1351,7 +1467,7 @@
                 await page.render(renderContext).promise;
 
                 // Update editor canvas size to match the rendered PDF
-                if (editorCanvas) {
+                if (typeof editorCanvas !== 'undefined' && editorCanvas) {
                     updateEditorPageSize();
                 }
 
@@ -1437,6 +1553,265 @@
         // Update outline when zoom changes
         function updateOutlineOnZoom() {
             setTimeout(updatePdfAreaOutline, 100); // Small delay to ensure zoom is applied
+        }
+        
+        // Simple Multiple Records Management
+        let recordsCreated = 0;
+        
+        function createMultipleRecords() {
+            // Check if a text box is selected
+            if (!sessionState.selectedBox) {
+                alert('Please select a text box first!');
+                return;
+            }
+            
+            // Check if the selected text box has a CSV column assigned
+            if (!sessionState.selectedBox.csvColumn || sessionState.selectedBox.csvColumn === '') {
+                alert('Please select a text box that has a CSV field assigned!');
+                return;
+            }
+            
+            // Check if CSV data is loaded
+            if (!sessionState.csvRows || sessionState.csvRows.length === 0) {
+                alert('Please upload CSV data first!');
+                return;
+            }
+            
+            // Get the number of records to create from dropdown
+            const recordsCount = parseInt(document.getElementById('recordsCountSelect').value);
+            
+            // Get the selected text box
+            const selectedBox = sessionState.selectedBox;
+            
+            // Create copies of the selected text box with different records
+            for (let i = 0; i < recordsCount; i++) {
+                if (i >= sessionState.csvRows.length) break; // Don't create more than available records
+                
+                const record = sessionState.csvRows[i];
+                const recordText = record[selectedBox.csvColumn] || `Record ${i + 1}`;
+                
+                // Create new text box
+                const newBox = {
+                    ...selectedBox,
+                    id: ++boxCounter,
+                    y: selectedBox.y + (i * 60), // Stack vertically with 60px spacing
+                    element: null
+                };
+                
+                // Create the text box element
+                const textBox = document.createElement('div');
+                textBox.className = 'draggable-text-box';
+                textBox.id = 'textBox_' + newBox.id;
+                textBox.style.cssText = `
+                    position: absolute;
+                    left: ${newBox.x}px;
+                    top: ${newBox.y}px;
+                    width: ${newBox.width}px;
+                    height: ${newBox.height}px;
+                    min-width: 80px;
+                    min-height: 25px;
+                    background: transparent;
+                    border: none;
+                    padding: 5px;
+                    cursor: move;
+                    pointer-events: auto;
+                    z-index: 20;
+                    font-family: ${newBox.fontFamily}, sans-serif;
+                    font-size: ${newBox.fontSize}px;
+                    color: ${newBox.color};
+                    text-align: ${newBox.textAlign};
+                    user-select: none;
+                    box-sizing: border-box;
+                    overflow: hidden;
+                    box-shadow: none;
+                    transition: all 0.1s ease;
+                `;
+                textBox.textContent = recordText;
+                textBox.contentEditable = false;
+                
+                // Add to overlay container
+                const overlayContainer = document.getElementById('overlayContainer');
+                overlayContainer.appendChild(textBox);
+                
+                // Make it draggable
+                makeDraggable(textBox);
+                
+                // Add click handler
+                textBox.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    document.querySelectorAll('.draggable-text-box').forEach(box => {
+                        box.style.border = 'none';
+                    });
+                    textBox.style.border = 'none';
+                    sessionState.selectedBox = newBox;
+                    updateBoxEditor();
+                    updateBoxEditorValues(newBox);
+                });
+                
+                newBox.element = textBox;
+                sessionState.boxes.push(newBox);
+            }
+            
+            recordsCreated += recordsCount;
+            updateRecordsInfo();
+            
+            // Reset to first page and update navigation
+            currentPage = 0;
+            updatePageNavigation();
+            updateAllTextBoxesWithCSVData();
+            
+            alert(`Created ${recordsCount} text boxes with records 1-${recordsCount} from "${selectedBox.csvColumn}" field!`);
+        }
+        
+        function updateRecordsInfo() {
+            const infoElement = document.getElementById('recordsInfo');
+            const totalRecords = sessionState.csvRows ? sessionState.csvRows.length : 0;
+            
+            infoElement.textContent = `Total records: ${totalRecords} | Records created: ${recordsCreated}`;
+        }
+        
+        function updateCreateRecordsButtonState() {
+            const createBtn = document.getElementById('createMultipleRecordsBtn');
+            const hasSelectedBox = sessionState.selectedBox !== null;
+            const hasCsvColumn = sessionState.selectedBox && sessionState.selectedBox.csvColumn && sessionState.selectedBox.csvColumn !== '';
+            const hasCsvData = sessionState.csvRows && sessionState.csvRows.length > 0;
+            
+            // Enable button only if we have a selected box with a CSV column and CSV data
+            const shouldEnable = hasSelectedBox && hasCsvColumn && hasCsvData;
+            createBtn.disabled = !shouldEnable;
+            
+            // Update button text to show the selected number of records
+            const recordsCount = document.getElementById('recordsCountSelect').value;
+            createBtn.textContent = `🎯 CREATE ${recordsCount} RECORDS`;
+        }
+        
+        // Page navigation variables
+        let currentPage = 0;
+        let recordsPerPage = 4;
+        let totalPages = 1;
+        
+        function updatePageNavigation() {
+            const pageNav = document.getElementById('pageNavigation');
+            const pageInfo = document.getElementById('pageInfo');
+            const pageRecordsInfo = document.getElementById('pageRecordsInfo');
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            
+            if (!sessionState.csvRows || sessionState.csvRows.length === 0) {
+                pageNav.style.display = 'none';
+                return;
+            }
+            
+            // Calculate pages
+            recordsPerPage = parseInt(document.getElementById('recordsCountSelect').value);
+            totalPages = Math.ceil(sessionState.csvRows.length / recordsPerPage);
+            
+            // Update page info
+            pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages}`;
+            
+            // Calculate record range for current page
+            const startRecord = currentPage * recordsPerPage;
+            const endRecord = Math.min(startRecord + recordsPerPage - 1, sessionState.csvRows.length - 1);
+            pageRecordsInfo.textContent = `Showing records ${startRecord + 1}-${endRecord + 1}`;
+            
+            // Update button states
+            prevBtn.disabled = currentPage === 0;
+            nextBtn.disabled = currentPage >= totalPages - 1;
+            
+            // Show navigation
+            pageNav.style.display = 'block';
+        }
+        
+        function previousPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                updatePageNavigation();
+                updateAllTextBoxesWithCSVData();
+            }
+        }
+        
+        function nextPage() {
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                updatePageNavigation();
+                updateAllTextBoxesWithCSVData();
+            }
+        }
+        
+        function updateRecordDisplay() {
+            updatePageNavigation();
+        }
+        
+        function generateRecordsPreview() {
+            const previewContainer = document.getElementById('previewContainer');
+            if (!previewContainer || !sessionState.csvRows || sessionState.csvRows.length === 0) return;
+            
+            const totalRecords = sessionState.csvRows.length;
+            const totalPages = Math.ceil(totalRecords / recordsPerPage);
+            
+            let previewHTML = '';
+            
+            for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+                const startRecord = pageIndex * recordsPerPage;
+                const endRecord = Math.min(startRecord + recordsPerPage, totalRecords);
+                const recordsOnThisPage = endRecord - startRecord;
+                
+                previewHTML += `
+                    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; background: white;">
+                        <div style="font-weight: bold; color: #007bff; margin-bottom: 8px;">
+                            Page ${pageIndex + 1} (Records ${startRecord + 1}-${endRecord})
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                `;
+                
+                for (let i = 0; i < recordsOnThisPage; i++) {
+                    const recordIndex = startRecord + i;
+                    const record = sessionState.csvRows[recordIndex];
+                    const recordText = Object.values(record).slice(0, 3).join(' | '); // Show first 3 fields
+                    
+                    previewHTML += `
+                        <div style="padding: 5px; background: #f0f0f0; border-left: 3px solid #007bff; font-size: 11px;">
+                            <strong>Record ${recordIndex + 1}:</strong> ${recordText}
+                        </div>
+                    `;
+                }
+                
+                previewHTML += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            previewContainer.innerHTML = previewHTML;
+        }
+        
+        // Initialize simple system when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing simple system...');
+            updateRecordsInfo();
+            
+            // Add event listener for records count dropdown
+            document.getElementById('recordsCountSelect').addEventListener('change', function() {
+                updateCreateRecordsButtonState();
+                updatePageNavigation();
+            });
+        });
+        
+        // InDesign-style layout management
+        
+        function updateTextBoxMappingDisplay() {
+            // For InDesign-style data merge: each text box shows current record
+            // The records per page feature will duplicate the layout multiple times
+            sessionState.boxes.forEach((box) => {
+                const select = document.getElementById(`mapping_${box.id}`);
+                if (select) {
+                    select.value = currentRecord;
+                    textBoxMappings[box.id] = currentRecord;
+                }
+            });
+            
+            // Update all text boxes with current record data
+            updateAllTextBoxesWithCSVData();
         }
         
         // Initialize font handling
@@ -1562,22 +1937,6 @@
             // Make it draggable
             makeDraggable(textBox);
             
-            // Add click handler for selection
-            textBox.addEventListener('click', function(e) {
-                e.stopPropagation();
-                
-                // Remove selection from all boxes (no borders)
-                document.querySelectorAll('.draggable-text-box').forEach(box => {
-                    box.style.border = 'none';
-                });
-                
-                // Select this box (no border)
-                textBox.style.border = 'none';
-                sessionState.selectedBox = boxData;
-                updateBoxEditor();
-                updateBoxEditorValues(boxData);
-            });
-            
             // Add to session state
             const boxData = {
                 id: boxCounter,
@@ -1599,6 +1958,22 @@
                 height: 40
             };
             
+            // Add click handler for selection
+            textBox.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Remove selection from all boxes (no borders)
+                document.querySelectorAll('.draggable-text-box').forEach(box => {
+                    box.style.border = 'none';
+                });
+                
+                // Select this box (no border)
+                textBox.style.border = 'none';
+                sessionState.selectedBox = boxData;
+                updateBoxEditor();
+                updateBoxEditorValues(boxData);
+            });
+            
             sessionState.boxes.push(boxData);
             sessionState.selectedBox = boxData;
             currentBoxId = boxCounter;
@@ -1612,7 +1987,7 @@
             
             // Select the text box immediately for editing
             textBox.focus();
-            textBox.select();
+            // Remove the problematic select() call - text boxes don't have select() method
             
             // Update text size to fit the initial box dimensions
             updateTextSize(textBox);
@@ -1870,6 +2245,9 @@
             } else {
                 boxEditor.classList.remove('active');
             }
+            
+            // Update the create records button state
+            updateCreateRecordsButtonState();
         }
 
         function updateBoxEditorValues(box) {
@@ -1938,6 +2316,7 @@
                 box.csvColumn = this.value;
                 updateTextBoxContent(box);
                 updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
+                updateCreateRecordsButtonState();
             };
 
             // Text properties
@@ -2059,28 +2438,23 @@
         }
 
         function deleteSelectedBox() {
-            if (!sessionState.selectedBox || !editorCanvas) return;
+            if (!sessionState.selectedBox) return;
 
-            const boxId = sessionState.selectedBox.boxId;
+            const boxId = sessionState.selectedBox.id;
             
-            // Remove from canvas
-            editorCanvas.remove(sessionState.selectedBox);
+            // Remove element from DOM
+            if (sessionState.selectedBox.element) {
+                sessionState.selectedBox.element.remove();
+            }
             
             // Remove from session state
-            sessionState.boxes = sessionState.boxes.filter(box => box.boxId !== boxId);
+            sessionState.boxes = sessionState.boxes.filter(box => box.id !== boxId);
             
             // Clear selection
             sessionState.selectedBox = null;
-            currentBoxId = null;
             
             // Hide box editor
             updateBoxEditor();
-            
-            // Reset PDF view
-            if (pdfViewer) {
-                pdfViewer.style.display = 'none';
-            }
-            resetView();
             
             updateEditorStatus('Box deleted');
         }
@@ -2187,6 +2561,7 @@
                     element.style.zIndex = '20';
                     resizeHandle = '';
                     element.classList.remove('resizing');
+                    
                 } else if (isDragging) {
                     initialX = currentX;
                     initialY = currentY;
@@ -2564,10 +2939,10 @@
             }
         }
 
-        // Download PDFs function - High Resolution Image Capture Approach
+        // Download PDFs function - Simplified Multiple Records
         async function downloadPdfs() {
             try {
-                console.log('=== HIGH RESOLUTION PDF GENERATION ===');
+                console.log('=== SIMPLIFIED MULTIPLE RECORDS PDF GENERATION ===');
                 
                 // Step 1: Validate inputs
                 console.log('Step 1: Validating inputs...');
@@ -2581,6 +2956,7 @@
                     throw new Error('No text boxes configured');
                 }
                 console.log(`✓ Inputs valid: ${sessionState.csvRows.length} CSV rows, ${sessionState.boxes.length} text boxes`);
+                console.log(`Records per page: ${recordsPerPage}`);
 
                 const downloadBtn = document.getElementById('downloadPdfsBtn');
                 downloadBtn.disabled = true;
@@ -2601,22 +2977,27 @@
                 console.log('✓ JSZip loaded');
 
                 const zip = new JSZip();
-                const originalRecord = currentRecord;
+                const totalRecords = sessionState.csvRows.length;
+                const totalPages = Math.ceil(totalRecords / recordsPerPage);
 
                 try {
-                    // Step 3: Process each CSV record
-                    for (let i = 0; i < sessionState.csvRows.length; i++) {
-                        console.log(`\n--- Processing Record ${i + 1} ---`);
-                        currentRecord = i;
+                    // Step 3: Process each page
+                    for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+                        console.log(`\n--- Processing Page ${pageIndex + 1}/${totalPages} ---`);
                         
-                        // Step 3a: Update text boxes with current record data
-                        console.log('Step 3a: Updating text boxes with CSV data...');
-                        updateAllTextBoxesWithCSVData();
-                        await new Promise(r => setTimeout(r, 100)); // Wait for DOM update
-                        console.log('✓ Text boxes updated');
+                        // Calculate which records belong to this page
+                        const startRecord = pageIndex * recordsPerPage;
+                        const endRecord = Math.min(startRecord + recordsPerPage, totalRecords);
+                        const recordsOnThisPage = endRecord - startRecord;
+                        
+                        console.log(`Records on this page: ${startRecord + 1} to ${endRecord} (${recordsOnThisPage} records)`);
 
-                        // Step 3b: High-resolution capture of PDF area only
-                        console.log('Step 3b: Capturing high-resolution image of PDF area...');
+                        // Step 3a: Set current page and update text boxes
+                        currentPage = pageIndex;
+                        updateAllTextBoxesWithCSVData();
+
+                        // Step 3b: Capture the PDF area with text boxes
+                        console.log('Step 3b: Capturing PDF area...');
                         const pdfViewer = document.getElementById('pdfViewer');
                         const canvas = document.getElementById('viewer');
                         
@@ -2624,40 +3005,26 @@
                             throw new Error('PDF viewer not found');
                         }
                         
-                        // Get the exact PDF area dimensions (use actual canvas size, not display size)
+                        // Get PDF area dimensions
                         const canvasRect = canvas.getBoundingClientRect();
                         const viewerRect = pdfViewer.getBoundingClientRect();
-                        
-                        // Calculate PDF area position relative to viewer
                         const pdfAreaX = canvasRect.left - viewerRect.left;
                         const pdfAreaY = canvasRect.top - viewerRect.top;
                         const pdfAreaWidth = canvasRect.width;
                         const pdfAreaHeight = canvasRect.height;
                         
-                        console.log(`PDF area display: ${pdfAreaWidth}x${pdfAreaHeight} at (${pdfAreaX}, ${pdfAreaY})`);
-                        console.log(`Canvas actual size: ${canvas.width}x${canvas.height}`);
-                        
-                        // Use actual canvas dimensions for capture to maintain full quality
-                        const actualWidth = canvas.width;
-                        const actualHeight = canvas.height;
-                        
-                        // Calculate high-quality scale factor to maintain original PDF quality
-                        // Use higher scale to ensure crisp text and maintain quality
-                        let scale = 6; // Start with high quality
-                        
-                        // If the original PDF has high resolution, use even higher scale
+                        // Calculate high-quality scale factor
+                        let scale = 6;
                         const img = canvas.querySelector('img');
                         if (img && img.naturalWidth && img.width) {
                             const originalScale = img.naturalWidth / img.width;
-                            scale = Math.max(6, originalScale * 1.5); // Maintain original quality + extra for crispness
+                            scale = Math.max(6, originalScale * 1.5);
                         }
-                        
-                        // Ensure minimum scale of 4x for quality, maximum of 12x for performance
                         scale = Math.max(4, Math.min(12, scale));
                         
-                        console.log(`Using scale factor: ${scale} for high quality output`);
+                        // Step 3c: Capture the PDF area with current page data
+                        console.log('Step 3c: Capturing PDF area...');
                         
-                        // Configure html2canvas for PDF area capture only
                         const options = {
                             scale: scale,
                             useCORS: true,
@@ -2671,24 +3038,15 @@
                             onclone: (clonedDoc) => {
                                 const clonedViewer = clonedDoc.getElementById('pdfViewer');
                                 if (clonedViewer) {
-                                    // Hide PDF area outline during capture
+                                    // Hide UI elements
                                     const outline = clonedDoc.getElementById('pdfAreaOutline');
-                                    if (outline) {
-                                        outline.style.display = 'none';
-                                    }
+                                    if (outline) outline.style.display = 'none';
                                     
-                                    // Hide PDF lock indicator
                                     const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
-                                    if (lockIndicator) {
-                                        lockIndicator.style.display = 'none';
-                                    }
+                                    if (lockIndicator) lockIndicator.style.display = 'none';
                                     
-                                    // Remove selection styling for clean capture
-                                    const selectedBoxes = clonedViewer.querySelectorAll('.selected');
-                                    selectedBoxes.forEach(box => box.classList.remove('selected'));
-                                    
-                                    // Remove ALL borders and backgrounds from text boxes
-                                    const allBoxes = clonedViewer.querySelectorAll('.draggable-box');
+                                    // Remove borders and backgrounds
+                                    const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box');
                                     allBoxes.forEach(box => {
                                         box.style.border = 'none';
                                         box.style.background = 'transparent';
@@ -2696,154 +3054,82 @@
                                         box.style.outline = 'none';
                                     });
                                     
-                                    // Also remove any blue selection outlines
-                                    const allElements = clonedViewer.querySelectorAll('*');
-                                    allElements.forEach(element => {
-                                        if (element.style.outline && element.style.outline.includes('blue')) {
-                                            element.style.outline = 'none';
-                                        }
+                                    // Remove resize handles (orange controllers)
+                                    const resizeHandles = clonedViewer.querySelectorAll('.resize-handle');
+                                    resizeHandles.forEach(handle => {
+                                        handle.style.display = 'none';
                                     });
                                 }
                             }
                         };
                         
-                        // Wait for fonts and DOM to be ready
                         await document.fonts.ready;
                         await new Promise(requestAnimationFrame);
                         
-                        // Capture only the PDF area at high resolution
                         const capturedCanvas = await html2canvas(pdfViewer, options);
-                        console.log('✓ High-resolution PDF area captured');
-                        console.log(`Image dimensions: ${capturedCanvas.width} x ${capturedCanvas.height} pixels`);
-
-                        // Step 3c: Convert to high-quality image data
-                        console.log('Step 3c: Converting to high-quality image...');
                         
-                        // Always use PNG for maximum quality and crisp text
-                        let imgData = capturedCanvas.toDataURL('image/png', 1.0); // Maximum quality PNG
-                        let imgElement = new Image();
-                        imgElement.src = imgData;
+                        // Step 3d: Convert to PDF
+                        console.log('Step 3d: Converting to PDF...');
                         
-                        // Wait for image to load
-                        await new Promise((resolve) => {
-                            imgElement.onload = resolve;
+                        // Load jsPDF if not already loaded
+                        if (!window.jsPDF) {
+                            const script = document.createElement('script');
+                            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                            document.body.appendChild(script);
+                            await new Promise(res => { script.onload = res; });
+                        }
+                        
+                        const { jsPDF } = window.jspdf;
+                        const pdf = new jsPDF({
+                            orientation: 'portrait',
+                            unit: 'px',
+                            format: [pdfAreaWidth, pdfAreaHeight]
                         });
                         
-                        // Check file size
-                        const imgBlob = await fetch(imgData).then(r => r.blob());
-                        const fileSizeMB = imgBlob.size / (1024 * 1024);
-                        console.log(`Initial file size: ${fileSizeMB.toFixed(2)} MB`);
+                        // Convert canvas to image
+                        const imgData = capturedCanvas.toDataURL('image/png', 1.0);
                         
-                        // If file is too small, increase quality by using higher scale
-                        if (fileSizeMB < 1.0) {
-                            console.log('File too small, increasing quality...');
-                            // Re-capture with higher scale
-                            const higherScale = Math.min(12, scale * 1.5);
-                            console.log(`Re-capturing with higher scale: ${higherScale}`);
-                            
-                            const highQualityOptions = {
-                                ...options,
-                                scale: higherScale
-                            };
-                            
-                            const highQualityCanvas = await html2canvas(pdfViewer, highQualityOptions);
-                            imgData = highQualityCanvas.toDataURL('image/png', 1.0);
-                            imgElement = new Image();
-                            imgElement.src = imgData;
-                            await new Promise((resolve) => { imgElement.onload = resolve; });
-                            
-                            const newBlob = await fetch(imgData).then(r => r.blob());
-                            const newSizeMB = newBlob.size / (1024 * 1024);
-                            console.log(`High quality file size: ${newSizeMB.toFixed(2)} MB`);
-                        }
+                        // Add image to PDF
+                        pdf.addImage(imgData, 'PNG', 0, 0, pdfAreaWidth, pdfAreaHeight);
                         
-                        // If file is too large, use JPEG with high quality
-                        if (fileSizeMB > 1.5) {
-                            console.log('File too large, using high-quality JPEG...');
-                            imgData = capturedCanvas.toDataURL('image/jpeg', 0.95); // Very high quality JPEG
-                            imgElement = new Image();
-                            imgElement.src = imgData;
-                            await new Promise((resolve) => { imgElement.onload = resolve; });
-                            
-                            const jpegBlob = await fetch(imgData).then(r => r.blob());
-                            const jpegSizeMB = jpegBlob.size / (1024 * 1024);
-                            console.log(`JPEG file size: ${jpegSizeMB.toFixed(2)} MB`);
-                        }
-                        
-                        // Step 3d: Create PDF using jsPDF with exact dimensions
-                        console.log('Step 3d: Creating PDF from high-resolution image...');
-                        const { jsPDF } = window.jspdf;
-                        
-                        // Get the original PDF dimensions to maintain aspect ratio
-                        const originalPdf = await PDFLib.PDFDocument.load(sessionState.templatePdfBytes);
-                        const originalPage = originalPdf.getPages()[0];
-                        const originalWidth = originalPage.getWidth();
-                        const originalHeight = originalPage.getHeight();
-                        
-                        // Convert points to mm (1 point = 0.3528 mm)
-                        const pointsToMm = 0.3528;
-                        const pdfWidthMm = originalWidth * pointsToMm;
-                        const pdfHeightMm = originalHeight * pointsToMm;
-                        
-                        console.log(`Original PDF dimensions: ${pdfWidthMm} x ${pdfHeightMm} mm`);
-                        
-                        // Create PDF with exact original dimensions
-                        const pdf = new jsPDF('p', 'mm', [pdfWidthMm, pdfHeightMm]);
-                        
-                        // Calculate image dimensions to fit the PDF exactly
-                        const imgAspectRatio = imgElement.width / imgElement.height;
-                        const pdfAspectRatio = pdfWidthMm / pdfHeightMm;
-                        
-                        let imgWidth, imgHeight;
-                        if (imgAspectRatio > pdfAspectRatio) {
-                            imgWidth = pdfWidthMm;
-                            imgHeight = pdfWidthMm / imgAspectRatio;
-                        } else {
-                            imgHeight = pdfHeightMm;
-                            imgWidth = pdfHeightMm * imgAspectRatio;
-                        }
-                        
-                        // Center image on page
-                        const x = (pdfWidthMm - imgWidth) / 2;
-                        const y = (pdfHeightMm - imgHeight) / 2;
-                        
-                        // Add optimized image to PDF
-                        const imageFormat = imgData.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
-                        pdf.addImage(imgData, imageFormat, x, y, imgWidth, imgHeight);
-                        
-                        // Step 3e: Save high-quality PDF to zip
-                        console.log('Step 3e: Saving high-quality PDF...');
+                        // Step 3e: Add to zip
                         const pdfBytes = pdf.output('blob');
-                        const fileName = `record_${i + 1}.pdf`;
+                        const fileName = `page_${pageIndex + 1}_records_${startRecord + 1}-${endRecord}.pdf`;
                         zip.file(fileName, pdfBytes);
-                        console.log(`✓ High-quality PDF saved: ${fileName}`);
+                        
+                        console.log(`✓ Page ${pageIndex + 1} added to zip: ${fileName}`);
                     }
-
-                    // Step 4: Generate and download
-                    console.log('\nStep 4: Generating download...');
-                    const content = await zip.generateAsync({type: 'blob'});
-                    const url = URL.createObjectURL(content);
+                    
+                    // Step 4: Download zip file
+                    console.log('Step 4: Generating zip file...');
+                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    
+                    // Create download link
+                    const url = URL.createObjectURL(zipBlob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = sessionState.csvRows.length === 1 ? 'generated.pdf' : 'generated_pdfs.zip';
+                    a.download = `merged_pdfs_${totalRecords}_records.zip`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-
-                    console.log('=== HIGH RESOLUTION PDF GENERATION COMPLETE ===');
-                    alert('High-quality PDFs generated successfully!');
-
+                    
+                    console.log('✓ Download complete!');
+                    
+                } catch (error) {
+                    console.error('Error during PDF generation:', error);
+                    throw error;
                 } finally {
-                    currentRecord = originalRecord;
+                    // Restore original state
+                    currentPage = 0;
                     updateAllTextBoxesWithCSVData();
                 }
-
+                
             } catch (error) {
-                console.error('=== PDF GENERATION ERROR ===');
-                console.error('Error:', error);
+                console.error('Download failed:', error);
                 alert('Error generating PDFs: ' + error.message);
             } finally {
+                // Restore button state
                 const downloadBtn = document.getElementById('downloadPdfsBtn');
                 downloadBtn.disabled = false;
                 downloadBtn.textContent = 'Download PDFs';
@@ -2997,6 +3283,12 @@
                     
                     // Update download button state
                     updateDownloadButtonState();
+                    
+                    // Update records info
+                    updateRecordsInfo();
+                    
+                    // Update create records button state
+                    updateCreateRecordsButtonState();
                 },
                 error: function(error) {
                     console.error('CSV parsing error:', error);
@@ -3364,6 +3656,9 @@
                         currentRecord--;
                         updateRecordInfo();
                         updateAllTextBoxesWithCSVData();
+                        
+                        // Update record display
+                        updateRecordDisplay();
                     }
                 };
                 
@@ -3372,6 +3667,9 @@
                         currentRecord++;
                         updateRecordInfo();
                         updateAllTextBoxesWithCSVData();
+                        
+                        // Update record display
+                        updateRecordDisplay();
                     }
                 };
             } else {
@@ -3389,15 +3687,42 @@
         function updateAllTextBoxesWithCSVData() {
             sessionState.boxes.forEach(box => {
                 if (box.type === 'text' && box.csvColumn) {
+                    // Use current record for this text box
                     updateTextBoxWithCSVData(box);
                 }
             });
         }
 
         function updateTextBoxWithCSVData(box) {
-            if (!box || !box.element || !csvData || !csvData[currentRecord]) return;
+            if (!box || !box.element || !csvData) return;
             
-            const row = csvData[currentRecord];
+            // Calculate which record this text box should show based on its position
+            const boxIndex = sessionState.boxes.indexOf(box);
+            const recordIndex = currentPage * recordsPerPage + boxIndex;
+            
+            if (recordIndex >= csvData.length) {
+                // No more records, show empty
+                updateTextBoxContentSafely(box.element, '');
+                return;
+            }
+            
+            const row = csvData[recordIndex];
+            const text = row[box.csvColumn] || '';
+            
+            // Update the text content while preserving resize handles
+            updateTextBoxContentSafely(box.element, text);
+            
+            // Apply formatting
+            updateTextBoxFont(box);
+        }
+        
+        function updateTextBoxWithMappedCSVData(box) {
+            if (!box || !box.element || !csvData) return;
+            
+            const mappedRowIndex = textBoxMappings[box.id];
+            if (mappedRowIndex === undefined || !csvData[mappedRowIndex]) return;
+            
+            const row = csvData[mappedRowIndex];
             const text = row[box.csvColumn] || '';
             
             // Update the text content while preserving resize handles
