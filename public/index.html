@@ -932,6 +932,10 @@
                     
 
                     
+                    <button id="screenshotBtn" class="btn btn-danger" onclick="takeScreenshot()" style="background-color: #dc3545; border-color: #dc3545; margin-bottom: 10px; padding: 15px; font-size: 16px; font-weight: bold;">
+                        📸 TAKE SCREENSHOT
+                    </button>
+                    
                     <button id="generateFromTemplateBtn" class="btn btn-primary" onclick="generateFromTemplate()" disabled>
                         Generate From Template
                     </button>
@@ -2939,10 +2943,10 @@
             }
         }
 
-        // Download PDFs function - Simplified Multiple Records
+        // Download PDFs function - Hybrid High Quality (Vector PDF + High-Res Overlays)
         async function downloadPdfs() {
             try {
-                console.log('=== SIMPLIFIED MULTIPLE RECORDS PDF GENERATION ===');
+                console.log('=== HYBRID HIGH QUALITY PDF GENERATION ===');
                 
                 // Step 1: Validate inputs
                 console.log('Step 1: Validating inputs...');
@@ -2960,10 +2964,10 @@
 
                 const downloadBtn = document.getElementById('downloadPdfsBtn');
                 downloadBtn.disabled = true;
-                downloadBtn.textContent = 'Generating PDFs...';
+                downloadBtn.textContent = 'Generating Hybrid PDFs...';
 
-                // Step 2: Load JSZip and jsPDF
-                console.log('Step 2: Loading libraries...');
+                // Step 2: Load JSZip
+                console.log('Step 2: Loading JSZip...');
                 const JSZipScript = document.getElementById('jszip-cdn');
                 if (!window.JSZip && !JSZipScript) {
                     const script = document.createElement('script');
@@ -2981,7 +2985,7 @@
                 const totalPages = Math.ceil(totalRecords / recordsPerPage);
 
                 try {
-                    // Step 3: Process each page
+                    // Step 3: Process each page using hybrid approach
                     for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
                         console.log(`\n--- Processing Page ${pageIndex + 1}/${totalPages} ---`);
                         
@@ -2992,12 +2996,28 @@
                         
                         console.log(`Records on this page: ${startRecord + 1} to ${endRecord} (${recordsOnThisPage} records)`);
 
-                        // Step 3a: Set current page and update text boxes
+                        // Step 3a: Load the template PDF (crisp vector background)
+                        console.log('Step 3a: Loading template PDF...');
+                        const pdfDoc = await PDFLib.PDFDocument.load(sessionState.templatePdfBytes);
+                        
+                        // Get the first page
+                        const pages = pdfDoc.getPages();
+                        if (pages.length === 0) {
+                            throw new Error('Template PDF has no pages');
+                        }
+                        
+                        const page = pages[0];
+                        
+                        // Step 3b: Update UI to show current page data
+                        console.log('Step 3b: Updating UI for overlay capture...');
                         currentPage = pageIndex;
                         updateAllTextBoxesWithCSVData();
-
-                        // Step 3b: Capture the PDF area with text boxes
-                        console.log('Step 3b: Capturing PDF area...');
+                        
+                        // Wait for UI to update
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        
+                        // Step 3c: Capture high-resolution overlay (text boxes only)
+                        console.log('Step 3c: Capturing high-res overlays...');
                         const pdfViewer = document.getElementById('pdfViewer');
                         const canvas = document.getElementById('viewer');
                         
@@ -3013,23 +3033,21 @@
                         const pdfAreaWidth = canvasRect.width;
                         const pdfAreaHeight = canvasRect.height;
                         
-                        // Calculate high-quality scale factor
-                        let scale = 6;
+                        // Calculate ultra-high quality scale factor for overlays
+                        let scale = 8; // Higher scale for overlay quality
                         const img = canvas.querySelector('img');
                         if (img && img.naturalWidth && img.width) {
                             const originalScale = img.naturalWidth / img.width;
-                            scale = Math.max(6, originalScale * 1.5);
+                            scale = Math.max(8, originalScale * 2.0); // Higher multiplier for overlays
                         }
-                        scale = Math.max(4, Math.min(12, scale));
+                        scale = Math.max(6, Math.min(16, scale)); // Higher range for overlays
                         
-                        // Step 3c: Capture the PDF area with current page data
-                        console.log('Step 3c: Capturing PDF area...');
-                        
-                        const options = {
+                        // Capture only the overlay elements with transparency
+                        const overlayCanvas = await html2canvas(pdfViewer, {
                             scale: scale,
                             useCORS: true,
                             allowTaint: true,
-                            backgroundColor: null,
+                            backgroundColor: null, // Transparent background
                             logging: false,
                             x: pdfAreaX,
                             y: pdfAreaY,
@@ -3038,6 +3056,12 @@
                             onclone: (clonedDoc) => {
                                 const clonedViewer = clonedDoc.getElementById('pdfViewer');
                                 if (clonedViewer) {
+                                    // Hide the PDF background completely
+                                    const pdfCanvas = clonedDoc.getElementById('viewer');
+                                    if (pdfCanvas) {
+                                        pdfCanvas.style.display = 'none';
+                                    }
+                                    
                                     // Hide UI elements
                                     const outline = clonedDoc.getElementById('pdfAreaOutline');
                                     if (outline) outline.style.display = 'none';
@@ -3045,59 +3069,61 @@
                                     const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
                                     if (lockIndicator) lockIndicator.style.display = 'none';
                                     
-                                    // Remove borders and backgrounds
+                                    // Keep only text boxes with their styling
                                     const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box');
                                     allBoxes.forEach(box => {
+                                        // Remove borders but keep text styling
                                         box.style.border = 'none';
                                         box.style.background = 'transparent';
                                         box.style.boxShadow = 'none';
                                         box.style.outline = 'none';
+                                        // Keep font styling for quality
+                                        box.style.fontFamily = box.style.fontFamily || 'Arial, sans-serif';
+                                        box.style.fontSize = box.style.fontSize || '16px';
+                                        box.style.fontWeight = box.style.fontWeight || 'normal';
+                                        box.style.color = box.style.color || '#000000';
                                     });
                                     
-                                    // Remove resize handles (orange controllers)
+                                    // Remove resize handles
                                     const resizeHandles = clonedViewer.querySelectorAll('.resize-handle');
                                     resizeHandles.forEach(handle => {
                                         handle.style.display = 'none';
                                     });
+                                    
+                                    // Make background transparent
+                                    clonedViewer.style.background = 'transparent';
                                 }
                             }
-                        };
-                        
-                        await document.fonts.ready;
-                        await new Promise(requestAnimationFrame);
-                        
-                        const capturedCanvas = await html2canvas(pdfViewer, options);
-                        
-                        // Step 3d: Convert to PDF
-                        console.log('Step 3d: Converting to PDF...');
-                        
-                        // Load jsPDF if not already loaded
-                        if (!window.jsPDF) {
-                            const script = document.createElement('script');
-                            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                            document.body.appendChild(script);
-                            await new Promise(res => { script.onload = res; });
-                        }
-                        
-                        const { jsPDF } = window.jspdf;
-                        const pdf = new jsPDF({
-                            orientation: 'portrait',
-                            unit: 'px',
-                            format: [pdfAreaWidth, pdfAreaHeight]
                         });
                         
-                        // Convert canvas to image
-                        const imgData = capturedCanvas.toDataURL('image/png', 1.0);
+                        // Step 3d: Convert overlay to PNG with transparency
+                        console.log('Step 3d: Converting overlay to PNG...');
+                        const overlayPngDataUrl = overlayCanvas.toDataURL('image/png', 1.0);
                         
-                        // Add image to PDF
-                        pdf.addImage(imgData, 'PNG', 0, 0, pdfAreaWidth, pdfAreaHeight);
+                        // Step 3e: Embed overlay image into PDF
+                        console.log('Step 3e: Embedding overlay into PDF...');
+                        const overlayImage = await pdfDoc.embedPng(overlayPngDataUrl);
                         
-                        // Step 3e: Add to zip
-                        const pdfBytes = pdf.output('blob');
-                        const fileName = `page_${pageIndex + 1}_records_${startRecord + 1}-${endRecord}.pdf`;
+                        // Get page dimensions
+                        const { width: pageWidth, height: pageHeight } = page.getSize();
+                        
+                        // Add overlay image to page (full page coverage)
+                        page.drawImage(overlayImage, {
+                            x: 0,
+                            y: 0,
+                            width: pageWidth,
+                            height: pageHeight,
+                        });
+                        
+                        // Step 3f: Save the hybrid PDF
+                        console.log('Step 3f: Saving hybrid PDF...');
+                        const pdfBytes = await pdfDoc.save();
+                        
+                        // Step 3g: Add to zip
+                        const fileName = `hybrid_page_${pageIndex + 1}_records_${startRecord + 1}-${endRecord}.pdf`;
                         zip.file(fileName, pdfBytes);
                         
-                        console.log(`✓ Page ${pageIndex + 1} added to zip: ${fileName}`);
+                        console.log(`✓ Hybrid page ${pageIndex + 1} added to zip: ${fileName}`);
                     }
                     
                     // Step 4: Download zip file
@@ -3108,13 +3134,13 @@
                     const url = URL.createObjectURL(zipBlob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `merged_pdfs_${totalRecords}_records.zip`;
+                    a.download = `hybrid_high_quality_pdfs_${totalRecords}_records.zip`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                     
-                    console.log('✓ Download complete!');
+                    console.log('✓ Hybrid high-quality download complete!');
                     
                 } catch (error) {
                     console.error('Error during PDF generation:', error);
@@ -3133,6 +3159,113 @@
                 const downloadBtn = document.getElementById('downloadPdfsBtn');
                 downloadBtn.disabled = false;
                 downloadBtn.textContent = 'Download PDFs';
+            }
+        }
+
+        // Take Screenshot function
+        async function takeScreenshot() {
+            try {
+                const pdfViewer = document.getElementById('pdfViewer');
+                const canvas = document.getElementById('viewer');
+                
+                if (!pdfViewer || !canvas) {
+                    alert('No PDF viewer found. Please upload a PDF first.');
+                    return;
+                }
+
+                // Show loading state
+                const screenshotBtn = document.getElementById('screenshotBtn');
+                const originalText = screenshotBtn.textContent;
+                screenshotBtn.textContent = '📸 Taking Screenshot...';
+                screenshotBtn.disabled = true;
+
+                // Get PDF area dimensions (same as download function)
+                const canvasRect = canvas.getBoundingClientRect();
+                const viewerRect = pdfViewer.getBoundingClientRect();
+                const pdfAreaX = canvasRect.left - viewerRect.left;
+                const pdfAreaY = canvasRect.top - viewerRect.top;
+                const pdfAreaWidth = canvasRect.width;
+                const pdfAreaHeight = canvasRect.height;
+
+                // Calculate high-quality scale factor (same as download function)
+                let scale = 6;
+                const img = canvas.querySelector('img');
+                if (img && img.naturalWidth && img.width) {
+                    const originalScale = img.naturalWidth / img.width;
+                    scale = Math.max(6, originalScale * 1.5);
+                }
+                scale = Math.max(4, Math.min(12, scale));
+
+                // Use html2canvas to capture only the PDF area
+                const capturedCanvas = await html2canvas(pdfViewer, {
+                    scale: scale,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    x: pdfAreaX,
+                    y: pdfAreaY,
+                    width: pdfAreaWidth,
+                    height: pdfAreaHeight,
+                    onclone: (clonedDoc) => {
+                        const clonedViewer = clonedDoc.getElementById('pdfViewer');
+                        if (clonedViewer) {
+                            // Hide UI elements that shouldn't be in screenshot
+                            const outline = clonedDoc.getElementById('pdfAreaOutline');
+                            if (outline) outline.style.display = 'none';
+                            
+                            const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
+                            if (lockIndicator) lockIndicator.style.display = 'none';
+                            
+                            // Remove borders and backgrounds from text boxes for clean screenshot
+                            const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box');
+                            allBoxes.forEach(box => {
+                                box.style.border = 'none';
+                                box.style.background = 'transparent';
+                                box.style.boxShadow = 'none';
+                                box.style.outline = 'none';
+                            });
+                            
+                            // Remove resize handles
+                            const resizeHandles = clonedViewer.querySelectorAll('.resize-handle');
+                            resizeHandles.forEach(handle => {
+                                handle.style.display = 'none';
+                            });
+                        }
+                    }
+                });
+
+                // Convert canvas to blob
+                capturedCanvas.toBlob((blob) => {
+                    // Create download link
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `pdf-screenshot-${Date.now()}.png`;
+                    
+                    // Trigger download
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Clean up
+                    URL.revokeObjectURL(url);
+                    
+                    // Restore button state
+                    screenshotBtn.textContent = originalText;
+                    screenshotBtn.disabled = false;
+                    
+                    console.log('Screenshot taken and downloaded successfully');
+                }, 'image/png', 0.95);
+
+            } catch (error) {
+                console.error('Screenshot failed:', error);
+                alert('Error taking screenshot: ' + error.message);
+                
+                // Restore button state on error
+                const screenshotBtn = document.getElementById('screenshotBtn');
+                screenshotBtn.textContent = '📸 TAKE SCREENSHOT';
+                screenshotBtn.disabled = false;
             }
         }
 
