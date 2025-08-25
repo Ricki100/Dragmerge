@@ -11,6 +11,7 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" id="jszip-cdn"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -893,6 +894,36 @@
             white-space: normal;
         }
 
+        .draggable-text-box.selected .resize-handle {
+            background: #007bff !important;
+        }
+
+        /* Image box styles */
+        .draggable-image-box {
+            position: absolute;
+            border: 2px dashed #007bff;
+            background: rgba(255,255,255,0.2);
+            cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            overflow: hidden;
+            min-width: 40px;
+            min-height: 30px;
+        }
+
+        .draggable-image-box.selected {
+            border: 2px solid #007bff;
+            background: rgba(0,123,255,0.08);
+        }
+
+        .draggable-image-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
         .draggable-text-box:hover {
             border-color: #0056b3;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -1024,13 +1055,15 @@
                         <div id="boxEditor" class="box-editor">
                             <h4 id="boxEditorTitle">Text Box Properties</h4>
                             
+                            <!-- CSV Column Selection (for both text and image boxes) -->
+                            <div class="form-group">
+                                <label>CSV Column:</label>
+                                <select id="boxColumnSelect">
+                                    <option value="">Select CSV column...</option>
+                                </select>
+                            </div>
+                            
                             <div id="textProperties" style="display: none;">
-                                <div class="form-group">
-                                    <label>CSV Column:</label>
-                                    <select id="boxColumnSelect">
-                                        <option value="">Select CSV column...</option>
-                                    </select>
-                                </div>
                                 
                                 <div class="form-group">
                                     <label>Static Text (if no CSV column selected):</label>
@@ -1213,10 +1246,11 @@
                         <div class="zoom-display" id="zoomDisplay">100%</div>
                     </div>
                     
-                                    <div class="pdf-content" id="pdfContent">
-                    <canvas id="viewer"></canvas>
-                    <div id="pdfAreaOutline" class="pdf-area-outline" style="display: none;"></div>
-                </div>
+                    <div class="pdf-content" id="pdfContent">
+                        <canvas id="viewer"></canvas>
+                        <canvas id="editorCanvas" style="display: none;"></canvas>
+                        <div id="pdfAreaOutline" class="pdf-area-outline" style="display: none;"></div>
+                    </div>
                 </div>
             </div>
 
@@ -1297,6 +1331,9 @@
         // CSV data management
         let currentRecord = 0;
         let csvData = null;
+        
+        // Editor canvas management
+        let editorCanvas = null;
 
         // Initialize status indicators
         function updateStatusIndicators() {
@@ -1312,6 +1349,49 @@
             document.getElementById('templateIndicator').classList.toggle('loaded', templateLoaded);
             document.getElementById('csvIndicator').classList.toggle('loaded', csvLoaded);
             document.getElementById('layoutIndicator').classList.toggle('loaded', layoutLoaded);
+        }
+        
+        // Initialize editor canvas
+        function initEditorCanvas() {
+            if (editorCanvas) return; // Already initialized
+            
+            const canvasElement = document.getElementById('editorCanvas');
+            if (!canvasElement) {
+                console.error('Editor canvas element not found');
+                return;
+            }
+            
+            // Set canvas size to match PDF viewer
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (pdfViewer) {
+                const rect = pdfViewer.getBoundingClientRect();
+                canvasElement.width = rect.width;
+                canvasElement.height = rect.height;
+            }
+            
+            // Initialize Fabric.js canvas
+            editorCanvas = new fabric.Canvas('editorCanvas', {
+                selection: true,
+                preserveObjectStacking: true
+            });
+            
+            // Set canvas position to overlay PDF
+            canvasElement.style.position = 'absolute';
+            canvasElement.style.top = '20px';
+            canvasElement.style.left = '20px';
+            canvasElement.style.pointerEvents = 'auto';
+            canvasElement.style.zIndex = '15';
+            
+            // Make canvas visible when in editor mode
+            canvasElement.style.display = 'block';
+            
+            // Set Fabric.js canvas dimensions to match
+            editorCanvas.setDimensions({
+                width: canvasElement.width,
+                height: canvasElement.height
+            });
+            
+            console.log('Editor canvas initialized');
         }
 
         // File input handler
@@ -1497,6 +1577,35 @@
                 console.error('Error rendering page:', error);
             }
         }
+        
+        // Update editor canvas size to match PDF
+        function updateEditorPageSize() {
+            if (!editorCanvas) return;
+            
+            const canvas = document.getElementById('viewer');
+            const canvasElement = document.getElementById('editorCanvas');
+            
+            if (canvas && canvasElement) {
+                // Get the display size of the PDF canvas
+                const displayWidth = parseInt(canvas.style.width) || canvas.width;
+                const displayHeight = parseInt(canvas.style.height) || canvas.height;
+                
+                // Update editor canvas size to match
+                canvasElement.width = displayWidth;
+                canvasElement.height = displayHeight;
+                
+                // Update Fabric.js canvas dimensions
+                editorCanvas.setDimensions({
+                    width: displayWidth,
+                    height: displayHeight
+                });
+                
+                // Re-render the canvas
+                editorCanvas.renderAll();
+                
+                console.log('Editor canvas resized to:', displayWidth, 'x', displayHeight);
+            }
+        }
 
         // Drag and drop support
         const uploadArea = document.querySelector('.sidebar');
@@ -1579,15 +1688,15 @@
         let recordsCreated = 0;
         
         function createMultipleRecords() {
-            // Check if a text box is selected
+            // Check if a box is selected
             if (!sessionState.selectedBox) {
-                alert('Please select a text box first!');
+                alert('Please select a text box or image box first!');
                 return;
             }
             
-            // Check if the selected text box has a CSV column assigned
+            // Check if the selected box has a CSV column assigned
             if (!sessionState.selectedBox.csvColumn || sessionState.selectedBox.csvColumn === '') {
-                alert('Please select a text box that has a CSV field assigned!');
+                alert('Please select a box that has a CSV field assigned!');
                 return;
             }
             
@@ -1603,73 +1712,135 @@
             // Get the selected text box
             const selectedBox = sessionState.selectedBox;
             
-            // Create copies of the selected text box with different records
+            // Create copies of the selected box with different records
             for (let i = 0; i < recordsCount; i++) {
                 if (i >= sessionState.csvRows.length) break; // Don't create more than available records
                 
                 const record = sessionState.csvRows[i];
-                const recordText = record[selectedBox.csvColumn] || `Record ${i + 1}`;
                 
-                // Create new text box
-                const newBox = {
-                    ...selectedBox,
-                    id: ++boxCounter,
-                    y: selectedBox.y + (i * 60), // Stack vertically with 60px spacing
-                    element: null
-                };
-                
-                // Create the text box element
-                const textBox = document.createElement('div');
-                textBox.className = 'draggable-text-box';
-                textBox.id = 'textBox_' + newBox.id;
-                textBox.style.cssText = `
-                    position: absolute;
-                    left: ${newBox.x}px;
-                    top: ${newBox.y}px;
-                    width: ${newBox.width}px;
-                    height: ${newBox.height}px;
-                    min-width: 80px;
-                    min-height: 25px;
-                    background: transparent;
-                    border: none;
-                    padding: 5px;
-                    cursor: move;
-                    pointer-events: auto;
-                    z-index: 20;
-                    font-family: ${newBox.fontFamily}, sans-serif;
-                    font-size: ${newBox.fontSize}px;
-                    color: ${newBox.color};
-                    text-align: ${newBox.textAlign};
-                    user-select: none;
-                    box-sizing: border-box;
-                    overflow: hidden;
-                    box-shadow: none;
-                    transition: all 0.1s ease;
-                `;
-                textBox.textContent = recordText;
-                textBox.contentEditable = false;
-                
-                // Add to overlay container
-                const overlayContainer = document.getElementById('overlayContainer');
-                overlayContainer.appendChild(textBox);
-                
-                // Make it draggable
-                makeDraggable(textBox);
-                
-                // Add click handler
-                textBox.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    document.querySelectorAll('.draggable-text-box').forEach(box => {
-                        box.style.border = 'none';
+                if (selectedBox.boxType === 'image') {
+                    // Create image box using DOM elements
+                    const centerX = parseFloat(selectedBox.style?.left) || 100;
+                    const centerY = (parseFloat(selectedBox.style?.top) || 100) + (i * 60); // Stack vertically
+                    
+                    // Create a DOM-based image box
+                    const imageBox = document.createElement('div');
+                    imageBox.className = 'draggable-image-box';
+                    imageBox.style.position = 'absolute';
+                    imageBox.style.left = (centerX - 50) + 'px';
+                    imageBox.style.top = (centerY - 50) + 'px';
+                    imageBox.style.width = '100px';
+                    imageBox.style.height = '100px';
+                    imageBox.style.border = '2px dashed #007bff';
+                    imageBox.style.background = 'rgba(255,255,255,0.2)';
+                    imageBox.style.cursor = 'move';
+                    imageBox.style.display = 'flex';
+                    imageBox.style.alignItems = 'center';
+                    imageBox.style.justifyContent = 'center';
+                    imageBox.style.zIndex = '10';
+                    imageBox.style.overflow = 'hidden';
+                    imageBox.textContent = 'IMAGE';
+                    imageBox.style.color = '#666';
+                    imageBox.style.fontWeight = 'bold';
+                    imageBox.style.fontSize = '12px';
+
+                    // Add custom properties
+                    imageBox.boxId = ++boxCounter;
+                    imageBox.boxType = 'image';
+                    imageBox.csvColumn = selectedBox.csvColumn;
+                    imageBox.imageSource = 'csv';
+                    imageBox.imageUrl = '';
+                    imageBox.boxIndex = i; // Track which record this box represents
+
+                    // Add click handler for selection
+                    imageBox.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        document.querySelectorAll('.draggable-image-box.selected, .draggable-text-box.selected').forEach(box => {
+                            box.classList.remove('selected');
+                        });
+                        imageBox.classList.add('selected');
+                        sessionState.selectedBox = imageBox;
+                        currentBoxId = imageBox.boxId;
+                        updateBoxEditor();
+                        updateBoxEditorValues(imageBox);
                     });
-                    textBox.style.border = 'none';
-                    sessionState.selectedBox = newBox;
-                    updateBoxEditor();
-                    updateBoxEditorValues(newBox);
-                });
-                
-                newBox.element = textBox;
-                sessionState.boxes.push(newBox);
+
+                    // Add to PDF viewer and enable drag/resize
+                    const pdfViewer = document.getElementById('pdfViewer');
+                    pdfViewer.appendChild(imageBox);
+                    enableDragResize(imageBox);
+                    
+                    sessionState.boxes.push(imageBox);
+                    
+                    // Update the image with CSV data
+                    updateImageBoxWithCSVData(imageBox);
+                    
+                } else {
+                    // Create text box (existing logic)
+                    const recordText = record[selectedBox.csvColumn] || `Record ${i + 1}`;
+                    
+                    const newBox = {
+                        ...selectedBox,
+                        id: ++boxCounter,
+                        y: selectedBox.y + (i * 60), // Stack vertically with 60px spacing
+                        element: null
+                    };
+                    
+                    // Create the text box element
+                    const textBox = document.createElement('div');
+                    textBox.className = 'draggable-text-box';
+                    textBox.id = 'textBox_' + newBox.id;
+                    textBox.style.cssText = `
+                        position: absolute;
+                        left: ${newBox.x}px;
+                        top: ${newBox.y}px;
+                        width: ${newBox.width}px;
+                        height: ${newBox.height}px;
+                        min-width: 80px;
+                        min-height: 25px;
+                        background: transparent;
+                        border: none;
+                        padding: 5px;
+                        cursor: move;
+                        pointer-events: auto;
+                        z-index: 20;
+                        font-family: ${newBox.fontFamily}, sans-serif;
+                        font-size: ${newBox.fontSize}px;
+                        color: ${newBox.color};
+                        text-align: ${newBox.textAlign};
+                        user-select: none;
+                        box-sizing: border-box;
+                        overflow: hidden;
+                        box-shadow: none;
+                        transition: all 0.1s ease;
+                    `;
+                    textBox.textContent = recordText;
+                    textBox.contentEditable = false;
+                    
+                    // Add to overlay container
+                    const overlayContainer = document.getElementById('overlayContainer');
+                    overlayContainer.appendChild(textBox);
+                    
+                    // Make it draggable
+                    makeDraggable(textBox);
+                    
+                    // Add click handler
+                    textBox.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        document.querySelectorAll('.draggable-text-box').forEach(box => {
+                            box.style.border = 'none';
+                            box.classList.remove('selected');
+                        });
+                        textBox.style.border = 'none';
+                        textBox.classList.add('selected');
+                        sessionState.selectedBox = newBox;
+                        updateBoxEditor();
+                        updateBoxEditorValues(newBox);
+                    });
+                    
+                    newBox.element = textBox;
+                    sessionState.boxes.push(newBox);
+                }
             }
             
             recordsCreated += recordsCount;
@@ -1680,7 +1851,8 @@
             updatePageNavigation();
             updateAllTextBoxesWithCSVData();
             
-            alert(`Created ${recordsCount} text boxes with records 1-${recordsCount} from "${selectedBox.csvColumn}" field!`);
+            const boxType = selectedBox.boxType === 'image' ? 'image boxes' : 'text boxes';
+            alert(`Created ${recordsCount} ${boxType} with records 1-${recordsCount} from "${selectedBox.csvColumn}" field!`);
         }
         
         function updateRecordsInfo() {
@@ -1874,6 +2046,7 @@
             isEditorMode = !isEditorMode;
             const viewer = document.getElementById('viewer');
             const editorCanvasElement = document.getElementById('editorCanvas');
+            const pdfViewer = document.getElementById('pdfViewer');
             
             if (isEditorMode) {
                 // Show both PDF and editor canvas
@@ -1985,10 +2158,12 @@
                 // Remove selection from all boxes (no borders)
                 document.querySelectorAll('.draggable-text-box').forEach(box => {
                     box.style.border = 'none';
+                    box.classList.remove('selected');
                 });
                 
                 // Select this box (no border)
                 textBox.style.border = 'none';
+                textBox.classList.add('selected');
                 sessionState.selectedBox = boxData;
                 updateBoxEditor();
                 updateBoxEditorValues(boxData);
@@ -2014,83 +2189,224 @@
         }
 
         function addImagePlaceholder() {
-            if (!editorCanvas) {
-                // Initialize editor canvas if not already done
-                initEditorCanvas();
-                setTimeout(() => addImagePlaceholder(), 100);
-                return;
-            }
-
-            // Switch to editor mode
+            console.log('addImagePlaceholder called');
+            
             if (!isEditorMode) {
                 toggleEditorMode();
             }
 
-            // Calculate center position for the new image placeholder
-            const canvasWidth = editorCanvas.getWidth();
-            const canvasHeight = editorCanvas.getHeight();
-            const centerX = canvasWidth / 2;
-            const centerY = canvasHeight / 2;
-            
-            const rect = new fabric.Rect({
-                left: centerX - 50,
-                top: centerY - 50,
-                width: 100,
-                height: 100,
-                fill: '#f0f0f0',
-                stroke: '#999',
-                strokeWidth: 1,
-                originX: 'center',
-                originY: 'center'
+            // Create a DOM-based image box (similar to MERGE-ONLINE approach)
+            const imageBox = document.createElement('div');
+            imageBox.className = 'draggable-image-box';
+            imageBox.style.position = 'absolute';
+            imageBox.style.left = '50px';
+            imageBox.style.top = '50px';
+            imageBox.style.width = '100px';
+            imageBox.style.height = '100px';
+            imageBox.style.border = '2px dashed #007bff';
+            imageBox.style.background = 'rgba(255,255,255,0.2)';
+            imageBox.style.cursor = 'move';
+            imageBox.style.display = 'flex';
+            imageBox.style.alignItems = 'center';
+            imageBox.style.justifyContent = 'center';
+            imageBox.style.zIndex = '10';
+            imageBox.style.overflow = 'hidden';
+            imageBox.textContent = 'IMAGE';
+            imageBox.style.color = '#666';
+            imageBox.style.fontWeight = 'bold';
+            imageBox.style.fontSize = '12px';
+
+            // Add custom properties
+            imageBox.boxId = ++boxCounter;
+            imageBox.boxType = 'image';
+            imageBox.csvColumn = '';
+            imageBox.imageSource = 'csv';
+            imageBox.imageUrl = '';
+
+            // Add click handler for selection
+            imageBox.addEventListener('click', function(e) {
+                e.stopPropagation();
+                // Remove selected class from all boxes
+                document.querySelectorAll('.draggable-image-box.selected, .draggable-text-box.selected').forEach(box => {
+                    box.classList.remove('selected');
+                });
+                // Add selected class to this box
+                imageBox.classList.add('selected');
+                
+                // Update session state
+                sessionState.selectedBox = imageBox;
+                currentBoxId = imageBox.boxId;
+                
+                // Update box editor
+                updateBoxEditor();
+                updateBoxEditorValues(imageBox);
             });
 
-            const text = new fabric.Text('IMAGE', {
-                left: centerX,
-                top: centerY,
-                fontSize: 12,
-                fill: '#666',
-                fontFamily: 'Arial',
-                textAlign: 'center',
-                originX: 'center',
-                originY: 'center'
-            });
+            // Add to PDF viewer
+            const pdfViewer = document.getElementById('pdfViewer');
+            pdfViewer.appendChild(imageBox);
 
-            const group = new fabric.Group([rect, text], {
-                left: centerX,
-                top: centerY,
-                originX: 'center',
-                originY: 'center',
-                selectable: true,
-                evented: true,
-                hasControls: true,
-                hasBorders: true,
-                lockRotation: false,
-                lockScalingX: false,
-                lockScalingY: false,
-                lockMovementX: false,
-                lockMovementY: false
-            });
+            // Add to session state
+            sessionState.boxes.push(imageBox);
+            sessionState.selectedBox = imageBox;
+            currentBoxId = imageBox.boxId;
 
-            // Add custom properties for our box management system
-            group.boxId = ++boxCounter;
-            group.boxType = 'image';
-            group.csvColumn = '';
-            group.imageSource = 'csv';
-            group.imageUrl = '';
-            
-            editorCanvas.add(group);
-            editorCanvas.setActiveObject(group);
-            
-            // Add to session state and select
-            sessionState.boxes.push(group);
-            sessionState.selectedBox = group;
-            currentBoxId = group.boxId;
-            
             // Update box editor
             updateBoxEditor();
-            updateBoxEditorValues(group);
-            
+            updateBoxEditorValues(imageBox);
+
+            // Enable drag and resize for this box
+            enableDragResize(imageBox);
+
             updateEditorStatus('Image placeholder created - drag it to position and edit properties');
+        }
+
+        // Function to enable drag and resize for DOM elements (similar to MERGE-ONLINE)
+        function enableDragResize(element) {
+            // Make sure Interact.js is available
+            if (typeof interact === 'undefined') {
+                console.error('Interact.js not loaded');
+                return;
+            }
+
+            // Enable dragging
+            interact(element).draggable({
+                listeners: {
+                    start: function(event) {
+                        event.target.classList.add('dragging');
+                    },
+                    move: function(event) {
+                        const target = event.target;
+                        const left = parseFloat(target.style.left) + event.dx;
+                        const top = parseFloat(target.style.top) + event.dy;
+                        
+                        target.style.left = left + 'px';
+                        target.style.top = top + 'px';
+                    },
+                    end: function(event) {
+                        event.target.classList.remove('dragging');
+                    }
+                }
+            });
+
+            // Enable resizing
+            interact(element).resizable({
+                edges: { left: true, right: true, top: true, bottom: true },
+                listeners: {
+                    move: function(event) {
+                        const target = event.target;
+                        let width = parseFloat(target.style.width);
+                        let height = parseFloat(target.style.height);
+                        let left = parseFloat(target.style.left);
+                        let top = parseFloat(target.style.top);
+
+                        // Update width and height
+                        width += event.deltaRect.width;
+                        height += event.deltaRect.height;
+                        
+                        // Update position for left and top edges
+                        left += event.deltaRect.left;
+                        top += event.deltaRect.top;
+
+                        // Apply changes
+                        target.style.width = width + 'px';
+                        target.style.height = height + 'px';
+                        target.style.left = left + 'px';
+                        target.style.top = top + 'px';
+                    }
+                }
+            });
+        }
+
+        // Function to load static image
+        function loadStaticImage(box, imageUrl) {
+            console.log('loadStaticImage called with:', box, imageUrl);
+            if (!imageUrl) return;
+            
+            // Use proxy to handle CORS
+            const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(imageUrl);
+            console.log('Proxied URL:', proxiedUrl);
+            
+            // Create image element
+            const img = document.createElement('img');
+            img.crossOrigin = 'anonymous'; // Add CORS attribute
+            img.src = proxiedUrl;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
+            img.style.objectPosition = 'center';
+            
+            // Add error handling
+            img.onerror = function() {
+                console.error('Failed to load image:', imageUrl);
+                console.error('Error details:', this.src);
+                box.innerHTML = '<div style="color: red; text-align: center; padding: 10px; font-size: 12px;">Failed to load image<br>' + imageUrl + '</div>';
+            };
+            
+            img.onload = function() {
+                console.log('Image loaded successfully:', imageUrl);
+            };
+            
+            // Clear existing content and add image
+            box.innerHTML = '';
+            box.appendChild(img);
+            
+            // Update box properties
+            box.imageUrl = imageUrl;
+        }
+
+        // Function to update image box with CSV data
+        function updateImageBoxWithCSVData(box) {
+            console.log('updateImageBoxWithCSVData called with:', box);
+            if (box.boxType !== 'image' || !box.csvColumn) {
+                console.log('Box is not image type or no CSV column selected');
+                return;
+            }
+            
+            // Get current CSV row data
+            const currentRow = sessionState.csvRows && sessionState.csvRows[currentPage * recordsPerPage + (box.boxIndex || 0)];
+            if (!currentRow) {
+                console.log('No current row data available');
+                return;
+            }
+            
+            const imageUrl = currentRow[box.csvColumn];
+            console.log('Image URL from CSV:', imageUrl);
+            if (!imageUrl) {
+                console.log('No image URL found in CSV column');
+                return;
+            }
+            
+            // Use proxy to handle CORS
+            const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(imageUrl);
+            console.log('Proxied URL for CSV image:', proxiedUrl);
+            
+            // Create image element
+            const img = document.createElement('img');
+            img.crossOrigin = 'anonymous'; // Add CORS attribute
+            img.src = proxiedUrl;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
+            img.style.objectPosition = 'center';
+            
+            // Add error handling
+            img.onerror = function() {
+                console.error('Failed to load CSV image:', imageUrl);
+                console.error('Error details:', this.src);
+                box.innerHTML = '<div style="color: red; text-align: center; padding: 10px; font-size: 12px;">Failed to load CSV image<br>' + imageUrl + '</div>';
+            };
+            
+            img.onload = function() {
+                console.log('CSV image loaded successfully:', imageUrl);
+            };
+            
+            // Clear existing content and add image
+            box.innerHTML = '';
+            box.appendChild(img);
+            
+            // Update box properties
+            box.imageUrl = imageUrl;
         }
 
         function duplicateObject() {
@@ -2277,8 +2593,11 @@
             const columnSelect = document.getElementById('boxColumnSelect');
             columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
             
+            console.log('Updating CSV column dropdown. csvData:', csvData);
+            
             if (csvData && csvData.length > 0) {
                 const columns = Object.keys(csvData[0]);
+                console.log('CSV columns found:', columns);
                 columns.forEach(column => {
                     const option = document.createElement('option');
                     option.value = column;
@@ -2286,6 +2605,8 @@
                     option.selected = column === box.csvColumn;
                     columnSelect.appendChild(option);
                 });
+            } else {
+                console.log('No CSV data available for column dropdown');
             }
 
             // Show/hide appropriate property sections
@@ -2321,10 +2642,19 @@
             }
 
             // Update position and size
-            document.getElementById('boxXPos').value = Math.round(box.left || 0);
-            document.getElementById('boxYPos').value = Math.round(box.top || 0);
-            document.getElementById('boxWidth').value = Math.round(box.width || 100);
-            document.getElementById('boxHeight').value = Math.round(box.height || 100);
+            if (box.style) {
+                // DOM element
+                document.getElementById('boxXPos').value = Math.round(parseFloat(box.style.left) || 0);
+                document.getElementById('boxYPos').value = Math.round(parseFloat(box.style.top) || 0);
+                document.getElementById('boxWidth').value = Math.round(parseFloat(box.style.width) || 100);
+                document.getElementById('boxHeight').value = Math.round(parseFloat(box.style.height) || 100);
+            } else {
+                // Fabric.js object
+                document.getElementById('boxXPos').value = Math.round(box.left || 0);
+                document.getElementById('boxYPos').value = Math.round(box.top || 0);
+                document.getElementById('boxWidth').value = Math.round(box.width || 100);
+                document.getElementById('boxHeight').value = Math.round(box.height || 100);
+            }
 
             // Add event listeners
             addBoxEditorEventListeners(box);
@@ -2334,7 +2664,11 @@
             // CSV Column change
             document.getElementById('boxColumnSelect').onchange = function() {
                 box.csvColumn = this.value;
-                updateTextBoxContent(box);
+                if (box.boxType === 'text') {
+                    updateTextBoxContent(box);
+                } else if (box.boxType === 'image' && box.imageSource === 'csv') {
+                    updateImageBoxWithCSVData(box);
+                }
                 updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
                 updateCreateRecordsButtonState();
             };
@@ -2390,69 +2724,142 @@
             if (box.boxType === 'image') {
                 document.getElementById('boxImageSource').onchange = function() {
                     box.imageSource = this.value;
+                    if (this.value === 'csv' && box.csvColumn) {
+                        updateImageBoxWithCSVData(box);
+                    }
                 };
 
                 document.getElementById('boxImageUrl').oninput = function() {
                     box.imageUrl = this.value;
+                    if (box.imageSource === 'static' && this.value) {
+                        // Load static image
+                        loadStaticImage(box, this.value);
+                    }
                 };
             }
 
             // Position and size
             document.getElementById('boxXPos').onchange = function() {
                 const x = parseInt(this.value);
-                box.set('left', x);
-                editorCanvas.renderAll();
+                if (box.style) {
+                    // DOM element
+                    box.style.left = x + 'px';
+                } else {
+                    // Fabric.js object
+                    box.set('left', x);
+                    editorCanvas.renderAll();
+                }
             };
 
             document.getElementById('boxYPos').onchange = function() {
                 const y = parseInt(this.value);
-                box.set('top', y);
-                editorCanvas.renderAll();
+                if (box.style) {
+                    // DOM element
+                    box.style.top = y + 'px';
+                } else {
+                    // Fabric.js object
+                    box.set('top', y);
+                    editorCanvas.renderAll();
+                }
             };
 
             document.getElementById('boxWidth').onchange = function() {
                 const width = parseInt(this.value);
-                box.set('width', width);
-                editorCanvas.renderAll();
+                if (box.style) {
+                    // DOM element
+                    box.style.width = width + 'px';
+                } else {
+                    // Fabric.js object
+                    box.set('width', width);
+                    editorCanvas.renderAll();
+                }
             };
 
             document.getElementById('boxHeight').onchange = function() {
                 const height = parseInt(this.value);
-                box.set('height', height);
-                editorCanvas.renderAll();
+                if (box.style) {
+                    // DOM element
+                    box.style.height = height + 'px';
+                } else {
+                    // Fabric.js object
+                    box.set('height', height);
+                    editorCanvas.renderAll();
+                }
             };
         }
 
         function duplicateSelectedBox() {
-            if (!sessionState.selectedBox || !editorCanvas) return;
+            if (!sessionState.selectedBox) return;
 
             const original = sessionState.selectedBox;
-            const clone = fabric.util.object.clone(original);
             
-            // Offset the clone
-            clone.set({
-                left: original.left + 20,
-                top: original.top + 20,
-                boxId: ++boxCounter
-            });
+            if (original.style) {
+                // DOM element - create a new DOM element
+                const clone = original.cloneNode(true);
+                clone.boxId = ++boxCounter;
+                clone.boxType = original.boxType;
+                clone.csvColumn = original.csvColumn;
+                clone.imageSource = original.imageSource;
+                clone.imageUrl = original.imageUrl;
+                
+                // Offset the clone
+                const originalLeft = parseFloat(original.style.left) || 0;
+                const originalTop = parseFloat(original.style.top) || 0;
+                clone.style.left = (originalLeft + 20) + 'px';
+                clone.style.top = (originalTop + 20) + 'px';
+                
+                // Add click handler for selection
+                clone.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    document.querySelectorAll('.draggable-image-box.selected, .draggable-text-box.selected').forEach(box => {
+                        box.classList.remove('selected');
+                    });
+                    clone.classList.add('selected');
+                    sessionState.selectedBox = clone;
+                    currentBoxId = clone.boxId;
+                    updateBoxEditor();
+                    updateBoxEditorValues(clone);
+                });
+                
+                // Add to PDF viewer and enable drag/resize
+                const pdfViewer = document.getElementById('pdfViewer');
+                pdfViewer.appendChild(clone);
+                enableDragResize(clone);
+                
+                sessionState.boxes.push(clone);
+                sessionState.selectedBox = clone;
+                currentBoxId = clone.boxId;
+                updateBoxEditorValues(clone);
+            } else {
+                // Fabric.js object
+                if (!editorCanvas) return;
+                const clone = fabric.util.object.clone(original);
+                
+                // Offset the clone
+                clone.set({
+                    left: original.left + 20,
+                    top: original.top + 20,
+                    boxId: ++boxCounter
+                });
 
-            // Copy custom properties
-            clone.boxType = original.boxType;
-            clone.csvColumn = original.csvColumn;
-            clone.staticText = original.staticText;
-            clone.bold = original.bold;
-            clone.italic = original.italic;
-            clone.underline = original.underline;
-            clone.imageSource = original.imageSource;
-            clone.imageUrl = original.imageUrl;
+                // Copy custom properties
+                clone.boxType = original.boxType;
+                clone.csvColumn = original.csvColumn;
+                clone.staticText = original.staticText;
+                clone.bold = original.bold;
+                clone.italic = original.italic;
+                clone.underline = original.underline;
+                clone.imageSource = original.imageSource;
+                clone.imageUrl = original.imageUrl;
 
-            editorCanvas.add(clone);
-            sessionState.boxes.push(clone);
-            
-            // Select the new clone
-            sessionState.selectedBox = clone;
-            currentBoxId = clone.boxId;
-            updateBoxEditorValues(clone);
+                editorCanvas.add(clone);
+                sessionState.boxes.push(clone);
+                
+                // Select the new clone
+                sessionState.selectedBox = clone;
+                currentBoxId = clone.boxId;
+                updateBoxEditorValues(clone);
+            }
             
             updateEditorStatus('Box duplicated');
         }
@@ -2460,17 +2867,20 @@
         function deleteSelectedBox() {
             if (!sessionState.selectedBox) return;
 
-            const boxId = sessionState.selectedBox.id;
+            const boxId = sessionState.selectedBox.boxId;
             
             // Remove element from DOM
-            if (sessionState.selectedBox.element) {
-                sessionState.selectedBox.element.remove();
+            if (sessionState.selectedBox.remove) {
+                sessionState.selectedBox.remove();
             }
             
             // Remove from session state
-            sessionState.boxes = sessionState.boxes.filter(box => box.id !== boxId);
+            sessionState.boxes = sessionState.boxes.filter(box => box.boxId !== boxId);
             
-            // Clear selection
+            // Clear selection and remove selected class from all boxes
+            document.querySelectorAll('.draggable-text-box.selected, .draggable-image-box.selected').forEach(box => {
+                box.classList.remove('selected');
+            });
             sessionState.selectedBox = null;
             
             // Hide box editor
@@ -2667,6 +3077,18 @@
             pdfViewer.addEventListener('mousemove', drag);
             pdfViewer.addEventListener('mouseup', stopDragging);
             pdfViewer.addEventListener('mouseleave', stopDragging);
+            
+            // Add click handler to deselect text boxes when clicking on empty space
+            pdfViewer.addEventListener('click', function(e) {
+                // Only deselect if we're clicking on the viewer itself (not on a text box)
+                if (e.target === pdfViewer || e.target.id === 'viewer' || e.target.id === 'pdfContent') {
+                    document.querySelectorAll('.draggable-text-box').forEach(box => {
+                        box.classList.remove('selected');
+                    });
+                    sessionState.selectedBox = null;
+                    updateBoxEditor();
+                }
+            });
             
             // Touch events for mobile
             pdfViewer.addEventListener('touchstart', startDraggingTouch);
@@ -3111,6 +3533,10 @@
                                         
                                         // Make background transparent
                                         clonedViewer.style.background = 'transparent';
+                                        
+                                        // Hide PDF controls (top right corner buttons)
+                                        const pdfControls = clonedViewer.querySelector('.pdf-controls');
+                                        if (pdfControls) pdfControls.style.display = 'none';
                                     }
                                 }
                             });
@@ -3258,6 +3684,10 @@
                                         
                                         // Make background transparent
                                         clonedViewer.style.background = 'transparent';
+                                        
+                                        // Hide PDF controls (top right corner buttons)
+                                        const pdfControls = clonedViewer.querySelector('.pdf-controls');
+                                        if (pdfControls) pdfControls.style.display = 'none';
                                     }
                                 }
                             });
@@ -3384,6 +3814,10 @@
                             
                             const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
                             if (lockIndicator) lockIndicator.style.display = 'none';
+                            
+                            // Hide PDF controls (top right corner buttons)
+                            const pdfControls = clonedViewer.querySelector('.pdf-controls');
+                            if (pdfControls) pdfControls.style.display = 'none';
                             
                             // Remove borders and backgrounds from text boxes for clean screenshot
                             const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box');
@@ -3539,6 +3973,7 @@
 
         // CSV file input handler
         document.getElementById('csvFile').addEventListener('change', function(e) {
+            console.log('CSV file selected:', e.target.files[0]);
             const file = e.target.files[0];
             if (file) {
                 parseCSVFile(file);
@@ -3546,10 +3981,12 @@
         });
 
         function parseCSVFile(file) {
+            console.log('Parsing CSV file:', file.name, file.size);
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
+                    console.log('CSV parsing complete:', results);
                     if (results.errors.length > 0) {
                         console.error('CSV parsing errors:', results.errors);
                         alert('Error parsing CSV file. Please check the file format.');
@@ -3560,6 +3997,12 @@
                     sessionState.csv = file;
                     sessionState.csvRows = results.data;
                     csvData = results.data;
+                    
+                    // Add columns property to csvData for compatibility with MERGE-ONLINE
+                    if (results.data && results.data.length > 0) {
+                        csvData.columns = Object.keys(results.data[0]);
+                    }
+                    
                     currentRecord = 0;
                     
                     // Update status indicators
@@ -3599,7 +4042,9 @@
         }
 
         function displayCSVPreview(data) {
+            console.log('Displaying CSV preview with data:', data);
             if (!data || data.length === 0) {
+                console.log('No CSV data to display');
                 document.getElementById('csvPreview').style.display = 'none';
                 return;
             }
@@ -3990,6 +4435,9 @@
                 if (box.type === 'text' && box.csvColumn) {
                     // Use current record for this text box
                     updateTextBoxWithCSVData(box);
+                } else if (box.boxType === 'image' && box.csvColumn) {
+                    // Handle image boxes
+                    updateImageBoxWithCSVData(box);
                 }
             });
         }
