@@ -1016,23 +1016,24 @@
             background: #007bff !important;
         }
 
-        /* Image box styles */
+        /* Image box styles - matching MERGE-ONLINE behavior */
         .draggable-image-box {
             position: absolute;
             border: 2px dashed #007bff;
-            background: transparent !important;
-            background-color: transparent !important;
+            background: rgba(255,255,255,0.2);
             cursor: move;
             z-index: 10;
             overflow: hidden;
             min-width: 40px;
             min-height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .draggable-image-box.selected {
             border: 2px solid #007bff;
-            background: transparent !important;
-            background-color: transparent !important;
+            background: rgba(0,123,255,0.08);
         }
 
         .draggable-image-box.selected .resize-handle {
@@ -1042,14 +1043,19 @@
         .draggable-image-box img {
             max-width: 100%;
             max-height: 100%;
-            object-fit: contain;
+            width: 100%;
+            height: 100%;
+            object-fit: contain !important;
+            object-position: center;
+            aspect-ratio: auto;
+            image-rendering: auto;
         }
-
-        /* Ensure image boxes are completely transparent */
-        .draggable-image-box,
-        .draggable-image-box * {
-            background: transparent !important;
-            background-color: transparent !important;
+        
+        /* Force aspect ratio preservation for all image box sizes */
+        .draggable-image-box img[style*="object-fit"] {
+            object-fit: contain !important;
+            object-position: center !important;
+            aspect-ratio: auto !important;
         }
 
         /* Ensure resize handles are visible for image boxes */
@@ -2987,7 +2993,7 @@
             }
         }
 
-        // Function to load image from URL
+        // Function to load image from URL - matching MERGE-ONLINE behavior
         function loadImageFromUrl(imageUrl, imageBox) {
             if (!imageUrl || imageUrl.trim() === '') {
                 console.log('No image URL provided');
@@ -2999,10 +3005,6 @@
             // Create image element
             const img = document.createElement('img');
             img.crossOrigin = 'anonymous';
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.objectFit = 'cover';
-            img.style.display = 'block';
             
             // Clear existing content
             imageBox.innerHTML = '';
@@ -3010,21 +3012,32 @@
             // Add image only (no delete button for image boxes)
             imageBox.appendChild(img);
             
-            // Load image
+            // Load image with proper styling
             img.onload = function() {
                 console.log('Image loaded successfully');
-                imageBox.style.border = 'none';
-                imageBox.style.background = 'transparent';
+                
+                // Apply MERGE-ONLINE style behavior
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                img.style.objectPosition = 'center';
+                img.style.display = 'block';
+                img.style.aspectRatio = 'auto';
+                img.style.imageRendering = 'auto';
+                
+                // Keep the box styling (don't remove border/background)
+                imageBox.style.border = '2px dashed #007bff';
+                imageBox.style.background = 'rgba(255,255,255,0.2)';
             };
             
             img.onerror = function() {
                 console.error('Failed to load image:', imageUrl);
-                imageBox.textContent = '❌ Image Error';
-                imageBox.style.color = '#ff0000';
-                imageBox.style.fontWeight = 'bold';
+                imageBox.textContent = 'No Image';
+                imageBox.style.color = '#666';
+                imageBox.style.fontWeight = 'normal';
                 imageBox.style.fontSize = '12px';
-                imageBox.style.border = '2px dashed #ff0000';
-                imageBox.style.background = 'transparent';
+                imageBox.style.border = '2px dashed #007bff';
+                imageBox.style.background = 'rgba(255,255,255,0.2)';
             };
             
             // Set image source using proxy
@@ -3101,6 +3114,17 @@
                             target.style.left = left + 'px';
                             target.style.top = top + 'px';
                         }
+                    
+                    // Ensure images maintain aspect ratio after resize
+                    if (target.classList.contains('draggable-image-box')) {
+                        const img = target.querySelector('img');
+                        if (img) {
+                            img.style.objectFit = 'contain';
+                            img.style.objectPosition = 'center';
+                            img.style.aspectRatio = 'auto';
+                            img.style.imageRendering = 'auto';
+                        }
+                    }
                     }
                 }
             });
@@ -4197,7 +4221,7 @@
             
             // Additional wait to ensure images are fully rendered
             subtitle.textContent = 'Finalizing image preparation...';
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 200ms
             
             // Hide progress overlay
             overlay.classList.remove('active');
@@ -4212,12 +4236,15 @@
             progressText.textContent = `${percentage}% (${loaded}/${total})`;
         }
         
-        // Function to style image boxes for html2canvas capture
+        // Function to style image boxes for html2canvas capture - matching MERGE-ONLINE behavior
         function styleImageBoxForCapture(img) {
             if (img) {
-                img.style.width = '100%';
-                img.style.height = '100%';
-                img.style.objectFit = 'contain';
+                // Use natural image dimensions for download (like MERGE-ONLINE)
+                img.style.width = img.naturalWidth + 'px';
+                img.style.height = img.naturalHeight + 'px';
+                img.style.maxWidth = 'none';
+                img.style.maxHeight = 'none';
+                img.style.objectFit = 'none';
                 img.style.display = 'block';
                 // Force image to be visible and loaded
                 img.style.opacity = '1';
@@ -4488,6 +4515,102 @@
 
                 const zip = new JSZip();
                 const totalRecords = sessionState.csvRows.length;
+                
+                // Create unified progress bar for entire process
+                const progressOverlay = document.createElement('div');
+                progressOverlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.7);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                `;
+                
+                const progressContent = document.createElement('div');
+                progressContent.style.cssText = `
+                    background: white;
+                    border-radius: 8px;
+                    padding: 30px;
+                    text-align: center;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                    max-width: 400px;
+                    width: 90%;
+                `;
+                
+                const progressTitle = document.createElement('div');
+                progressTitle.style.cssText = `
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #333;
+                    margin-bottom: 20px;
+                `;
+                progressTitle.textContent = `Generating ${downloadMode === 'single' ? 'Single Record' : 'Multi-Record'} PDFs`;
+                
+                const progressSubtitle = document.createElement('div');
+                progressSubtitle.style.cssText = `
+                    font-size: 14px;
+                    color: #666;
+                    margin-bottom: 25px;
+                `;
+                progressSubtitle.textContent = `Processing ${totalRecords} records...`;
+                
+                const progressContainer = document.createElement('div');
+                progressContainer.style.cssText = `
+                    background: #f0f0f0;
+                    border-radius: 20px;
+                    height: 8px;
+                    margin-bottom: 15px;
+                    overflow: hidden;
+                `;
+                
+                const progressBar = document.createElement('div');
+                progressBar.style.cssText = `
+                    background: linear-gradient(90deg, #007bff, #0056b3);
+                    height: 100%;
+                    width: 0%;
+                    transition: width 0.3s ease;
+                    border-radius: 20px;
+                `;
+                
+                const progressText = document.createElement('div');
+                progressText.style.cssText = `
+                    font-size: 12px;
+                    color: #666;
+                    margin-bottom: 10px;
+                `;
+                progressText.textContent = '0%';
+                
+                const progressDetails = document.createElement('div');
+                progressDetails.style.cssText = `
+                    font-size: 11px;
+                    color: #999;
+                `;
+                progressDetails.textContent = `0 of ${totalRecords} records processed`;
+                
+                // Assemble progress bar
+                progressContainer.appendChild(progressBar);
+                progressContent.appendChild(progressTitle);
+                progressContent.appendChild(progressSubtitle);
+                progressContent.appendChild(progressContainer);
+                progressContent.appendChild(progressText);
+                progressContent.appendChild(progressDetails);
+                progressOverlay.appendChild(progressContent);
+                document.body.appendChild(progressOverlay);
+                
+                // Progress tracking function
+                let processedRecords = 0;
+                const updateProgress = (step = 1, stepDescription = '') => {
+                    processedRecords += step;
+                    const percentage = Math.round((processedRecords / totalRecords) * 100);
+                    progressBar.style.width = percentage + '%';
+                    progressText.textContent = `${percentage}%`;
+                    progressDetails.textContent = `${processedRecords} of ${totalRecords} records processed${stepDescription ? ` - ${stepDescription}` : ''}`;
+                };
 
                 try {
                     if (downloadMode === 'single') {
@@ -4522,12 +4645,12 @@
                             updateAllTextBoxesForSingleRecord(recordIndex);
                             
                             // Wait for UI to update and ensure images are loaded
-                            await new Promise(resolve => setTimeout(resolve, 150));
+                            await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 150ms
                             
                             // Pre-load all images to ensure they're ready for capture
-                            downloadBtn.textContent = 'Loading images...';
+                            progressSubtitle.textContent = 'Loading images...';
                             await preloadAllImages();
-                            downloadBtn.textContent = `Generating ${downloadMode === 'single' ? 'Single Record' : 'Multi-Record'} PDFs...`;
+                            progressSubtitle.textContent = `Processing ${totalRecords} records...`;
                             
                             // Step 3c: Capture high-resolution overlay (text boxes and image boxes)
                             console.log('Step 3c: Capturing high-res overlays...');
@@ -4546,14 +4669,14 @@
                             const pdfAreaWidth = canvasRect.width;
                             const pdfAreaHeight = canvasRect.height;
                             
-                            // Calculate ultra-high quality scale factor for overlays
-                            let scale = 8; // Higher scale for overlay quality
+                            // Calculate optimized scale factor for overlays (balanced quality/speed)
+                            let scale = 4; // Reduced from 8 for better performance
                             const img = canvas.querySelector('img');
                             if (img && img.naturalWidth && img.width) {
                                 const originalScale = img.naturalWidth / img.width;
-                                scale = Math.max(8, originalScale * 2.0); // Higher multiplier for overlays
+                                scale = Math.max(3, originalScale * 1.5); // Reduced multiplier for speed
                             }
-                            scale = Math.max(6, Math.min(16, scale)); // Higher range for overlays
+                            scale = Math.max(2, Math.min(8, scale)); // Reduced range for faster processing
                             
                             // Capture only the overlay elements with transparency
                             const overlayCanvas = await html2canvas(pdfViewer, {
@@ -4613,10 +4736,19 @@
                                             }
                                         });
                                         
-                                        // Remove resize handles
+                                        // Remove resize handles (use !important to override CSS)
                                         const resizeHandles = clonedViewer.querySelectorAll('.resize-handle');
                                         resizeHandles.forEach(handle => {
-                                            handle.style.display = 'none';
+                                            handle.style.setProperty('display', 'none', 'important');
+                                            handle.style.setProperty('opacity', '0', 'important');
+                                        });
+                                        
+                                        // Hide "No Image" text in downloaded PDFs
+                                        const imageBoxes = clonedViewer.querySelectorAll('.draggable-image-box');
+                                        imageBoxes.forEach(box => {
+                                            if (box.textContent === 'No Image') {
+                                                box.textContent = '';
+                                            }
                                         });
                                         
                                         // Make background transparent
@@ -4626,6 +4758,31 @@
                                         const pdfControls = clonedViewer.querySelector('.pdf-controls');
                                         if (pdfControls) pdfControls.style.display = 'none';
                                     }
+                                }
+                            });
+                            
+                            // Fix image stretching for all image boxes before capture
+                            const imageBoxes = clonedViewer.querySelectorAll('.draggable-image-box img');
+                            imageBoxes.forEach(img => {
+                                if (img.naturalWidth && img.naturalHeight) {
+                                    const naturalWidth = img.naturalWidth;
+                                    const naturalHeight = img.naturalHeight;
+                                    const boxWidth = img.parentElement.offsetWidth;
+                                    const boxHeight = img.parentElement.offsetHeight;
+                                    
+                                    const imageAspect = naturalWidth / naturalHeight;
+                                    const boxAspect = boxWidth / boxHeight;
+                                    
+                                    if (imageAspect > boxAspect) {
+                                        img.style.width = '100%';
+                                        img.style.height = 'auto';
+                                    } else {
+                                        img.style.width = 'auto';
+                                        img.style.height = '100%';
+                                    }
+                                    
+                                    img.style.objectFit = 'none';
+                                    img.style.objectPosition = 'center';
                                 }
                             });
                             
@@ -4658,6 +4815,9 @@
                             zip.file(fileName, pdfBytes);
                             
                             console.log(`✓ Single record ${recordNumber} added to zip: ${fileName}`);
+                            
+                            // Update progress
+                            updateProgress(1, 'PDF generated');
                         }
                         
                     } else {
@@ -4696,12 +4856,12 @@
                             updateAllTextBoxesWithCSVData();
                             
                             // Wait for UI to update and ensure images are loaded
-                            await new Promise(resolve => setTimeout(resolve, 150));
+                            await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 150ms
                             
                             // Pre-load all images to ensure they're ready for capture
-                            downloadBtn.textContent = 'Loading images...';
+                            progressSubtitle.textContent = 'Loading images...';
                             await preloadAllImages();
-                            downloadBtn.textContent = `Generating ${downloadMode === 'single' ? 'Single Record' : 'Multi-Record'} PDFs...`;
+                            progressSubtitle.textContent = `Processing ${totalRecords} records...`;
                             
                             // Wait for UI to update
                             await new Promise(resolve => setTimeout(resolve, 100));
@@ -4723,14 +4883,14 @@
                             const pdfAreaWidth = canvasRect.width;
                             const pdfAreaHeight = canvasRect.height;
                             
-                            // Calculate ultra-high quality scale factor for overlays
-                            let scale = 8; // Higher scale for overlay quality
+                            // Calculate optimized scale factor for overlays (balanced quality/speed)
+                            let scale = 4; // Reduced from 8 for better performance
                             const img = canvas.querySelector('img');
                             if (img && img.naturalWidth && img.width) {
                                 const originalScale = img.naturalWidth / img.width;
-                                scale = Math.max(8, originalScale * 2.0); // Higher multiplier for overlays
+                                scale = Math.max(3, originalScale * 1.5); // Reduced multiplier for speed
                             }
-                            scale = Math.max(6, Math.min(16, scale)); // Higher range for overlays
+                            scale = Math.max(2, Math.min(8, scale)); // Reduced range for faster processing
                             
                             // Capture only the overlay elements with transparency
                             const overlayCanvas = await html2canvas(pdfViewer, {
@@ -4790,10 +4950,19 @@
                                             }
                                         });
                                         
-                                        // Remove resize handles
+                                        // Remove resize handles (use !important to override CSS)
                                         const resizeHandles = clonedViewer.querySelectorAll('.resize-handle');
                                         resizeHandles.forEach(handle => {
-                                            handle.style.display = 'none';
+                                            handle.style.setProperty('display', 'none', 'important');
+                                            handle.style.setProperty('opacity', '0', 'important');
+                                        });
+                                        
+                                        // Hide "No Image" text in downloaded PDFs
+                                        const imageBoxes = clonedViewer.querySelectorAll('.draggable-image-box');
+                                        imageBoxes.forEach(box => {
+                                            if (box.textContent === 'No Image') {
+                                                box.textContent = '';
+                                            }
                                         });
                                         
                                         // Make background transparent
@@ -4834,11 +5003,15 @@
                             zip.file(fileName, pdfBytes);
                             
                             console.log(`✓ Multi-record page ${pageIndex + 1} added to zip: ${fileName}`);
+                            
+                            // Update progress for multi-record mode
+                            updateProgress(recordsOnThisPage, 'Page completed');
                         }
                     }
                     
                     // Step 4: Download zip file
                     console.log('Step 4: Generating zip file...');
+                    progressSubtitle.textContent = 'Creating zip file...';
                     const zipBlob = await zip.generateAsync({ type: 'blob' });
                     
                     // Create download link with mode-specific naming
@@ -4856,22 +5029,43 @@
                     
                 } catch (error) {
                     console.error('Error during PDF generation:', error);
+                    
+                    // Remove progress overlay on error
+                    if (progressOverlay && progressOverlay.parentNode) {
+                        progressOverlay.parentNode.removeChild(progressOverlay);
+                    }
+                    
                     throw error;
                 } finally {
                     // Restore original state
                     currentPage = 0;
                     updateAllTextBoxesWithCSVData();
+                    
+                    // Remove progress overlay
+                    if (progressOverlay && progressOverlay.parentNode) {
+                        progressOverlay.parentNode.removeChild(progressOverlay);
+                    }
                 }
                 
-            } catch (error) {
-                console.error('Download failed:', error);
-                alert('Error generating PDFs: ' + error.message);
-            } finally {
-                // Restore button state
-                const downloadBtn = document.getElementById('downloadPdfsBtn');
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = 'Download PDFs';
-            }
+                            } catch (error) {
+                    console.error('Download failed:', error);
+                    alert('Error generating PDFs: ' + error.message);
+                    
+                    // Remove progress overlay on error
+                    if (progressOverlay && progressOverlay.parentNode) {
+                        progressOverlay.parentNode.removeChild(progressOverlay);
+                    }
+                } finally {
+                    // Remove progress overlay
+                    if (progressOverlay && progressOverlay.parentNode) {
+                        progressOverlay.parentNode.removeChild(progressOverlay);
+                    }
+                    
+                    // Restore button state
+                    const downloadBtn = document.getElementById('downloadPdfsBtn');
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = 'Download PDFs';
+                }
         }
 
         // Take Screenshot function
@@ -4999,59 +5193,172 @@
                 downloadBtn.textContent = '📄 Generating PDF...';
                 downloadBtn.disabled = true;
 
-                // Load the template PDF
+                // Step 1: Load the template PDF
+                console.log('Step 1: Loading template PDF...');
                 const pdfDoc = await PDFLib.PDFDocument.load(sessionState.templatePdfBytes);
                 const page = pdfDoc.getPages()[0];
 
-                // Get current record data
-                const currentRecordData = sessionState.csvRows && sessionState.csvRows.length > 0 
-                    ? sessionState.csvRows[currentRecord || 0] 
-                    : {};
+                // Step 2: Pre-load all images
+                console.log('Step 2: Pre-loading images...');
+                await preloadAllImages();
 
-                // Add text boxes to PDF
-                if (sessionState.boxes) {
-                    for (const box of sessionState.boxes) {
-                        if (box.type === 'text' && box.element) {
-                            const text = box.csvColumn && currentRecordData[box.csvColumn] 
-                                ? currentRecordData[box.csvColumn] 
-                                : box.element.textContent || '';
-                            
-                            if (text.trim()) {
-                                // Get box position and styling
-                                const rect = box.element.getBoundingClientRect();
-                                const pdfViewer = document.getElementById('pdfViewer');
-                                const viewerRect = pdfViewer.getBoundingClientRect();
-                                
-                                // Convert screen coordinates to PDF coordinates
-                                const pdfX = (rect.left - viewerRect.left) * (page.getWidth() / viewerRect.width);
-                                const pdfY = page.getHeight() - (rect.top - viewerRect.top) * (page.getHeight() / viewerRect.height);
-                                
-                                // Get font styling
-                                const computedStyle = window.getComputedStyle(box.element);
-                                const fontSize = parseInt(computedStyle.fontSize) || 16;
-                                const fontFamily = computedStyle.fontFamily || 'Arial';
-                                const color = computedStyle.color || '#000000';
-                                
-                                // Convert color to RGB
-                                const rgbColor = hexToRgb(color);
-                                
-                                // Embed font (use standard font for simplicity)
-                                const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-                                
-                                // Draw text
-                                page.drawText(text, {
-                                    x: pdfX,
-                                    y: pdfY,
-                                    size: fontSize,
-                                    font: font,
-                                    color: PDFLib.rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255)
-                                });
-                            }
-                        }
-                    }
+                // Step 3: Capture high-resolution overlay (text boxes and image boxes)
+                console.log('Step 3: Capturing high-res overlays...');
+                const pdfViewer = document.getElementById('pdfViewer');
+                const canvas = document.getElementById('viewer');
+                
+                if (!pdfViewer || !canvas) {
+                    throw new Error('PDF viewer not found');
                 }
 
-                // Save the PDF
+                // Wait for UI to update
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Get PDF area dimensions (same as multi-page function)
+                const canvasRect = canvas.getBoundingClientRect();
+                const viewerRect = pdfViewer.getBoundingClientRect();
+                const pdfAreaX = canvasRect.left - viewerRect.left;
+                const pdfAreaY = canvasRect.top - viewerRect.top;
+                const pdfAreaWidth = canvasRect.width;
+                const pdfAreaHeight = canvasRect.height;
+                
+                // Calculate optimized scale factor for overlays (same as multi-page function)
+                let scale = 4;
+                const img = canvas.querySelector('img');
+                if (img && img.naturalWidth && img.width) {
+                    const originalScale = img.naturalWidth / img.width;
+                    scale = Math.max(3, originalScale * 1.5);
+                }
+                scale = Math.max(2, Math.min(8, scale));
+                
+                // Capture only the overlay elements with transparency (same as multi-page function)
+                const overlayCanvas = await html2canvas(pdfViewer, {
+                    scale: scale,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: null,
+                    logging: false,
+                    x: pdfAreaX,
+                    y: pdfAreaY,
+                    width: pdfAreaWidth,
+                    height: pdfAreaHeight,
+                    onclone: (clonedDoc) => {
+                        const clonedViewer = clonedDoc.getElementById('pdfViewer');
+                        if (clonedViewer) {
+                            // Hide the PDF background completely
+                            const pdfCanvas = clonedDoc.getElementById('viewer');
+                            if (pdfCanvas) {
+                                pdfCanvas.style.display = 'none';
+                            }
+                            
+                            // Hide UI elements
+                            const outline = clonedDoc.getElementById('pdfAreaOutline');
+                            if (outline) outline.style.display = 'none';
+                            
+                            const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
+                            if (lockIndicator) lockIndicator.style.display = 'none';
+                            
+                            // Keep only text boxes and image boxes with their styling
+                            const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box, .draggable-image-box');
+                            allBoxes.forEach(box => {
+                                if (box.classList.contains('draggable-text-box')) {
+                                    // Text box styling
+                                    box.style.border = 'none';
+                                    box.style.background = 'transparent';
+                                    box.style.boxShadow = 'none';
+                                    box.style.outline = 'none';
+                                    // Keep font styling for quality
+                                    box.style.fontFamily = box.style.fontFamily || 'Arial, sans-serif';
+                                    box.style.fontSize = box.style.fontSize || '16px';
+                                    box.style.fontWeight = box.style.fontWeight || 'normal';
+                                    box.style.color = box.style.color || '#000000';
+                                } else if (box.classList.contains('draggable-image-box')) {
+                                    // Image box styling
+                                    box.style.border = 'none';
+                                    box.style.background = 'transparent';
+                                    box.style.boxShadow = 'none';
+                                    box.style.outline = 'none';
+                                    // Ensure images are visible and properly sized
+                                    const img = box.querySelector('img');
+                                    if (img) {
+                                        // Use natural dimensions to prevent stretching
+                                        const naturalWidth = img.naturalWidth;
+                                        const naturalHeight = img.naturalHeight;
+                                        const boxWidth = box.offsetWidth;
+                                        const boxHeight = box.offsetHeight;
+                                        
+                                        // Calculate aspect ratio and fit image properly
+                                        const imageAspect = naturalWidth / naturalHeight;
+                                        const boxAspect = boxWidth / boxHeight;
+                                        
+                                        if (imageAspect > boxAspect) {
+                                            // Image is wider than box - fit to width
+                                            img.style.width = '100%';
+                                            img.style.height = 'auto';
+                                        } else {
+                                            // Image is taller than box - fit to height
+                                            img.style.width = 'auto';
+                                            img.style.height = '100%';
+                                        }
+                                        
+                                        img.style.objectFit = 'none';
+                                        img.style.objectPosition = 'center';
+                                        img.style.display = 'block';
+                                    }
+                                    
+                                    // Hide "No Image" text in downloaded PDFs
+                                    if (box.textContent === 'No Image') {
+                                        box.textContent = '';
+                                    }
+                                }
+                            });
+                            
+                            // Remove resize handles (use !important to override CSS)
+                            const resizeHandles = clonedViewer.querySelectorAll('.resize-handle');
+                            resizeHandles.forEach(handle => {
+                                handle.style.setProperty('display', 'none', 'important');
+                                handle.style.setProperty('opacity', '0', 'important');
+                            });
+                            
+                            // Hide "No Image" text in downloaded PDFs
+                            const imageBoxes = clonedViewer.querySelectorAll('.draggable-image-box');
+                            imageBoxes.forEach(box => {
+                                if (box.textContent === 'No Image') {
+                                    box.textContent = '';
+                                }
+                            });
+                            
+                            // Make background transparent
+                            clonedViewer.style.background = 'transparent';
+                            
+                            // Hide PDF controls (top right corner buttons)
+                            const pdfControls = clonedViewer.querySelector('.pdf-controls');
+                            if (pdfControls) pdfControls.style.display = 'none';
+                        }
+                    }
+                });
+
+                // Step 4: Convert overlay to PNG with transparency
+                console.log('Step 4: Converting overlay to PNG...');
+                const overlayPngDataUrl = overlayCanvas.toDataURL('image/png', 1.0);
+
+                // Step 5: Embed overlay image into PDF
+                console.log('Step 5: Embedding overlay into PDF...');
+                const overlayImage = await pdfDoc.embedPng(overlayPngDataUrl);
+
+                // Get page dimensions
+                const { width: pageWidth, height: pageHeight } = page.getSize();
+
+                // Add overlay image to page (full page coverage)
+                page.drawImage(overlayImage, {
+                    x: 0,
+                    y: 0,
+                    width: pageWidth,
+                    height: pageHeight,
+                });
+
+                // Step 6: Save and download
+                console.log('Step 6: Saving and downloading...');
                 const pdfBytes = await pdfDoc.save();
                 
                 // Create download link
