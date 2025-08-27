@@ -76,7 +76,7 @@
         .sidebar-content {
             flex: 1;
             overflow-y: auto;
-            padding: 15px;
+            padding: 20px;
         }
 
         .sidebar.collapsed .sidebar-content {
@@ -192,6 +192,85 @@
             color: #666;
         }
 
+        /* Image Loading Progress Bar */
+        .image-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .image-loading-overlay.active {
+            display: flex;
+        }
+
+        .image-loading-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .image-loading-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .image-loading-subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .image-progress-container {
+            background: #f0f0f0;
+            border-radius: 20px;
+            height: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .image-progress-bar {
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 20px;
+        }
+
+        .image-progress-text {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .image-loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         /* Font Upload Styles */
         .font-upload-area {
             border: 2px dashed #ccc;
@@ -263,6 +342,69 @@
         .font-status.warning {
             color: #ffc107;
         }
+
+        /* Collapsible Drawers */
+        .drawer {
+            border-bottom: 1px solid #e0e0e0;
+            background: white;
+            margin-bottom: 10px;
+        }
+
+        .drawer-header {
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #333;
+            transition: background-color 0.2s;
+            font-size: 12px;
+        }
+
+        .drawer-header:hover {
+            background: #e9ecef;
+        }
+
+        .drawer-header.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .drawer-icon {
+            transition: transform 0.3s;
+            font-size: 14px;
+        }
+
+        .drawer-header.active .drawer-icon {
+            transform: rotate(180deg);
+        }
+
+        .drawer-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: white;
+        }
+
+        /* Make file uploads drawer open by default */
+        #uploadContent {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .drawer-content.open {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .drawer-content-inner {
+            padding: 15px;
+        }
+
+
         
 
 
@@ -463,31 +605,7 @@
             color: #666;
         }
 
-        .status-indicator {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #dc3545;
-        }
 
-        .status-indicator.loaded {
-            background: #28a745;
-        }
-
-        .reset-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
-            margin-top: 10px;
-        }
-
-        .reset-btn:hover {
-            background: #c82333;
-        }
 
         .main-content {
             flex: 1;
@@ -902,11 +1020,9 @@
         .draggable-image-box {
             position: absolute;
             border: 2px dashed #007bff;
-            background: rgba(255,255,255,0.2);
+            background: transparent !important;
+            background-color: transparent !important;
             cursor: move;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             z-index: 10;
             overflow: hidden;
             min-width: 40px;
@@ -915,13 +1031,31 @@
 
         .draggable-image-box.selected {
             border: 2px solid #007bff;
-            background: rgba(0,123,255,0.08);
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+
+        .draggable-image-box.selected .resize-handle {
+            background: #007bff !important;
         }
 
         .draggable-image-box img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+        }
+
+        /* Ensure image boxes are completely transparent */
+        .draggable-image-box,
+        .draggable-image-box * {
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+
+        /* Ensure resize handles are visible for image boxes */
+        .draggable-image-box .resize-handle {
+            display: block !important;
+            opacity: 1 !important;
         }
 
         .draggable-text-box:hover {
@@ -939,9 +1073,81 @@
             border-color: #ff6b35;
             box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.25);
         }
+
+        /* Delete Button Styles */
+        .delete-box-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 18px;
+            height: 18px;
+            background: #dc3545;
+            color: white;
+            border: 1px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+            z-index: 25;
+            opacity: 1;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            pointer-events: auto;
+            transition: all 0.2s ease;
+        }
+
+        /* Snap-to-Grid Styles */
+        .snap-guide {
+            position: absolute;
+            background: #007bff;
+            opacity: 0.6;
+            z-index: 1000;
+            pointer-events: none;
+            transition: opacity 0.1s ease;
+        }
+
+        .snap-guide.vertical {
+            width: 1px;
+            height: 100%;
+        }
+
+        .snap-guide.horizontal {
+            width: 100%;
+            height: 1px;
+        }
+
+        .snap-guide.active {
+            opacity: 0.8;
+            background: #28a745;
+        }
+
+        .delete-box-btn:hover {
+            background: #c82333;
+            transform: scale(1.2);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
     </style>
 </head>
 <body>
+    <!-- Image Loading Progress Overlay -->
+    <div class="image-loading-overlay" id="imageLoadingOverlay">
+        <div class="image-loading-content">
+            <div class="image-loading-title">
+                <span class="image-loading-spinner"></span>
+                Loading Images...
+            </div>
+            <div class="image-loading-subtitle" id="imageLoadingSubtitle">
+                Preparing images for PDF generation
+            </div>
+            <div class="image-progress-container">
+                <div class="image-progress-bar" id="imageProgressBar"></div>
+            </div>
+            <div class="image-progress-text" id="imageProgressText">0%</div>
+        </div>
+    </div>
+
     <div class="main-container">
         <div class="sidebar">
             <div class="sidebar-header">
@@ -949,119 +1155,156 @@
                 <button class="toggle-sidebar" onclick="toggleSidebar()">≡</button>
             </div>
             <div class="sidebar-content">
-                <div class="section">
-                    <h2 class="section-header">File Uploads</h2>
+
+
+                <!-- Step 1: File Uploads -->
+                <div class="drawer" id="uploadDrawer">
+                    <div class="drawer-header active" onclick="toggleDrawer('uploadDrawer')">
+                        <span>📁 File Uploads</span>
+                        <span class="drawer-icon">▼</span>
+                    </div>
+                    <div class="drawer-content" id="uploadContent">
+                        <div class="drawer-content-inner">
+                            <div class="form-group">
                     <label class="file-input" for="pdfFile">
                         <input type="file" id="pdfFile" accept="application/pdf">
-                        <div id="fileLabel">Click to select PDF file</div>
+                                    <div id="fileLabel">📄 Click to select PDF file</div>
                     </label>
+                            </div>
                     
+                            <div class="form-group">
                     <label class="file-input" for="csvFile">
                         <input type="file" id="csvFile" accept=".csv,text/csv">
-                        <div id="csvLabel">Click to select CSV file</div>
+                                    <div id="csvLabel">📊 Click to select CSV file</div>
                     </label>
-                    
-
-                    
-                    <button id="screenshotBtn" class="btn btn-danger" onclick="takeScreenshot()" style="background-color: #dc3545; border-color: #dc3545; margin-bottom: 10px; padding: 15px; font-size: 16px; font-weight: bold;">
-                        📸 TAKE SCREENSHOT
-                    </button>
-                    
-                    <button id="generateFromTemplateBtn" class="btn btn-primary" onclick="generateFromTemplate()" disabled>
-                        Generate From Template
-                    </button>
-                    
-                    <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled>
-                        Download PDFs
-                    </button>
-                    
-                    <div id="downloadLink" style="display: none;">
-                        <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Download Original PDF</a>
-                    </div>
-                    
-                    <!-- Download Mode Selection -->
-                    <div class="download-mode-section">
-                        <h3 class="section-header">Download Mode</h3>
-                        
-                        <div class="form-group">
-                            <label for="downloadModeSelect">Download Mode:</label>
-                            <select id="downloadModeSelect" class="form-control" style="margin-bottom: 10px;">
-                                <option value="single">Single Record Mode (1 PDF per record)</option>
-                                <option value="multi" selected>Multi-Record Mode (Multiple records per PDF)</option>
-                            </select>
-                            <div style="font-size: 12px; color: #666; text-align: center;">
-                                Single: Downloads all records as individual PDFs | Multi: Groups records per PDF
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Simple Multiple Records -->
-                    <div class="simple-multiple-records">
-                        <h3 class="section-header">Multiple Records</h3>
-                        
-                        <div class="form-group">
-                            <label for="recordsCountSelect">Number of Records:</label>
-                            <select id="recordsCountSelect" class="form-control" style="margin-bottom: 10px;">
-                                <option value="2">2 Records</option>
-                                <option value="3">3 Records</option>
-                                <option value="4" selected>4 Records</option>
-                                <option value="5">5 Records</option>
-                                <option value="6">6 Records</option>
-                                <option value="8">8 Records</option>
-                                <option value="10">10 Records</option>
-                            </select>
-                            
-                            <button id="createMultipleRecordsBtn" class="btn btn-success" onclick="createMultipleRecords()" style="width: 100%; padding: 15px; font-size: 16px; font-weight: bold; margin-bottom: 10px;" disabled>
-                                🎯 CREATE RECORDS
-                            </button>
-                            <div style="font-size: 12px; color: #666; text-align: center;">
-                                Select a text box with a field first, then click to create multiple copies
-                            </div>
-                        </div>
-                        
-                        <div id="recordsInfo" class="records-info">
-                            Total records: 0 | Records created: 0
-                        </div>
-                        
-                        <!-- Page Navigation -->
-                        <div id="pageNavigation" class="page-navigation" style="display: none; margin-top: 15px;">
-                            <h4 style="margin: 0 0 10px 0; font-size: 14px;">Page Navigation</h4>
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <button id="prevPageBtn" class="btn btn-secondary" onclick="previousPage()" style="flex: 1;">
-                                    ← Previous Page
-                                </button>
-                                <span id="pageInfo" style="font-size: 12px; color: #666;">
-                                    Page 1 of 1
-                                </span>
-                                <button id="nextPageBtn" class="btn btn-secondary" onclick="nextPage()" style="flex: 1;">
-                                    Next Page →
-                                </button>
-                            </div>
-                            <div id="pageRecordsInfo" style="font-size: 11px; color: #888; margin-top: 5px; text-align: center;">
-                                Showing records 1-4
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="section">
-                    <h2 class="section-header">Layout Editor</h2>
+                <!-- Add Box Buttons (Above Layout Editor) -->
+                <div class="section" style="margin-bottom: 20px;">
+                    <div class="box-type-buttons" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button class="btn btn-primary" onclick="addText()">Add Text Box(es)</button>
+                        <button class="btn btn-secondary" onclick="addImagePlaceholder()">Add Image Box(es)</button>
+                    </div>
+                    
+                    <!-- Box Count Selection -->
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label>Number of Boxes:</label>
+                        <select id="boxCountSelect" class="form-control">
+                            <option value="1">1 Box</option>
+                            <option value="2">2 Boxes</option>
+                            <option value="3">3 Boxes</option>
+                            <option value="4">4 Boxes</option>
+                            <option value="5">5 Boxes</option>
+                            <option value="6">6 Boxes</option>
+                            <option value="8">8 Boxes</option>
+                            <option value="10">10 Boxes</option>
+                            <option value="12">12 Boxes</option>
+                            <option value="15">15 Boxes</option>
+                            <option value="20">20 Boxes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Step 2: Layout Editor -->
+                <div class="drawer" id="layoutDrawer">
+                    <div class="drawer-header" onclick="toggleDrawer('layoutDrawer')">
+                        <span>🎨 Layout Editor</span>
+                        <span class="drawer-icon">▼</span>
+                    </div>
+                    <div class="drawer-content" id="layoutContent">
+                        <div class="drawer-content-inner">
+                            <!-- Font Upload Section (First) -->
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <label style="font-weight: bold; color: #333;">📁 Upload Custom Font:</label>
+                                <div class="font-upload-area" id="fontUploadArea">
+                                    <input type="file" id="fontUploadInput" accept=".ttf,.otf" style="display: none;">
+                                    <div class="font-upload-content">
+                                        <span>📁</span>
+                                        <p>Drop TTF/OTF file here or click to browse</p>
+                                    </div>
+                                </div>
+                                <div id="fontUploadStatus" class="font-status"></div>
+                </div>
+
                     <div class="box-controls">
-                        <div class="box-type-buttons">
-                            <button class="btn btn-primary" onclick="addText()">Add Text</button>
-                            <button class="btn btn-secondary" onclick="addImagePlaceholder()">Add Image</button>
+                        
+
+                        
+
+
+                        <!-- Format All Boxes Section -->
+                        <div class="form-group" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef;">
+                            <label style="font-weight: bold; color: #333;">🎨 Format All Text Boxes:</label>
+                            
+                            <!-- Font Family -->
+                            <div class="form-group" style="margin-top: 10px;">
+                                <label>Font Family:</label>
+                                <select id="formatAllFontFamily" class="form-control">
+                                    <option value="Arial">Arial</option>
+                                    <option value="Helvetica">Helvetica</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                    <option value="Georgia">Georgia</option>
+                                    <option value="Verdana">Verdana</option>
+                                    <option value="Courier New">Courier New</option>
+                                    <option value="Impact">Impact</option>
+                                    <option value="Comic Sans MS">Comic Sans MS</option>
+                                </select>
+                            </div>
+
+                            <!-- Font Size -->
+                            <div class="form-group">
+                                <label>Font Size:</label>
+                                <input type="number" id="formatAllFontSize" class="form-control" value="16" min="8" max="72">
+                            </div>
+
+                            <!-- Text Color -->
+                            <div class="form-group">
+                                <label>Text Color:</label>
+                                <input type="color" id="formatAllTextColor" class="form-control" value="#000000">
+                            </div>
+
+                            <!-- Text Alignment -->
+                            <div class="form-group">
+                                <label>Text Alignment:</label>
+                                <select id="formatAllTextAlign" class="form-control">
+                                    <option value="left">Left</option>
+                                    <option value="center" selected>Center</option>
+                                    <option value="right">Right</option>
+                                    <option value="justify">Justify</option>
+                                </select>
+                            </div>
+
+                            <!-- Text Style Buttons -->
+                            <div class="form-group">
+                                <label>Text Style:</label>
+                                <div style="display: flex; gap: 5px; margin-top: 5px;">
+                                    <button type="button" id="formatAllBold" class="btn btn-sm btn-outline-secondary" style="flex: 1;">B</button>
+                                    <button type="button" id="formatAllItalic" class="btn btn-sm btn-outline-secondary" style="flex: 1;">I</button>
+                                    <button type="button" id="formatAllUnderline" class="btn btn-sm btn-outline-secondary" style="flex: 1;">U</button>
+                                </div>
+                            </div>
+
+                            <!-- Apply Format Button -->
+                            <div class="form-group" style="margin-top: 15px;">
+                                <button class="btn btn-warning" onclick="formatAllTextBoxes()" style="width: 100%;">
+                                    🎨 Apply to All Text Boxes
+                                </button>
+                            </div>
                         </div>
                         
                         <div id="boxEditor" class="box-editor">
                             <h4 id="boxEditorTitle">Text Box Properties</h4>
                             
                             <!-- CSV Column Selection (for both text and image boxes) -->
-                            <div class="form-group">
-                                <label>CSV Column:</label>
-                                <select id="boxColumnSelect">
-                                    <option value="">Select CSV column...</option>
-                                </select>
-                            </div>
+                                <div class="form-group">
+                                    <label>CSV Column:</label>
+                                    <select id="boxColumnSelect">
+                                        <option value="">Select CSV column...</option>
+                                    </select>
+                                </div>
                             
                             <div id="textProperties" style="display: none;">
                                 
@@ -1070,20 +1313,9 @@
                                     <input type="text" id="boxTextInput" placeholder="Enter static text or leave empty for CSV data">
                                 </div>
                                 
-                                <!-- Font Upload Section -->
-                                <div class="form-group">
-                                    <label>Upload Custom Font:</label>
-                                    <div class="font-upload-area" id="fontUploadArea">
-                                        <input type="file" id="fontUploadInput" accept=".ttf,.otf" style="display: none;">
-                                        <div class="font-upload-content">
-                                            <span>📁</span>
-                                            <p>Drop TTF/OTF file here or click to browse</p>
-                                        </div>
-                                    </div>
-                                    <div id="fontUploadStatus" class="font-status"></div>
-                                </div>
-                                
 
+                                
+                                
                                 <!-- Font Selection -->
                                 <div class="form-group">
                                     <label>Font Family:</label>
@@ -1178,46 +1410,89 @@
                                 <button class="btn btn-danger" onclick="deleteSelectedBox()">Delete</button>
                             </div>
                         </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="section">
-                    <h2 class="section-header">CSV Data</h2>
-                    
-                    <!-- Record Navigation -->
-                    <div id="recordNavigation" class="record-navigation" style="display: none;">
-                        <div class="nav-controls">
-                            <button id="prevRecord" class="btn btn-secondary">‹</button>
-                            <span id="recordInfo">Record 1 of 1</span>
-                            <button id="nextRecord" class="btn btn-secondary">›</button>
+
+
+
+
+                <!-- Step 5: Generate & Download -->
+                <div class="drawer" id="generateDrawer">
+                    <div class="drawer-header" onclick="toggleDrawer('generateDrawer')">
+                        <span>🚀 Generate & Download</span>
+                        <span class="drawer-icon">▼</span>
+                    </div>
+                    <div class="drawer-content" id="generateContent">
+                        <div class="drawer-content-inner">
+                            <div class="form-group">
+                                <label for="downloadModeSelect">Download Mode:</label>
+                                <select id="downloadModeSelect" class="form-control" style="margin-bottom: 10px;">
+                                    <option value="single">Single Record Mode (1 PDF per record)</option>
+                                    <option value="multi" selected>Multi-Record Mode (Multiple records per PDF)</option>
+                                </select>
+                                <div style="font-size: 11px; color: #666; text-align: center; margin-bottom: 15px;">
+                                    Single: Downloads all records as individual PDFs | Multi: Groups records per PDF
                         </div>
                     </div>
                     
-                    <div id="csvPreview" class="csv-preview">
-                        <h4>CSV Preview (First 5 rows)</h4>
-                        <div id="csvTableContainer"></div>
-                        <div id="csvInfo" class="csv-info"></div>
+                            <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()" style="width: 100%; margin-bottom: 10px;">
+                                📄 Download Current PDF
+                            </button>
+                            
+
+                            
+                            <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled style="width: 100%; margin-bottom: 10px;">
+                                Download PDFs
+                            </button>
+                            
+                            <div id="downloadLink" style="display: none;">
+                                <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block; width: 100%;">Download Original PDF</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="section">
-                    <h2 class="section-header">Status</h2>
-                    <div class="status-items">
-                        <div class="status-item">
-                            <span class="status-indicator" id="templateIndicator"></span>
-                            <span id="templateStatus">Template: None</span>
+                <!-- Page Navigation -->
+                <div id="pageNavigation" class="page-navigation" style="border-top: 1px solid #e9ecef; padding: 12px; background: #f8f9fa; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <button id="prevPageBtn" class="btn btn-sm btn-outline-secondary" onclick="previousPage()" style="font-size: 11px; padding: 4px 8px; min-width: 60px;">
+                            ← Prev
+                        </button>
+                        <div style="text-align: center; flex: 1;">
+                            <div id="pageInfo" style="font-size: 11px; color: #495057; font-weight: 500;">
+                                Page 1 of 1
                         </div>
-                        <div class="status-item">
-                            <span class="status-indicator" id="csvIndicator"></span>
-                            <span id="csvStatus">CSV: None</span>
+                            <div id="pageRecordsInfo" style="font-size: 10px; color: #6c757d;">
+                                Records 1-4
                         </div>
-                        <div class="status-item">
-                            <span class="status-indicator" id="layoutIndicator"></span>
-                            <span id="layoutStatus">Layout: None</span>
                         </div>
+                        <button id="nextPageBtn" class="btn btn-sm btn-outline-secondary" onclick="nextPage()" style="font-size: 11px; padding: 4px 8px; min-width: 60px;">
+                            Next →
+                        </button>
                     </div>
-                    <button class="reset-btn" onclick="resetSession()">Reset Session</button>
                 </div>
+
+                <!-- Grid Toggle -->
+                <div class="text-center mt-3" style="border-top: 1px solid #e9ecef; padding: 12px; background: #f8f9fa; margin-bottom: 15px;">
+                    <div class="form-check" style="margin: 0;">
+                        <input class="form-check-input" type="checkbox" id="snapToGridToggle" onchange="toggleSnapToGrid()">
+                        <label class="form-check-label" for="snapToGridToggle" style="font-size: 11px; color: #495057;">
+                            🔗 Snap to Grid
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Reset Session Button -->
+                <div class="text-center mt-3" style="border-top: 1px solid #e9ecef; padding: 12px; background: #f8f9fa;">
+                    <button class="btn btn-sm btn-danger" onclick="resetSession()" style="font-size: 11px; padding: 6px 12px;">
+                        🔄 Reset Session
+                    </button>
+                </div>
+
+
             </div>
         </div>
 
@@ -1246,11 +1521,11 @@
                         <div class="zoom-display" id="zoomDisplay">100%</div>
                     </div>
                     
-                    <div class="pdf-content" id="pdfContent">
-                        <canvas id="viewer"></canvas>
+                                    <div class="pdf-content" id="pdfContent">
+                    <canvas id="viewer"></canvas>
                         <canvas id="editorCanvas" style="display: none;"></canvas>
                         <div id="pdfAreaOutline" class="pdf-area-outline" style="display: none;"></div>
-                    </div>
+                </div>
                 </div>
             </div>
 
@@ -1297,6 +1572,7 @@
                     <input type="number" id="height" step="1">
                 </div>
             </div>
+            
         </div>
     </div>
 
@@ -1331,25 +1607,11 @@
         // CSV data management
         let currentRecord = 0;
         let csvData = null;
-        
+
         // Editor canvas management
         let editorCanvas = null;
 
-        // Initialize status indicators
-        function updateStatusIndicators() {
-            const templateLoaded = sessionState.templatePdf !== null;
-            const csvLoaded = sessionState.csvRows.length > 0;
-            const layoutLoaded = sessionState.layout !== null;
 
-            // Update status bar text and indicators
-            document.getElementById('templateStatus').textContent = `Template: ${templateLoaded ? 'Loaded' : 'None'}`;
-            document.getElementById('csvStatus').textContent = `CSV: ${csvLoaded ? sessionState.csvRows.length + ' rows' : 'None'}`;
-            document.getElementById('layoutStatus').textContent = `Layout: ${layoutLoaded ? 'Loaded' : 'None'}`;
-
-            document.getElementById('templateIndicator').classList.toggle('loaded', templateLoaded);
-            document.getElementById('csvIndicator').classList.toggle('loaded', csvLoaded);
-            document.getElementById('layoutIndicator').classList.toggle('loaded', layoutLoaded);
-        }
         
         // Initialize editor canvas
         function initEditorCanvas() {
@@ -1436,10 +1698,11 @@
                 // Update session state with the separate copy
                 sessionState.templatePdf = pdf;
                 sessionState.templatePdfBytes = templateBytes;
-                updateStatusIndicators();
+                
+
 
                 // Enable Generate From Template button
-                document.getElementById('generateFromTemplateBtn').disabled = false;
+                // generateFromTemplateBtn was removed
                 
                 // Enable Download PDFs button if CSV and boxes are also loaded
                 updateDownloadButtonState();
@@ -1497,7 +1760,6 @@
                 // Update session state
                 sessionState.templatePdf = pdf;
                 sessionState.templatePdfBytes = arrayBuffer.slice(0); // Create a copy to avoid detachment
-                updateStatusIndicators();
 
                 // Render the page (always page 1 for single-page PDFs)
                 await renderPage(1);
@@ -1640,8 +1902,13 @@
             }
         });
 
-        // Initialize status indicators on page load
-        updateStatusIndicators();
+
+        
+        // Initialize snap-to-grid toggle
+        document.getElementById('snapToGridToggle').addEventListener('change', function() {
+            snapToGridEnabled = this.checked;
+            console.log('Snap to grid:', snapToGridEnabled ? 'enabled' : 'disabled');
+        });
         
         // Function to update download button state
         function updateDownloadButtonState() {
@@ -1669,13 +1936,18 @@
             const left = rect.left - viewerRect.left;
             const top = rect.top - viewerRect.top;
             
+            // Apply the same transform as the PDF content to keep outline aligned
+            outline.style.transform = `translate(${currentTransform.x}px, ${currentTransform.y}px) scale(${currentTransform.scale})`;
+            outline.style.transformOrigin = '0 0';
+            
+            // Set base position (before transform)
             outline.style.left = left + 'px';
             outline.style.top = top + 'px';
             outline.style.width = rect.width + 'px';
             outline.style.height = rect.height + 'px';
             outline.style.display = 'block';
             
-            console.log(`PDF area outline updated: ${rect.width}x${rect.height} at (${left}, ${top})`);
+            console.log(`PDF area outline updated: ${rect.width}x${rect.height} at (${left}, ${top}) with transform: scale(${currentTransform.scale})`);
             console.log(`Canvas actual size: ${canvas.width}x${canvas.height}, Display size: ${rect.width}x${rect.height}`);
         }
         
@@ -1684,105 +1956,292 @@
             setTimeout(updatePdfAreaOutline, 100); // Small delay to ensure zoom is applied
         }
         
+        // Field Selection Modal
+        function showFieldSelectionModal(csvColumns, boxCount, boxType) {
+            return new Promise((resolve) => {
+                // Create modal overlay
+                const modalOverlay = document.createElement('div');
+                modalOverlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                `;
+
+                // Create modal content
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = `
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                    max-width: 400px;
+                    width: 90%;
+                    text-align: center;
+                `;
+
+                // Create title
+                const title = document.createElement('h3');
+                title.textContent = `Select CSV Field for ${boxCount} ${boxType === 'text' ? 'Text' : 'Image'} Boxes`;
+                title.style.cssText = `
+                    margin: 0 0 20px 0;
+                    color: #333;
+                    font-size: 18px;
+                `;
+
+                // Create description
+                const description = document.createElement('p');
+                description.textContent = `Choose which CSV field to use for all ${boxCount} boxes:`;
+                description.style.cssText = `
+                    margin: 0 0 20px 0;
+                    color: #666;
+                    font-size: 14px;
+                `;
+
+                // Create dropdown
+                const dropdown = document.createElement('select');
+                dropdown.style.cssText = `
+                    width: 100%;
+                    padding: 12px;
+                    border: 2px solid #ddd;
+                    border-radius: 6px;
+                    font-size: 16px;
+                    margin-bottom: 20px;
+                    background: white;
+                `;
+
+                // Add default option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '-- Select a field --';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                dropdown.appendChild(defaultOption);
+
+                // Add CSV columns as options
+                csvColumns.forEach(column => {
+                    const option = document.createElement('option');
+                    option.value = column;
+                    option.textContent = column;
+                    dropdown.appendChild(option);
+                });
+
+                // Create button container
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.cssText = `
+                    display: flex;
+                    gap: 10px;
+                    justify-content: center;
+                `;
+
+                // Create OK button
+                const okButton = document.createElement('button');
+                okButton.textContent = 'Create Boxes';
+                okButton.style.cssText = `
+                    padding: 10px 20px;
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 14px;
+                `;
+                okButton.onclick = () => {
+                    const selectedValue = dropdown.value;
+                    if (selectedValue) {
+                        modalOverlay.remove();
+                        resolve(selectedValue);
+                    } else {
+                        alert('Please select a field first.');
+                    }
+                };
+
+                // Create Cancel button
+                const cancelButton = document.createElement('button');
+                cancelButton.textContent = 'Cancel';
+                cancelButton.style.cssText = `
+                    padding: 10px 20px;
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 14px;
+                `;
+                cancelButton.onclick = () => {
+                    modalOverlay.remove();
+                    resolve(null);
+                };
+
+                // Add hover effects
+                okButton.onmouseover = () => okButton.style.background = '#0056b3';
+                okButton.onmouseout = () => okButton.style.background = '#007bff';
+                cancelButton.onmouseover = () => cancelButton.style.background = '#545b62';
+                cancelButton.onmouseout = () => cancelButton.style.background = '#6c757d';
+
+                // Assemble modal
+                buttonContainer.appendChild(okButton);
+                buttonContainer.appendChild(cancelButton);
+                modalContent.appendChild(title);
+                modalContent.appendChild(description);
+                modalContent.appendChild(dropdown);
+                modalContent.appendChild(buttonContainer);
+                modalOverlay.appendChild(modalContent);
+
+                // Add to page
+                document.body.appendChild(modalOverlay);
+
+                // Focus on dropdown
+                dropdown.focus();
+
+                // Handle Enter key
+                dropdown.onkeydown = (e) => {
+                    if (e.key === 'Enter' && dropdown.value) {
+                        okButton.click();
+                    }
+                };
+            });
+        }
+
+        // Format All Text Boxes Function
+        function formatAllTextBoxes() {
+            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text');
+            
+            if (textBoxes.length === 0) {
+                alert('No text boxes found to format.');
+                return;
+            }
+
+            // Get formatting values from the form
+            const fontFamily = document.getElementById('formatAllFontFamily').value;
+            const fontSize = document.getElementById('formatAllFontSize').value;
+            const textColor = document.getElementById('formatAllTextColor').value;
+            const textAlign = document.getElementById('formatAllTextAlign').value;
+            
+            // Get text style states
+            const boldBtn = document.getElementById('formatAllBold');
+            const italicBtn = document.getElementById('formatAllItalic');
+            const underlineBtn = document.getElementById('formatAllUnderline');
+            
+            const isBold = boldBtn.classList.contains('active');
+            const isItalic = italicBtn.classList.contains('active');
+            const isUnderline = underlineBtn.classList.contains('active');
+
+            // Apply formatting to all text boxes
+            textBoxes.forEach(box => {
+                if (box.element) {
+                    const element = box.element;
+                    
+                    // Update element styles
+                    element.style.fontFamily = fontFamily;
+                    element.style.fontSize = fontSize + 'px';
+                    element.style.color = textColor;
+                    element.style.textAlign = textAlign;
+                    
+                    // Apply text styles
+                    element.style.fontWeight = isBold ? 'bold' : 'normal';
+                    element.style.fontStyle = isItalic ? 'italic' : 'normal';
+                    element.style.textDecoration = isUnderline ? 'underline' : 'none';
+                    
+                    // Update box data in session state
+                    box.fontFamily = fontFamily;
+                    box.fontSize = parseInt(fontSize);
+                    box.color = textColor;
+                    box.textAlign = textAlign;
+                    box.bold = isBold;
+                    box.italic = isItalic;
+                    box.underline = isUnderline;
+                }
+            });
+
+            // Show success message
+            alert(`Applied formatting to ${textBoxes.length} text box(es)!`);
+        }
+
+        // Add event listeners for text style buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Bold button
+            const boldBtn = document.getElementById('formatAllBold');
+            if (boldBtn) {
+                boldBtn.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    this.style.background = this.classList.contains('active') ? '#007bff' : '';
+                    this.style.color = this.classList.contains('active') ? 'white' : '';
+                });
+            }
+
+            // Italic button
+            const italicBtn = document.getElementById('formatAllItalic');
+            if (italicBtn) {
+                italicBtn.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    this.style.background = this.classList.contains('active') ? '#007bff' : '';
+                    this.style.color = this.classList.contains('active') ? 'white' : '';
+                });
+            }
+
+            // Underline button
+            const underlineBtn = document.getElementById('formatAllUnderline');
+            if (underlineBtn) {
+                underlineBtn.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    this.style.background = this.classList.contains('active') ? '#007bff' : '';
+                    this.style.color = this.classList.contains('active') ? 'white' : '';
+                });
+            }
+        });
+
         // Simple Multiple Records Management
         let recordsCreated = 0;
         
-        function createMultipleRecords() {
-            // Check if a box is selected
-            if (!sessionState.selectedBox) {
-                alert('Please select a text box or image box first!');
-                return;
-            }
-            
-            // Check if the selected box has a CSV column assigned
-            if (!sessionState.selectedBox.csvColumn || sessionState.selectedBox.csvColumn === '') {
-                alert('Please select a box that has a CSV field assigned!');
-                return;
-            }
-            
+        function createMultipleTextRecords() {
             // Check if CSV data is loaded
             if (!sessionState.csvRows || sessionState.csvRows.length === 0) {
                 alert('Please upload CSV data first!');
                 return;
             }
             
+            // Check if we have text boxes with CSV columns assigned
+            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text' && box.csvColumn);
+            
+            if (textBoxes.length === 0) {
+                alert('Please create at least one text box with a CSV field assigned!');
+                return;
+            }
+            
             // Get the number of records to create from dropdown
             const recordsCount = parseInt(document.getElementById('recordsCountSelect').value);
             
-            // Get the selected text box
-            const selectedBox = sessionState.selectedBox;
+            // Remove initial text boxes
+            textBoxes.forEach(box => {
+                if (box.element) {
+                    box.element.remove();
+                }
+            });
+            sessionState.boxes = sessionState.boxes.filter(box => box.boxType !== 'text');
             
-            // Create copies of the selected box with different records
+            // Create multiple text boxes for each record
             for (let i = 0; i < recordsCount; i++) {
                 if (i >= sessionState.csvRows.length) break; // Don't create more than available records
                 
                 const record = sessionState.csvRows[i];
+                const verticalOffset = i * 120; // Space between record groups
                 
-                if (selectedBox.boxType === 'image') {
-                    // Create image box using DOM elements
-                    const centerX = parseFloat(selectedBox.style?.left) || 100;
-                    const centerY = (parseFloat(selectedBox.style?.top) || 100) + (i * 60); // Stack vertically
-                    
-                    // Create a DOM-based image box
-                    const imageBox = document.createElement('div');
-                    imageBox.className = 'draggable-image-box';
-                    imageBox.style.position = 'absolute';
-                    imageBox.style.left = (centerX - 50) + 'px';
-                    imageBox.style.top = (centerY - 50) + 'px';
-                    imageBox.style.width = '100px';
-                    imageBox.style.height = '100px';
-                    imageBox.style.border = '2px dashed #007bff';
-                    imageBox.style.background = 'rgba(255,255,255,0.2)';
-                    imageBox.style.cursor = 'move';
-                    imageBox.style.display = 'flex';
-                    imageBox.style.alignItems = 'center';
-                    imageBox.style.justifyContent = 'center';
-                    imageBox.style.zIndex = '10';
-                    imageBox.style.overflow = 'hidden';
-                    imageBox.textContent = 'IMAGE';
-                    imageBox.style.color = '#666';
-                    imageBox.style.fontWeight = 'bold';
-                    imageBox.style.fontSize = '12px';
-
-                    // Add custom properties
-                    imageBox.boxId = ++boxCounter;
-                    imageBox.boxType = 'image';
-                    imageBox.csvColumn = selectedBox.csvColumn;
-                    imageBox.imageSource = 'csv';
-                    imageBox.imageUrl = '';
-                    imageBox.boxIndex = i; // Track which record this box represents
-
-                    // Add click handler for selection
-                    imageBox.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        document.querySelectorAll('.draggable-image-box.selected, .draggable-text-box.selected').forEach(box => {
-                            box.classList.remove('selected');
-                        });
-                        imageBox.classList.add('selected');
-                        sessionState.selectedBox = imageBox;
-                        currentBoxId = imageBox.boxId;
-                        updateBoxEditor();
-                        updateBoxEditorValues(imageBox);
-                    });
-
-                    // Add to PDF viewer and enable drag/resize
-                    const pdfViewer = document.getElementById('pdfViewer');
-                    pdfViewer.appendChild(imageBox);
-                    enableDragResize(imageBox);
-                    
-                    sessionState.boxes.push(imageBox);
-                    
-                    // Update the image with CSV data
-                    updateImageBoxWithCSVData(imageBox);
-                    
-                } else {
+                // Create text boxes
+                textBoxes.forEach((templateBox, txtIndex) => {
                     // Create text box (existing logic)
-                    const recordText = record[selectedBox.csvColumn] || `Record ${i + 1}`;
+                    const recordText = record[templateBox.csvColumn] || `Record ${i + 1}`;
                     
                     const newBox = {
-                        ...selectedBox,
+                        ...templateBox,
                         id: ++boxCounter,
-                        y: selectedBox.y + (i * 60), // Stack vertically with 60px spacing
+                        y: templateBox.y + verticalOffset, // Stack vertically with spacing
                         element: null
                     };
                     
@@ -1817,6 +2276,18 @@
                     textBox.textContent = recordText;
                     textBox.contentEditable = false;
                     
+                    // Create delete button
+                    const deleteBtn = document.createElement('div');
+                    deleteBtn.className = 'delete-box-btn';
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        deleteSelectedBox();
+                    };
+                    
+                    // Add delete button to text box
+                    textBox.appendChild(deleteBtn);
+                    
                     // Add to overlay container
                     const overlayContainer = document.getElementById('overlayContainer');
                     overlayContainer.appendChild(textBox);
@@ -1840,7 +2311,7 @@
                     
                     newBox.element = textBox;
                     sessionState.boxes.push(newBox);
-                }
+                });
             }
             
             recordsCreated += recordsCount;
@@ -1851,30 +2322,143 @@
             updatePageNavigation();
             updateAllTextBoxesWithCSVData();
             
-            const boxType = selectedBox.boxType === 'image' ? 'image boxes' : 'text boxes';
-            alert(`Created ${recordsCount} ${boxType} with records 1-${recordsCount} from "${selectedBox.csvColumn}" field!`);
+            const totalBoxes = textBoxes.length * recordsCount;
+            alert(`Created ${totalBoxes} text boxes for ${recordsCount} records!`);
+            
+            // Update download button state to enable downloads
+            updateDownloadButtonState();
+            
+            // Update text box scaling to match current PDF viewer state
+            updateTextBoxScaling();
         }
         
         function updateRecordsInfo() {
-            const infoElement = document.getElementById('recordsInfo');
-            const totalRecords = sessionState.csvRows ? sessionState.csvRows.length : 0;
-            
-            infoElement.textContent = `Total records: ${totalRecords} | Records created: ${recordsCreated}`;
+            // recordsInfo element was removed with the Multiple Records section
+            // This function is kept for compatibility but does nothing
         }
         
+        function createMultipleImageRecords() {
+            // Check if CSV data is loaded
+            if (!sessionState.csvRows || sessionState.csvRows.length === 0) {
+                alert('Please upload CSV data first!');
+                return;
+            }
+            
+            // Check if we have image boxes with CSV columns assigned
+            const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image' && box.csvColumn);
+            
+            if (imageBoxes.length === 0) {
+                alert('Please create at least one image box with a CSV field assigned!');
+                return;
+            }
+            
+            // Get the number of records to create from dropdown
+            const recordsCount = parseInt(document.getElementById('recordsCountSelect').value);
+            
+            // Remove initial image boxes
+            imageBoxes.forEach(box => {
+                if (box.parentNode) {
+                    box.remove();
+                }
+            });
+            sessionState.boxes = sessionState.boxes.filter(box => box.boxType !== 'image');
+            
+            // Create multiple image boxes for each record
+            for (let i = 0; i < recordsCount; i++) {
+                if (i >= sessionState.csvRows.length) break; // Don't create more than available records
+                
+                const record = sessionState.csvRows[i];
+                const verticalOffset = i * 120; // Space between record groups
+                
+                // Create image boxes
+                imageBoxes.forEach((templateBox, imgIndex) => {
+                    // Create image box using DOM elements
+                    const centerX = parseFloat(templateBox.style?.left) || 100;
+                    const centerY = (parseFloat(templateBox.style?.top) || 100) + verticalOffset; // Stack vertically
+                    
+                    // Create a DOM-based image box
+                    const imageBox = document.createElement('div');
+                    imageBox.className = 'draggable-image-box';
+                    imageBox.style.cssText = `
+                        position: absolute;
+                        left: ${(centerX - 50)}px;
+                        top: ${(centerY - 50)}px;
+                        width: 100px;
+                        height: 100px;
+                        border: 2px dashed #007bff;
+                        background: transparent;
+                        cursor: move;
+                        z-index: 10;
+                        overflow: hidden;
+                        box-sizing: border-box;
+                        transition: all 0.1s ease;
+                    `;
+
+                    // Add custom properties
+                    imageBox.boxId = ++boxCounter;
+                    imageBox.boxType = 'image';
+                    imageBox.csvColumn = templateBox.csvColumn;
+                    imageBox.imageSource = 'csv';
+                    imageBox.imageUrl = '';
+                    imageBox.boxIndex = i; // Track which record this box represents
+
+                    // Create delete button
+                    const deleteBtn = document.createElement('div');
+                    deleteBtn.className = 'delete-box-btn';
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        deleteSelectedBox();
+                    };
+
+                    // Add click handler for selection
+                    imageBox.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        document.querySelectorAll('.draggable-image-box.selected, .draggable-text-box.selected').forEach(box => {
+                            box.classList.remove('selected');
+                        });
+                        imageBox.classList.add('selected');
+                        sessionState.selectedBox = imageBox;
+                        currentBoxId = imageBox.boxId;
+                        updateBoxEditor();
+                        updateBoxEditorValues(imageBox);
+                    });
+
+                    // Add delete button to image box
+                    imageBox.appendChild(deleteBtn);
+
+                    // Add to PDF viewer and enable drag/resize
+                    const pdfViewer = document.getElementById('pdfViewer');
+                    pdfViewer.appendChild(imageBox);
+                    enableDragResize(imageBox);
+                    
+                    sessionState.boxes.push(imageBox);
+                    
+                    // Update the image with CSV data
+                    updateImageBoxWithCSVData(imageBox);
+                });
+            }
+            
+            recordsCreated += recordsCount;
+            updateRecordsInfo();
+            
+            // Reset to first page and update navigation
+            currentPage = 0;
+            updatePageNavigation();
+            
+            const totalBoxes = imageBoxes.length * recordsCount;
+            alert(`Created ${totalBoxes} image boxes for ${recordsCount} records!`);
+            
+            // Update download button state to enable downloads
+            updateDownloadButtonState();
+            
+            // Update image box scaling to match current PDF viewer state
+            updateImageBoxScaling();
+        }
+
         function updateCreateRecordsButtonState() {
-            const createBtn = document.getElementById('createMultipleRecordsBtn');
-            const hasSelectedBox = sessionState.selectedBox !== null;
-            const hasCsvColumn = sessionState.selectedBox && sessionState.selectedBox.csvColumn && sessionState.selectedBox.csvColumn !== '';
-            const hasCsvData = sessionState.csvRows && sessionState.csvRows.length > 0;
-            
-            // Enable button only if we have a selected box with a CSV column and CSV data
-            const shouldEnable = hasSelectedBox && hasCsvColumn && hasCsvData;
-            createBtn.disabled = !shouldEnable;
-            
-            // Update button text to show the selected number of records
-            const recordsCount = document.getElementById('recordsCountSelect').value;
-            createBtn.textContent = `🎯 CREATE ${recordsCount} RECORDS`;
+            // Multiple records buttons were removed
+            // This function is kept for compatibility but does nothing
         }
         
         // Page navigation variables
@@ -1895,7 +2479,7 @@
             }
             
             // Calculate pages
-            recordsPerPage = parseInt(document.getElementById('recordsCountSelect').value);
+            recordsPerPage = 4; // Default value since recordsCountSelect was removed
             totalPages = Math.ceil(sessionState.csvRows.length / recordsPerPage);
             
             // Update page info
@@ -1918,7 +2502,7 @@
             if (currentPage > 0) {
                 currentPage--;
                 updatePageNavigation();
-                updateAllTextBoxesWithCSVData();
+                updateAllTextBoxesWithCSVData(); // This already handles both text and image boxes
             }
         }
         
@@ -1926,7 +2510,7 @@
             if (currentPage < totalPages - 1) {
                 currentPage++;
                 updatePageNavigation();
-                updateAllTextBoxesWithCSVData();
+                updateAllTextBoxesWithCSVData(); // This already handles both text and image boxes
             }
         }
         
@@ -1981,13 +2565,39 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing simple system...');
             updateRecordsInfo();
-            
-            // Add event listener for records count dropdown
-            document.getElementById('recordsCountSelect').addEventListener('change', function() {
-                updateCreateRecordsButtonState();
-                updatePageNavigation();
-            });
+            initializeDrawers();
         });
+
+        // Drawer functionality
+        function initializeDrawers() {
+            // Open the first drawer by default with a small delay to ensure DOM is ready
+            setTimeout(() => {
+                toggleDrawer('uploadDrawer');
+            }, 100);
+        }
+
+        function toggleDrawer(drawerId) {
+            const drawer = document.getElementById(drawerId);
+            const header = drawer.querySelector('.drawer-header');
+            const content = drawer.querySelector('.drawer-content');
+            
+            // Close all other drawers first
+            const allDrawers = document.querySelectorAll('.drawer');
+            allDrawers.forEach(d => {
+                if (d.id !== drawerId) {
+                    const otherHeader = d.querySelector('.drawer-header');
+                    const otherContent = d.querySelector('.drawer-content');
+                    otherHeader.classList.remove('active');
+                    otherContent.classList.remove('open');
+                }
+            });
+            
+            // Toggle the clicked drawer
+            header.classList.toggle('active');
+            content.classList.toggle('open');
+        }
+
+
         
         // InDesign-style layout management
         
@@ -2075,7 +2685,7 @@
 
 
 
-        function addText() {
+        async function addText() {
             // Ensure editor is initialized
             if (!document.getElementById('overlayContainer')) {
                 initEditor();
@@ -2088,18 +2698,61 @@
                 return;
             }
             
+            // Check if CSV data is available
+            if (!sessionState.csvRows || sessionState.csvRows.length === 0) {
+                alert('Please upload CSV data first!');
+                return;
+            }
+            
+            // Get number of boxes to add from dropdown
+            const boxCount = parseInt(document.getElementById('boxCountSelect').value) || 1;
+            
             const rect = pdfViewer.getBoundingClientRect();
             const centerX = (rect.width / 2) - 60;
             const centerY = (rect.height / 2) - 20;
+            
+            // Get available CSV columns
+            const csvColumns = sessionState.csvColumns || [];
+            if (csvColumns.length === 0) {
+                alert('No CSV columns found. Please check your CSV file.');
+                return;
+            }
+            
+            // Create field selection modal
+            const selectedField = await showFieldSelectionModal(csvColumns, boxCount, 'text');
+            if (!selectedField) {
+                return; // User cancelled
+            }
+            
+            // Add multiple boxes for the same field across different records
+            for (let i = 0; i < boxCount; i++) {
+                const offsetX = i * 20; // Small horizontal offset for each box
+                const offsetY = i * 15; // Small vertical offset for each box
+                const boxX = centerX + offsetX;
+                const boxY = centerY + offsetY;
+                
+                // Get data from the corresponding record
+                const recordIndex = i % sessionState.csvRows.length; // Cycle through records
+                const recordData = sessionState.csvRows[recordIndex];
+                const sampleText = recordData ? recordData[selectedField] || `Record ${recordIndex + 1}` : `Record ${recordIndex + 1}`;
             
             // Create text box element
             const textBox = document.createElement('div');
             textBox.className = 'draggable-text-box';
             textBox.id = 'textBox_' + ++boxCounter;
+            
+            // Create delete button
+            const deleteBtn = document.createElement('div');
+            deleteBtn.className = 'delete-box-btn';
+            deleteBtn.innerHTML = '×';
+            deleteBtn.onclick = function(e) {
+                e.stopPropagation();
+                deleteSelectedBox();
+            };
             textBox.style.cssText = `
                 position: absolute;
-                left: ${centerX}px;
-                top: ${centerY}px;
+                left: ${boxX}px;
+                top: ${boxY}px;
                 width: 120px;
                 height: 40px;
                 min-width: 80px;
@@ -2120,8 +2773,11 @@
                 box-shadow: none;
                 transition: all 0.1s ease;
             `;
-            textBox.textContent = 'Sample Text';
+            textBox.textContent = sampleText;
             textBox.contentEditable = false; // Disable direct editing since we use the panel
+            
+            // Add delete button to text box
+            textBox.appendChild(deleteBtn);
             
             // Add to overlay container
             const overlayContainer = document.getElementById('overlayContainer');
@@ -2136,8 +2792,8 @@
                 element: textBox,
                 type: 'text',
                 boxType: 'text',
-                csvColumn: '',
-                staticText: 'Sample Text',
+                csvColumn: selectedField,
+                staticText: sampleText,
                 bold: false,
                 italic: false,
                 underline: false,
@@ -2145,8 +2801,8 @@
                 fontFamily: defaultFontFamily,
                 color: '#000000',
                 textAlign: 'center',
-                x: centerX,
-                y: centerY,
+                x: boxX,
+                y: boxY,
                 width: 120,
                 height: 40
             };
@@ -2180,6 +2836,9 @@
             // Update download button state
             updateDownloadButtonState();
             
+            // Update text box scaling to match current PDF viewer state
+            updateTextBoxScaling();
+            
             // Select the text box immediately for editing
             textBox.focus();
             // Remove the problematic select() call - text boxes don't have select() method
@@ -2187,41 +2846,81 @@
             // Update text size to fit the initial box dimensions
             updateTextSize(textBox);
         }
+        }
 
-        function addImagePlaceholder() {
+        async function addImagePlaceholder() {
             console.log('addImagePlaceholder called');
             
-            if (!isEditorMode) {
-                toggleEditorMode();
+            // Don't toggle editor mode for image boxes - they use DOM elements, not canvas
+
+            // Check if CSV data is available
+            if (!sessionState.csvRows || sessionState.csvRows.length === 0) {
+                alert('Please upload CSV data first!');
+                return;
             }
 
-            // Create a DOM-based image box (similar to MERGE-ONLINE approach)
-            const imageBox = document.createElement('div');
+            // Get number of boxes to add from dropdown
+            const boxCount = parseInt(document.getElementById('boxCountSelect').value) || 1;
+            
+            // Get available CSV columns
+            const csvColumns = sessionState.csvColumns || [];
+            if (csvColumns.length === 0) {
+                alert('No CSV columns found. Please check your CSV file.');
+                return;
+            }
+            
+            // Create field selection modal
+            const selectedField = await showFieldSelectionModal(csvColumns, boxCount, 'image');
+            if (!selectedField) {
+                return; // User cancelled
+            }
+            
+            // Add multiple image boxes for the same field across different records
+            for (let i = 0; i < boxCount; i++) {
+                const offsetX = i * 20; // Small horizontal offset for each box
+                const offsetY = i * 15; // Small vertical offset for each box
+                const boxX = 50 + offsetX;
+                const boxY = 50 + offsetY;
+                
+                // Get data from the corresponding record
+                const recordIndex = i % sessionState.csvRows.length; // Cycle through records
+                const recordData = sessionState.csvRows[recordIndex];
+                const sampleImageUrl = recordData ? recordData[selectedField] || '' : '';
+                
+                // Create a DOM-based image box (similar to MERGE-ONLINE approach)
+                const imageBox = document.createElement('div');
             imageBox.className = 'draggable-image-box';
-            imageBox.style.position = 'absolute';
-            imageBox.style.left = '50px';
-            imageBox.style.top = '50px';
-            imageBox.style.width = '100px';
-            imageBox.style.height = '100px';
-            imageBox.style.border = '2px dashed #007bff';
-            imageBox.style.background = 'rgba(255,255,255,0.2)';
-            imageBox.style.cursor = 'move';
-            imageBox.style.display = 'flex';
-            imageBox.style.alignItems = 'center';
-            imageBox.style.justifyContent = 'center';
-            imageBox.style.zIndex = '10';
-            imageBox.style.overflow = 'hidden';
-            imageBox.textContent = 'IMAGE';
-            imageBox.style.color = '#666';
-            imageBox.style.fontWeight = 'bold';
-            imageBox.style.fontSize = '12px';
+            
+            imageBox.style.cssText = `
+                position: absolute;
+                left: ${boxX}px;
+                top: ${boxY}px;
+                width: 100px;
+                height: 100px;
+                min-width: 40px;
+                min-height: 30px;
+                background: transparent;
+                border: 2px dashed #007bff;
+                cursor: move;
+                pointer-events: auto;
+                z-index: 10;
+                overflow: hidden;
+                box-sizing: border-box;
+                transition: all 0.1s ease;
+                transform-origin: top left;
+            `;
 
             // Add custom properties
             imageBox.boxId = ++boxCounter;
             imageBox.boxType = 'image';
-            imageBox.csvColumn = '';
+            imageBox.csvColumn = selectedField;
             imageBox.imageSource = 'csv';
-            imageBox.imageUrl = '';
+            imageBox.imageUrl = sampleImageUrl;
+
+            // Load image if URL is available
+            if (sampleImageUrl && sampleImageUrl.trim() !== '') {
+                loadImageFromUrl(sampleImageUrl, imageBox);
+            }
 
             // Add click handler for selection
             imageBox.addEventListener('click', function(e) {
@@ -2242,23 +2941,94 @@
                 updateBoxEditorValues(imageBox);
             });
 
-            // Add to PDF viewer
-            const pdfViewer = document.getElementById('pdfViewer');
-            pdfViewer.appendChild(imageBox);
+            // Add to overlay container (same as text boxes)
+            const overlayContainer = document.getElementById('overlayContainer');
+            if (!overlayContainer) {
+                initEditor();
+            }
+            overlayContainer.appendChild(imageBox);
 
-            // Add to session state
-            sessionState.boxes.push(imageBox);
-            sessionState.selectedBox = imageBox;
+            // Add to session state (same structure as text boxes)
+            const boxData = {
+                id: imageBox.boxId,
+                element: imageBox,
+                type: 'image',
+                boxType: 'image',
+                csvColumn: selectedField,
+                imageSource: 'csv',
+                imageUrl: sampleImageUrl,
+                x: boxX,
+                y: boxY,
+                width: 100,
+                height: 100
+            };
+            
+            sessionState.boxes.push(boxData);
+            sessionState.selectedBox = boxData;
             currentBoxId = imageBox.boxId;
-
+            
             // Update box editor
             updateBoxEditor();
-            updateBoxEditorValues(imageBox);
+            updateBoxEditorValues(boxData);
 
             // Enable drag and resize for this box
             enableDragResize(imageBox);
+            
+            // Add resize handles for visual feedback
+            addResizeHandles(imageBox);
 
-            updateEditorStatus('Image placeholder created - drag it to position and edit properties');
+            updateEditorStatus('Image box created - drag it to position and edit properties');
+            
+            // Update download button state to enable downloads
+            updateDownloadButtonState();
+            
+            // Update image box scaling to match current PDF viewer state
+            updateImageBoxScaling();
+            }
+        }
+
+        // Function to load image from URL
+        function loadImageFromUrl(imageUrl, imageBox) {
+            if (!imageUrl || imageUrl.trim() === '') {
+                console.log('No image URL provided');
+                return;
+            }
+
+            console.log('Loading image from URL:', imageUrl);
+            
+            // Create image element
+            const img = document.createElement('img');
+            img.crossOrigin = 'anonymous';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.style.display = 'block';
+            
+            // Clear existing content
+            imageBox.innerHTML = '';
+            
+            // Add image only (no delete button for image boxes)
+            imageBox.appendChild(img);
+            
+            // Load image
+            img.onload = function() {
+                console.log('Image loaded successfully');
+                imageBox.style.border = 'none';
+                imageBox.style.background = 'transparent';
+            };
+            
+            img.onerror = function() {
+                console.error('Failed to load image:', imageUrl);
+                imageBox.textContent = '❌ Image Error';
+                imageBox.style.color = '#ff0000';
+                imageBox.style.fontWeight = 'bold';
+                imageBox.style.fontSize = '12px';
+                imageBox.style.border = '2px dashed #ff0000';
+                imageBox.style.background = 'transparent';
+            };
+            
+            // Set image source using proxy
+            img.src = `proxy_image.php?url=${encodeURIComponent(imageUrl)}`;
         }
 
         // Function to enable drag and resize for DOM elements (similar to MERGE-ONLINE)
@@ -2280,11 +3050,20 @@
                         const left = parseFloat(target.style.left) + event.dx;
                         const top = parseFloat(target.style.top) + event.dy;
                         
-                        target.style.left = left + 'px';
-                        target.style.top = top + 'px';
+                        if (snapToGridEnabled) {
+                            // Apply snap-to-grid when enabled
+                            const snappedPosition = snapToGrid(left, top, target);
+                            target.style.left = snappedPosition.x + 'px';
+                            target.style.top = snappedPosition.y + 'px';
+                        } else {
+                            // Free movement when snap-to-grid is disabled
+                            target.style.left = left + 'px';
+                            target.style.top = top + 'px';
+                        }
                     },
                     end: function(event) {
                         event.target.classList.remove('dragging');
+                        clearSnapGuides();
                     }
                 }
             });
@@ -2308,11 +3087,20 @@
                         left += event.deltaRect.left;
                         top += event.deltaRect.top;
 
-                        // Apply changes
-                        target.style.width = width + 'px';
-                        target.style.height = height + 'px';
-                        target.style.left = left + 'px';
-                        target.style.top = top + 'px';
+                        if (snapToGridEnabled) {
+                            // Apply snap-to-grid when enabled
+                            const snappedPosition = snapToGrid(left, top, target);
+                            target.style.width = width + 'px';
+                            target.style.height = height + 'px';
+                            target.style.left = snappedPosition.x + 'px';
+                            target.style.top = snappedPosition.y + 'px';
+                        } else {
+                            // Apply changes with free positioning
+                            target.style.width = width + 'px';
+                            target.style.height = height + 'px';
+                            target.style.left = left + 'px';
+                            target.style.top = top + 'px';
+                        }
                     }
                 }
             });
@@ -2650,10 +3438,10 @@
                 document.getElementById('boxHeight').value = Math.round(parseFloat(box.style.height) || 100);
             } else {
                 // Fabric.js object
-                document.getElementById('boxXPos').value = Math.round(box.left || 0);
-                document.getElementById('boxYPos').value = Math.round(box.top || 0);
-                document.getElementById('boxWidth').value = Math.round(box.width || 100);
-                document.getElementById('boxHeight').value = Math.round(box.height || 100);
+            document.getElementById('boxXPos').value = Math.round(box.left || 0);
+            document.getElementById('boxYPos').value = Math.round(box.top || 0);
+            document.getElementById('boxWidth').value = Math.round(box.width || 100);
+            document.getElementById('boxHeight').value = Math.round(box.height || 100);
             }
 
             // Add event listeners
@@ -2665,7 +3453,7 @@
             document.getElementById('boxColumnSelect').onchange = function() {
                 box.csvColumn = this.value;
                 if (box.boxType === 'text') {
-                    updateTextBoxContent(box);
+                updateTextBoxContent(box);
                 } else if (box.boxType === 'image' && box.imageSource === 'csv') {
                     updateImageBoxWithCSVData(box);
                 }
@@ -2746,8 +3534,8 @@
                     box.style.left = x + 'px';
                 } else {
                     // Fabric.js object
-                    box.set('left', x);
-                    editorCanvas.renderAll();
+                box.set('left', x);
+                editorCanvas.renderAll();
                 }
             };
 
@@ -2758,8 +3546,8 @@
                     box.style.top = y + 'px';
                 } else {
                     // Fabric.js object
-                    box.set('top', y);
-                    editorCanvas.renderAll();
+                box.set('top', y);
+                editorCanvas.renderAll();
                 }
             };
 
@@ -2770,8 +3558,8 @@
                     box.style.width = width + 'px';
                 } else {
                     // Fabric.js object
-                    box.set('width', width);
-                    editorCanvas.renderAll();
+                box.set('width', width);
+                editorCanvas.renderAll();
                 }
             };
 
@@ -2782,8 +3570,8 @@
                     box.style.height = height + 'px';
                 } else {
                     // Fabric.js object
-                    box.set('height', height);
-                    editorCanvas.renderAll();
+                box.set('height', height);
+                editorCanvas.renderAll();
                 }
             };
         }
@@ -2807,6 +3595,19 @@
                 const originalTop = parseFloat(original.style.top) || 0;
                 clone.style.left = (originalLeft + 20) + 'px';
                 clone.style.top = (originalTop + 20) + 'px';
+                
+                // Ensure delete button exists and has correct event handler
+                let deleteBtn = clone.querySelector('.delete-box-btn');
+                if (!deleteBtn) {
+                    deleteBtn = document.createElement('div');
+                    deleteBtn.className = 'delete-box-btn';
+                    deleteBtn.innerHTML = '×';
+                    clone.appendChild(deleteBtn);
+                }
+                deleteBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    deleteSelectedBox();
+                };
                 
                 // Add click handler for selection
                 clone.addEventListener('click', function(e) {
@@ -2833,32 +3634,32 @@
             } else {
                 // Fabric.js object
                 if (!editorCanvas) return;
-                const clone = fabric.util.object.clone(original);
-                
-                // Offset the clone
-                clone.set({
-                    left: original.left + 20,
-                    top: original.top + 20,
-                    boxId: ++boxCounter
-                });
+            const clone = fabric.util.object.clone(original);
+            
+            // Offset the clone
+            clone.set({
+                left: original.left + 20,
+                top: original.top + 20,
+                boxId: ++boxCounter
+            });
 
-                // Copy custom properties
-                clone.boxType = original.boxType;
-                clone.csvColumn = original.csvColumn;
-                clone.staticText = original.staticText;
-                clone.bold = original.bold;
-                clone.italic = original.italic;
-                clone.underline = original.underline;
-                clone.imageSource = original.imageSource;
-                clone.imageUrl = original.imageUrl;
+            // Copy custom properties
+            clone.boxType = original.boxType;
+            clone.csvColumn = original.csvColumn;
+            clone.staticText = original.staticText;
+            clone.bold = original.bold;
+            clone.italic = original.italic;
+            clone.underline = original.underline;
+            clone.imageSource = original.imageSource;
+            clone.imageUrl = original.imageUrl;
 
-                editorCanvas.add(clone);
-                sessionState.boxes.push(clone);
-                
-                // Select the new clone
-                sessionState.selectedBox = clone;
-                currentBoxId = clone.boxId;
-                updateBoxEditorValues(clone);
+            editorCanvas.add(clone);
+            sessionState.boxes.push(clone);
+            
+            // Select the new clone
+            sessionState.selectedBox = clone;
+            currentBoxId = clone.boxId;
+            updateBoxEditorValues(clone);
             }
             
             updateEditorStatus('Box duplicated');
@@ -2887,6 +3688,13 @@
             updateBoxEditor();
             
             updateEditorStatus('Box deleted');
+            
+            // Update download button state after deletion
+            updateDownloadButtonState();
+            
+            // Update box scaling after deletion
+            updateImageBoxScaling();
+            updateTextBoxScaling();
         }
 
         // Simple drag functionality for text boxes
@@ -2977,7 +3785,9 @@
                     xOffset = currentX;
                     yOffset = currentY;
 
-                    element.style.transform = `translate(${currentX}px, ${currentY}px)`;
+                    // Apply snap-to-grid
+                    const snappedPosition = snapToGrid(currentX, currentY, element);
+                    element.style.transform = `translate(${snappedPosition.x}px, ${snappedPosition.y}px)`;
                 }
             }
 
@@ -2998,6 +3808,7 @@
                     isDragging = false;
                     element.style.cursor = 'move';
                     element.style.zIndex = '20';
+                    clearSnapGuides();
                 }
             }
         }
@@ -3045,6 +3856,117 @@
 
                 element.appendChild(handleElement);
             });
+        }
+
+        // Snap-to-Grid System
+        const GRID_SIZE = 50; // Grid size in pixels (increased from 20 for looser grid)
+        const SNAP_THRESHOLD = 25; // Distance to snap in pixels (increased from 10 for gentler snapping)
+        let snapToGridEnabled = false; // Toggle for snap-to-grid feature - DISABLED for free movement
+
+        function toggleSnapToGrid() {
+            snapToGridEnabled = document.getElementById('snapToGridToggle').checked;
+            console.log('Snap-to-grid:', snapToGridEnabled ? 'ENABLED' : 'DISABLED');
+        }
+
+        function snapToGrid(x, y, element) {
+            if (!snapToGridEnabled) {
+                return { x: x, y: y };
+            }
+            
+            const pdfViewer = document.getElementById('pdfViewer');
+            const viewerRect = pdfViewer.getBoundingClientRect();
+            
+            // Get all other boxes for alignment guides
+            const allBoxes = document.querySelectorAll('.draggable-text-box, .draggable-image-box');
+            const otherBoxes = Array.from(allBoxes).filter(box => box !== element);
+            
+            let snappedX = x;
+            let snappedY = y;
+            
+            // Snap to grid
+            const gridX = Math.round(x / GRID_SIZE) * GRID_SIZE;
+            const gridY = Math.round(y / GRID_SIZE) * GRID_SIZE;
+            
+            if (Math.abs(x - gridX) < SNAP_THRESHOLD) {
+                snappedX = gridX;
+            }
+            if (Math.abs(y - gridY) < SNAP_THRESHOLD) {
+                snappedY = gridY;
+            }
+            
+            // Snap to other boxes (alignment guides)
+            otherBoxes.forEach(box => {
+                const boxRect = box.getBoundingClientRect();
+                const elementRect = element.getBoundingClientRect();
+                
+                // Vertical alignment (left, center, right)
+                const leftAlign = Math.abs((boxRect.left - viewerRect.left) - (elementRect.left - viewerRect.left + x));
+                const centerAlign = Math.abs((boxRect.left + boxRect.width/2 - viewerRect.left) - (elementRect.left + elementRect.width/2 - viewerRect.left + x));
+                const rightAlign = Math.abs((boxRect.right - viewerRect.left) - (elementRect.right - viewerRect.left + x));
+                
+                // Horizontal alignment (top, middle, bottom)
+                const topAlign = Math.abs((boxRect.top - viewerRect.top) - (elementRect.top - viewerRect.top + y));
+                const middleAlign = Math.abs((boxRect.top + boxRect.height/2 - viewerRect.top) - (elementRect.top + elementRect.height/2 - viewerRect.top + y));
+                const bottomAlign = Math.abs((boxRect.bottom - viewerRect.top) - (elementRect.bottom - viewerRect.top + y));
+                
+                // Apply snapping with visual guides
+                if (leftAlign < SNAP_THRESHOLD) {
+                    snappedX = (boxRect.left - viewerRect.left) - (elementRect.left - viewerRect.left);
+                    showSnapGuide('vertical', boxRect.left - viewerRect.left);
+                } else if (centerAlign < SNAP_THRESHOLD) {
+                    snappedX = (boxRect.left + boxRect.width/2 - viewerRect.left) - (elementRect.left + elementRect.width/2 - viewerRect.left);
+                    showSnapGuide('vertical', boxRect.left + boxRect.width/2 - viewerRect.left);
+                } else if (rightAlign < SNAP_THRESHOLD) {
+                    snappedX = (boxRect.right - viewerRect.left) - (elementRect.right - viewerRect.left);
+                    showSnapGuide('vertical', boxRect.right - viewerRect.left);
+                }
+                
+                if (topAlign < SNAP_THRESHOLD) {
+                    snappedY = (boxRect.top - viewerRect.top) - (elementRect.top - viewerRect.top);
+                    showSnapGuide('horizontal', boxRect.top - viewerRect.top);
+                } else if (middleAlign < SNAP_THRESHOLD) {
+                    snappedY = (boxRect.top + boxRect.height/2 - viewerRect.top) - (elementRect.top + elementRect.height/2 - viewerRect.top);
+                    showSnapGuide('horizontal', boxRect.top + boxRect.height/2 - viewerRect.top);
+                } else if (bottomAlign < SNAP_THRESHOLD) {
+                    snappedY = (boxRect.bottom - viewerRect.top) - (elementRect.bottom - viewerRect.top);
+                    showSnapGuide('horizontal', boxRect.bottom - viewerRect.top);
+                }
+            });
+            
+            return { x: snappedX, y: snappedY };
+        }
+
+        function showSnapGuide(type, position) {
+            // Remove existing guides
+            clearSnapGuides();
+            
+            const guide = document.createElement('div');
+            guide.className = `snap-guide ${type}`;
+            guide.style.position = 'absolute';
+            
+            if (type === 'vertical') {
+                guide.style.left = position + 'px';
+                guide.style.top = '0';
+                guide.style.height = '100%';
+            } else {
+                guide.style.top = position + 'px';
+                guide.style.left = '0';
+                guide.style.width = '100%';
+            }
+            
+            document.getElementById('pdfViewer').appendChild(guide);
+            
+            // Remove guide after a short delay
+            setTimeout(() => {
+                if (guide.parentNode) {
+                    guide.parentNode.removeChild(guide);
+                }
+            }, 500);
+        }
+
+        function clearSnapGuides() {
+            const guides = document.querySelectorAll('.snap-guide');
+            guides.forEach(guide => guide.remove());
         }
 
         function updateTextSize(element) {
@@ -3193,6 +4115,142 @@
                 editorCanvas.setZoom(currentTransform.scale);
                 editorCanvas.renderAll();
             }
+            
+            // Update image box scaling to match PDF viewer
+            updateImageBoxScaling();
+            
+            // Update text box scaling to match PDF viewer
+            updateTextBoxScaling();
+            
+            // Update PDF area outline to match transform
+            updatePdfAreaOutline();
+        }
+        
+        // Function to update image box scaling to match PDF viewer zoom
+        function updateImageBoxScaling() {
+            const imageBoxes = document.querySelectorAll('.draggable-image-box');
+            imageBoxes.forEach(box => {
+                // Apply the same scale transform as the PDF viewer
+                box.style.transform = `scale(${currentTransform.scale})`;
+            });
+        }
+        
+        // Function to update text box scaling to match PDF viewer zoom
+        function updateTextBoxScaling() {
+            const textBoxes = document.querySelectorAll('.draggable-text-box');
+            textBoxes.forEach(box => {
+                // Apply the same scale transform as the PDF viewer
+                box.style.transform = `scale(${currentTransform.scale})`;
+            });
+        }
+        
+        // Function to pre-load all images for html2canvas capture with progress bar
+        async function preloadAllImages() {
+            const imageBoxes = document.querySelectorAll('.draggable-image-box img');
+            
+            if (imageBoxes.length === 0) {
+                console.log('No images to preload');
+                return;
+            }
+
+            // Show progress overlay
+            const overlay = document.getElementById('imageLoadingOverlay');
+            const progressBar = document.getElementById('imageProgressBar');
+            const progressText = document.getElementById('imageProgressText');
+            const subtitle = document.getElementById('imageLoadingSubtitle');
+            
+            overlay.classList.add('active');
+            subtitle.textContent = `Loading ${imageBoxes.length} image${imageBoxes.length > 1 ? 's' : ''}...`;
+            
+            let loadedCount = 0;
+            const totalImages = imageBoxes.length;
+            
+            const imagePromises = Array.from(imageBoxes).map((img, index) => {
+                return new Promise((resolve, reject) => {
+                    if (img.complete && img.naturalWidth > 0) {
+                        // Image already loaded
+                        loadedCount++;
+                        updateProgress(loadedCount, totalImages, progressBar, progressText);
+                        resolve();
+                    } else {
+                        img.onload = () => {
+                            loadedCount++;
+                            updateProgress(loadedCount, totalImages, progressBar, progressText);
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            // Continue even if some images fail
+                            loadedCount++;
+                            updateProgress(loadedCount, totalImages, progressBar, progressText);
+                            resolve();
+                        };
+                        // Force reload if needed
+                        if (img.src) {
+                            img.src = img.src;
+                        }
+                    }
+                });
+            });
+            
+            // Wait for all images to load (with timeout)
+            await Promise.allSettled(imagePromises);
+            
+            // Additional wait to ensure images are fully rendered
+            subtitle.textContent = 'Finalizing image preparation...';
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Hide progress overlay
+            overlay.classList.remove('active');
+            
+            console.log(`All ${totalImages} images pre-loaded for capture`);
+        }
+
+        // Helper function to update progress bar
+        function updateProgress(loaded, total, progressBar, progressText) {
+            const percentage = Math.round((loaded / total) * 100);
+            progressBar.style.width = percentage + '%';
+            progressText.textContent = `${percentage}% (${loaded}/${total})`;
+        }
+        
+        // Function to style image boxes for html2canvas capture
+        function styleImageBoxForCapture(img) {
+            if (img) {
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                img.style.display = 'block';
+                // Force image to be visible and loaded
+                img.style.opacity = '1';
+                img.style.visibility = 'visible';
+                // Ensure cross-origin is set for html2canvas
+                img.crossOrigin = 'anonymous';
+                // Remove any transform that might affect capture
+                img.style.transform = 'none';
+                // Ensure image is fully loaded and rendered
+                img.style.imageRendering = 'auto';
+                img.style.imageRendering = 'crisp-edges';
+            }
+        }
+        
+        // Function to hide UI elements for html2canvas capture
+        function hideUIElementsForCapture(clonedViewer) {
+            // Remove resize handles
+            const resizeHandles = clonedViewer.querySelectorAll('.resize-handle');
+            resizeHandles.forEach(handle => {
+                handle.style.display = 'none';
+            });
+            
+            // Hide delete buttons to prevent capture
+            const deleteButtons = clonedViewer.querySelectorAll('.delete-box-btn');
+            deleteButtons.forEach(btn => {
+                btn.style.display = 'none';
+            });
+            
+            // Hide any other UI elements that shouldn't be captured
+            const uiElements = clonedViewer.querySelectorAll('.delete-box-btn, .resize-handle, .pdf-controls');
+            uiElements.forEach(element => {
+                element.style.display = 'none';
+            });
         }
 
         function togglePDFLock() {
@@ -3397,9 +4455,18 @@
                     throw new Error('No CSV data loaded');
                 }
                 if (!sessionState.boxes || sessionState.boxes.length === 0) {
-                    throw new Error('No text boxes configured');
+                    throw new Error('No boxes configured');
                 }
-                console.log(`✓ Inputs valid: ${sessionState.csvRows.length} CSV rows, ${sessionState.boxes.length} text boxes`);
+                
+                // Check if we have at least some boxes with CSV data
+                const hasTextBoxes = sessionState.boxes.some(box => box.type === 'text' && box.csvColumn);
+                const hasImageBoxes = sessionState.boxes.some(box => box.boxType === 'image' && box.csvColumn);
+                
+                if (!hasTextBoxes && !hasImageBoxes) {
+                    throw new Error('No boxes with CSV data configured. Please add text boxes or image boxes with CSV field bindings.');
+                }
+                
+                console.log(`✓ Inputs valid: ${sessionState.csvRows.length} CSV rows, ${sessionState.boxes.length} total boxes (${hasTextBoxes ? 'text' : ''}${hasTextBoxes && hasImageBoxes ? ' + ' : ''}${hasImageBoxes ? 'image' : ''})`);
 
                 const downloadBtn = document.getElementById('downloadPdfsBtn');
                 downloadBtn.disabled = true;
@@ -3451,13 +4518,18 @@
                             // Set current record for this PDF
                             currentRecord = recordIndex;
                             
-                            // Update text boxes with current record data (single record mode)
+                            // Update text boxes and image boxes with current record data (single record mode)
                             updateAllTextBoxesForSingleRecord(recordIndex);
                             
-                            // Wait for UI to update
+                            // Wait for UI to update and ensure images are loaded
                             await new Promise(resolve => setTimeout(resolve, 150));
                             
-                            // Step 3c: Capture high-resolution overlay (text boxes only)
+                            // Pre-load all images to ensure they're ready for capture
+                            downloadBtn.textContent = 'Loading images...';
+                            await preloadAllImages();
+                            downloadBtn.textContent = `Generating ${downloadMode === 'single' ? 'Single Record' : 'Multi-Record'} PDFs...`;
+                            
+                            // Step 3c: Capture high-resolution overlay (text boxes and image boxes)
                             console.log('Step 3c: Capturing high-res overlays...');
                             const pdfViewer = document.getElementById('pdfViewer');
                             const canvas = document.getElementById('viewer');
@@ -3510,19 +4582,35 @@
                                         const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
                                         if (lockIndicator) lockIndicator.style.display = 'none';
                                         
-                                        // Keep only text boxes with their styling
-                                        const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box');
+                                        // Keep only text boxes and image boxes with their styling
+                                        const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box, .draggable-image-box');
                                         allBoxes.forEach(box => {
-                                            // Remove borders but keep text styling
-                                            box.style.border = 'none';
-                                            box.style.background = 'transparent';
-                                            box.style.boxShadow = 'none';
-                                            box.style.outline = 'none';
-                                            // Keep font styling for quality
-                                            box.style.fontFamily = box.style.fontFamily || 'Arial, sans-serif';
-                                            box.style.fontSize = box.style.fontSize || '16px';
-                                            box.style.fontWeight = box.style.fontWeight || 'normal';
-                                            box.style.color = box.style.color || '#000000';
+                                            if (box.classList.contains('draggable-text-box')) {
+                                                // Text box styling
+                                                box.style.border = 'none';
+                                                box.style.background = 'transparent';
+                                                box.style.boxShadow = 'none';
+                                                box.style.outline = 'none';
+                                                // Keep font styling for quality
+                                                box.style.fontFamily = box.style.fontFamily || 'Arial, sans-serif';
+                                                box.style.fontSize = box.style.fontSize || '16px';
+                                                box.style.fontWeight = box.style.fontWeight || 'normal';
+                                                box.style.color = box.style.color || '#000000';
+                                            } else if (box.classList.contains('draggable-image-box')) {
+                                                // Image box styling
+                                                box.style.border = 'none';
+                                                box.style.background = 'transparent';
+                                                box.style.boxShadow = 'none';
+                                                box.style.outline = 'none';
+                                                // Ensure images are visible and properly sized
+                                                const img = box.querySelector('img');
+                                                if (img) {
+                                                    img.style.width = '100%';
+                                                    img.style.height = '100%';
+                                                    img.style.objectFit = 'contain';
+                                                    img.style.display = 'block';
+                                                }
+                                            }
                                         });
                                         
                                         // Remove resize handles
@@ -3603,12 +4691,22 @@
                             // Step 3b: Update UI to show current page data
                             console.log('Step 3b: Updating UI for overlay capture...');
                             currentPage = pageIndex;
+                            
+                            // Update all boxes with current page data
                             updateAllTextBoxesWithCSVData();
+                            
+                            // Wait for UI to update and ensure images are loaded
+                            await new Promise(resolve => setTimeout(resolve, 150));
+                            
+                            // Pre-load all images to ensure they're ready for capture
+                            downloadBtn.textContent = 'Loading images...';
+                            await preloadAllImages();
+                            downloadBtn.textContent = `Generating ${downloadMode === 'single' ? 'Single Record' : 'Multi-Record'} PDFs...`;
                             
                             // Wait for UI to update
                             await new Promise(resolve => setTimeout(resolve, 100));
                             
-                            // Step 3c: Capture high-resolution overlay (text boxes only)
+                            // Step 3c: Capture high-resolution overlay (text boxes and image boxes)
                             console.log('Step 3c: Capturing high-res overlays...');
                             const pdfViewer = document.getElementById('pdfViewer');
                             const canvas = document.getElementById('viewer');
@@ -3661,19 +4759,35 @@
                                         const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
                                         if (lockIndicator) lockIndicator.style.display = 'none';
                                         
-                                        // Keep only text boxes with their styling
-                                        const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box');
+                                        // Keep only text boxes and image boxes with their styling
+                                        const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box, .draggable-image-box');
                                         allBoxes.forEach(box => {
-                                            // Remove borders but keep text styling
-                                            box.style.border = 'none';
-                                            box.style.background = 'transparent';
-                                            box.style.boxShadow = 'none';
-                                            box.style.outline = 'none';
-                                            // Keep font styling for quality
-                                            box.style.fontFamily = box.style.fontFamily || 'Arial, sans-serif';
-                                            box.style.fontSize = box.style.fontSize || '16px';
-                                            box.style.fontWeight = box.style.fontWeight || 'normal';
-                                            box.style.color = box.style.color || '#000000';
+                                            if (box.classList.contains('draggable-text-box')) {
+                                                // Text box styling
+                                                box.style.border = 'none';
+                                                box.style.background = 'transparent';
+                                                box.style.boxShadow = 'none';
+                                                box.style.outline = 'none';
+                                                // Keep font styling for quality
+                                                box.style.fontFamily = box.style.fontFamily || 'Arial, sans-serif';
+                                                box.style.fontSize = box.style.fontSize || '16px';
+                                                box.style.fontWeight = box.style.fontWeight || 'normal';
+                                                box.style.color = box.style.color || '#000000';
+                                            } else if (box.classList.contains('draggable-image-box')) {
+                                                // Image box styling
+                                                box.style.border = 'none';
+                                                box.style.background = 'transparent';
+                                                box.style.boxShadow = 'none';
+                                                box.style.outline = 'none';
+                                                // Ensure images are visible and properly sized
+                                                const img = box.querySelector('img');
+                                                if (img) {
+                                                    img.style.width = '100%';
+                                                    img.style.height = '100%';
+                                                    img.style.objectFit = 'contain';
+                                                    img.style.display = 'block';
+                                                }
+                                            }
                                         });
                                         
                                         // Remove resize handles
@@ -3871,6 +4985,117 @@
             }
         }
 
+        // Download Current PDF function
+        async function downloadCurrentPdf() {
+            try {
+                if (!sessionState.templatePdfBytes) {
+                    alert('Please upload a PDF template first');
+                    return;
+                }
+
+                // Show loading state
+                const downloadBtn = document.getElementById('screenshotBtn');
+                const originalText = downloadBtn.textContent;
+                downloadBtn.textContent = '📄 Generating PDF...';
+                downloadBtn.disabled = true;
+
+                // Load the template PDF
+                const pdfDoc = await PDFLib.PDFDocument.load(sessionState.templatePdfBytes);
+                const page = pdfDoc.getPages()[0];
+
+                // Get current record data
+                const currentRecordData = sessionState.csvRows && sessionState.csvRows.length > 0 
+                    ? sessionState.csvRows[currentRecord || 0] 
+                    : {};
+
+                // Add text boxes to PDF
+                if (sessionState.boxes) {
+                    for (const box of sessionState.boxes) {
+                        if (box.type === 'text' && box.element) {
+                            const text = box.csvColumn && currentRecordData[box.csvColumn] 
+                                ? currentRecordData[box.csvColumn] 
+                                : box.element.textContent || '';
+                            
+                            if (text.trim()) {
+                                // Get box position and styling
+                                const rect = box.element.getBoundingClientRect();
+                                const pdfViewer = document.getElementById('pdfViewer');
+                                const viewerRect = pdfViewer.getBoundingClientRect();
+                                
+                                // Convert screen coordinates to PDF coordinates
+                                const pdfX = (rect.left - viewerRect.left) * (page.getWidth() / viewerRect.width);
+                                const pdfY = page.getHeight() - (rect.top - viewerRect.top) * (page.getHeight() / viewerRect.height);
+                                
+                                // Get font styling
+                                const computedStyle = window.getComputedStyle(box.element);
+                                const fontSize = parseInt(computedStyle.fontSize) || 16;
+                                const fontFamily = computedStyle.fontFamily || 'Arial';
+                                const color = computedStyle.color || '#000000';
+                                
+                                // Convert color to RGB
+                                const rgbColor = hexToRgb(color);
+                                
+                                // Embed font (use standard font for simplicity)
+                                const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+                                
+                                // Draw text
+                                page.drawText(text, {
+                                    x: pdfX,
+                                    y: pdfY,
+                                    size: fontSize,
+                                    font: font,
+                                    color: PDFLib.rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255)
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // Save the PDF
+                const pdfBytes = await pdfDoc.save();
+                
+                // Create download link
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `current-pdf-${Date.now()}.pdf`;
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up
+                URL.revokeObjectURL(url);
+                
+                // Restore button state
+                downloadBtn.textContent = originalText;
+                downloadBtn.disabled = false;
+                
+                console.log('Current PDF downloaded successfully');
+                
+            } catch (error) {
+                console.error('Download failed:', error);
+                alert('Error downloading PDF: ' + error.message);
+                
+                // Restore button state on error
+                const downloadBtn = document.getElementById('screenshotBtn');
+                downloadBtn.textContent = '📄 Download Current PDF';
+                downloadBtn.disabled = false;
+            }
+        }
+
+        // Helper function to convert hex color to RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
         // Generate From Template function
         async function generateFromTemplate() {
             try {
@@ -4001,12 +5226,14 @@
                     // Add columns property to csvData for compatibility with MERGE-ONLINE
                     if (results.data && results.data.length > 0) {
                         csvData.columns = Object.keys(results.data[0]);
+                        sessionState.csvColumns = Object.keys(results.data[0]); // Add this line
                     }
                     
                     currentRecord = 0;
                     
-                    // Update status indicators
-                    updateStatusIndicators();
+
+                    
+
                     
                     // Display preview
                     displayCSVPreview(results.data);
@@ -4031,6 +5258,9 @@
                     // Update records info
                     updateRecordsInfo();
                     
+                    // Initialize page navigation
+                    updatePageNavigation();
+                    
                     // Update create records button state
                     updateCreateRecordsButtonState();
                 },
@@ -4045,52 +5275,16 @@
             console.log('Displaying CSV preview with data:', data);
             if (!data || data.length === 0) {
                 console.log('No CSV data to display');
-                document.getElementById('csvPreview').style.display = 'none';
                 return;
             }
 
-            const container = document.getElementById('csvTableContainer');
-            const headers = Object.keys(data[0]);
-            const previewRows = data.slice(0, 5); // First 5 rows
-
-            // Create table HTML
-            let tableHTML = '<table class="csv-table"><thead><tr>';
-            
-            // Add headers
-            headers.forEach(header => {
-                tableHTML += `<th>${header}</th>`;
-            });
-            tableHTML += '</tr></thead><tbody>';
-            
-            // Add data rows
-            previewRows.forEach(row => {
-                tableHTML += '<tr>';
-                headers.forEach(header => {
-                    const value = row[header] || '';
-                    tableHTML += `<td>${value}</td>`;
-                });
-                tableHTML += '</tr>';
-            });
-            
-            tableHTML += '</tbody></table>';
-            
-            container.innerHTML = tableHTML;
-            
-            // Update info text
-            const totalRows = data.length;
-            const shownRows = Math.min(5, totalRows);
-            document.getElementById('csvInfo').textContent = 
-                `Showing ${shownRows} of ${totalRows} rows. Headers: ${headers.join(', ')}`;
-            
-            // Show preview
-            document.getElementById('csvPreview').style.display = 'block';
+            // CSV preview section was removed, so we just log the data
+            console.log('CSV loaded successfully:', data.length, 'rows');
+            console.log('CSV columns:', Object.keys(data[0]));
         }
 
         function toggleCSVPreview() {
-            const csvPreview = document.getElementById('csvPreview');
-            const csvToggle = document.querySelector('.csv-toggle');
-            csvPreview.classList.toggle('expanded');
-            csvToggle.textContent = csvPreview.classList.contains('expanded') ? 'Hide CSV' : 'CSV Preview';
+            // CSV preview functionality was removed
         }
 
         function resetSession() {
@@ -4137,10 +5331,10 @@
             document.getElementById('pdfFile').value = '';
             document.getElementById('csvFile').value = '';
             document.getElementById('csvLabel').textContent = 'Click to select CSV file';
-            document.getElementById('csvPreview').style.display = 'none';
+            // csvPreview element was removed
 
             // Disable Generate From Template button
-            document.getElementById('generateFromTemplateBtn').disabled = true;
+                            // generateFromTemplateBtn was removed
             
             // Disable Download PDFs button
             const downloadBtn = document.getElementById('downloadPdfsBtn');
@@ -4148,8 +5342,7 @@
                 downloadBtn.disabled = true;
             }
 
-            // Update status indicators
-            updateStatusIndicators();
+
 
             // Revoke any ObjectURLs if they exist
             if (serverPdfUrl && serverPdfUrl.startsWith('blob:')) {
@@ -4391,43 +5584,13 @@
 
         // CSV Data Binding Functions
         function showRecordNavigation() {
-            const nav = document.getElementById('recordNavigation');
-            if (csvData && csvData.length > 0) {
-                nav.style.display = 'block';
-                updateRecordInfo();
-                
-                // Add event listeners
-                document.getElementById('prevRecord').onclick = () => {
-                    if (currentRecord > 0) {
-                        currentRecord--;
-                        updateRecordInfo();
-                        updateAllTextBoxesWithCSVData();
-                        
-                        // Update record display
-                        updateRecordDisplay();
-                    }
-                };
-                
-                document.getElementById('nextRecord').onclick = () => {
-                    if (currentRecord < csvData.length - 1) {
-                        currentRecord++;
-                        updateRecordInfo();
-                        updateAllTextBoxesWithCSVData();
-                        
-                        // Update record display
-                        updateRecordDisplay();
-                    }
-                };
-            } else {
-                nav.style.display = 'none';
-            }
+            // Record navigation was moved to the main interface
+            // This function is kept for compatibility but does nothing
         }
 
         function updateRecordInfo() {
-            const recordInfo = document.getElementById('recordInfo');
-            if (csvData && csvData.length > 0) {
-                recordInfo.textContent = `Record ${currentRecord + 1} of ${csvData.length}`;
-            }
+            // recordInfo element was removed with the CSV Data drawer
+            // This function is kept for compatibility but does nothing
         }
 
         function updateAllTextBoxesWithCSVData() {
@@ -4447,6 +5610,9 @@
                 if (box.type === 'text' && box.csvColumn) {
                     // In single record mode, all text boxes show the same record
                     updateTextBoxForSingleRecord(box, recordIndex);
+                } else if (box.boxType === 'image' && box.csvColumn) {
+                    // In single record mode, all image boxes show the same record
+                    updateImageBoxForSingleRecord(box, recordIndex);
                 }
             });
         }
@@ -4492,6 +5658,31 @@
             // Apply formatting
             updateTextBoxFont(box);
         }
+
+        function updateImageBoxForSingleRecord(box, recordIndex) {
+            if (!box || !box.element || !csvData) return;
+            
+            if (recordIndex >= csvData.length) {
+                // No more records, show placeholder
+                box.element.textContent = 'No Image';
+                box.element.style.border = '2px dashed #ccc';
+                box.element.style.background = 'transparent';
+                return;
+            }
+            
+            const row = csvData[recordIndex];
+            const imageUrl = row[box.csvColumn] || '';
+            
+            // Load the new image
+            if (imageUrl && imageUrl.trim() !== '') {
+                loadImageFromUrl(imageUrl, box.element);
+            } else {
+                // Show placeholder if no image URL
+                box.element.textContent = 'No Image';
+                box.element.style.border = '2px dashed #ccc';
+                box.element.style.background = 'transparent';
+            }
+        }
         
         function updateTextBoxWithMappedCSVData(box) {
             if (!box || !box.element || !csvData) return;
@@ -4524,6 +5715,35 @@
             
             updateTextBoxContentSafely(box.element, text);
             updateTextBoxFont(box);
+        }
+
+        function updateImageBoxWithCSVData(box) {
+            if (!box || !box.element || !csvData) return;
+            
+            // Calculate which record this image box should show based on its position
+            const boxIndex = sessionState.boxes.indexOf(box);
+            const recordIndex = currentPage * recordsPerPage + boxIndex;
+            
+            if (recordIndex >= csvData.length) {
+                // No more records, show placeholder
+                box.element.textContent = 'No Image';
+                box.element.style.border = '2px dashed #ccc';
+                box.element.style.background = 'transparent';
+                return;
+            }
+            
+            const row = csvData[recordIndex];
+            const imageUrl = row[box.csvColumn] || '';
+            
+            // Load the new image
+            if (imageUrl && imageUrl.trim() !== '') {
+                loadImageFromUrl(imageUrl, box.element);
+            } else {
+                // Show placeholder if no image URL
+                box.element.textContent = 'No Image';
+                box.element.style.border = '2px dashed #ccc';
+                box.element.style.background = 'transparent';
+            }
         }
 
         function updateTextBoxContentSafely(element, text) {
