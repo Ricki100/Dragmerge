@@ -1080,29 +1080,7 @@
             box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.25);
         }
 
-        /* Delete Button Styles */
-        .delete-box-btn {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 18px;
-            height: 18px;
-            background: #dc3545;
-            color: white;
-            border: 1px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 10px;
-            font-weight: bold;
-            z-index: 25;
-            opacity: 1;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            pointer-events: auto;
-            transition: all 0.2s ease;
-        }
+
 
         /* Snap-to-Grid Styles */
         .snap-guide {
@@ -1129,11 +1107,7 @@
             background: #28a745;
         }
 
-        .delete-box-btn:hover {
-            background: #c82333;
-            transform: scale(1.2);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-        }
+
     </style>
 </head>
 <body>
@@ -1241,12 +1215,20 @@
                         
 
 
-                        <!-- Format All Boxes Section -->
+                        <!-- Text Box Properties & Formatting -->
                         <div class="form-group" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef;">
-                            <label style="font-weight: bold; color: #333;">🎨 Format All Text Boxes:</label>
+                            <label style="font-weight: bold; color: #333;">🎨 Text Box Properties & Formatting:</label>
+                            
+                            <!-- CSV Column Selection -->
+                            <div class="form-group" style="margin-top: 10px;">
+                                <label>CSV Column:</label>
+                                <select id="boxColumnSelect" class="form-control">
+                                    <option value="">Select CSV column...</option>
+                                </select>
+                            </div>
                             
                             <!-- Font Family -->
-                            <div class="form-group" style="margin-top: 10px;">
+                            <div class="form-group">
                                 <label>Font Family:</label>
                                 <select id="formatAllFontFamily" class="form-control">
                                     <option value="Arial">Arial</option>
@@ -1287,135 +1269,28 @@
                             <div class="form-group">
                                 <label>Text Style:</label>
                                 <div style="display: flex; gap: 5px; margin-top: 5px;">
-                                    <button type="button" id="formatAllBold" class="btn btn-sm btn-outline-secondary" style="flex: 1;">B</button>
-                                    <button type="button" id="formatAllItalic" class="btn btn-sm btn-outline-secondary" style="flex: 1;">I</button>
-                                    <button type="button" id="formatAllUnderline" class="btn btn-sm btn-outline-secondary" style="flex: 1;">U</button>
+                                    <button type="button" id="formatAllBold" class="btn btn-sm btn-outline-secondary" style="flex: 1;" onclick="toggleFormatStyle('formatAllBold')">B</button>
+                                    <button type="button" id="formatAllItalic" class="btn btn-sm btn-outline-secondary" style="flex: 1;" onclick="toggleFormatStyle('formatAllItalic')">I</button>
+                                    <button type="button" id="formatAllUnderline" class="btn btn-sm btn-outline-secondary" style="flex: 1;" onclick="toggleFormatStyle('formatAllUnderline')">U</button>
                                 </div>
                             </div>
 
                             <!-- Apply Format Button -->
                             <div class="form-group" style="margin-top: 15px;">
-                                <button class="btn btn-warning" onclick="formatAllTextBoxes()" style="width: 100%;">
+                                <button class="btn btn-warning" onclick="formatAllTextBoxes()" style="width: 100%; margin-bottom: 10px;">
                                     🎨 Apply to All Text Boxes
+                                </button>
+                            </div>
+                            
+                            <!-- Delete Selected Box Button -->
+                            <div class="form-group" style="margin-top: 10px;">
+                                <button class="btn btn-danger" onclick="deleteSelectedBox()" style="width: 100%;" id="deleteBoxBtn" disabled>
+                                    🗑️ Delete Selected Box
                                 </button>
                             </div>
                         </div>
                         
-                        <div id="boxEditor" class="box-editor">
-                            <h4 id="boxEditorTitle">Text Box Properties</h4>
-                            
-                            <!-- CSV Column Selection (for both text and image boxes) -->
-                                <div class="form-group">
-                                    <label>CSV Column:</label>
-                                    <select id="boxColumnSelect">
-                                        <option value="">Select CSV column...</option>
-                                    </select>
-                                </div>
-                            
-                            <div id="textProperties" style="display: none;">
-                                
-                                <div class="form-group">
-                                    <label>Static Text (if no CSV column selected):</label>
-                                    <input type="text" id="boxTextInput" placeholder="Enter static text or leave empty for CSV data">
-                                </div>
-                                
 
-                                
-                                
-                                <!-- Font Selection -->
-                                <div class="form-group">
-                                    <label>Font Family:</label>
-                                    <select id="boxFontFamily">
-                                        <option value="Arial">Arial</option>
-                                        <option value="Times New Roman">Times New Roman</option>
-                                        <option value="Helvetica">Helvetica</option>
-                                        <option value="Georgia">Georgia</option>
-                                        <option value="Verdana">Verdana</option>
-                                        <option value="Courier New">Courier New</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>Font Size:</label>
-                                        <input type="number" id="boxFontSize" value="16" min="8" max="72">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Text Color:</label>
-                                        <input type="color" id="boxTextColor" value="#000000">
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Text Alignment:</label>
-                                    <select id="boxTextAlign">
-                                        <option value="left">Left</option>
-                                        <option value="center" selected>Center</option>
-                                        <option value="right">Right</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Text Styling:</label>
-                                    <div class="style-checkboxes">
-                                        <label class="checkbox-item">
-                                            <input type="checkbox" id="boxBold">
-                                            <span>Bold</span>
-                                        </label>
-                                        <label class="checkbox-item">
-                                            <input type="checkbox" id="boxItalic">
-                                            <span>Italic</span>
-                                        </label>
-                                        <label class="checkbox-item">
-                                            <input type="checkbox" id="boxUnderline">
-                                            <span>Underline</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div id="imageProperties" style="display: none;">
-                                <div class="form-group">
-                                    <label>Image Source:</label>
-                                    <select id="boxImageSource">
-                                        <option value="csv">From CSV column</option>
-                                        <option value="static">Static image</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Image URL/Path:</label>
-                                    <input type="text" id="boxImageUrl" placeholder="Enter image URL or path">
-                                </div>
-                            </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>X Position:</label>
-                                    <input type="number" id="boxXPos" step="1">
-                                </div>
-                                <div class="form-group">
-                                    <label>Y Position:</label>
-                                    <input type="number" id="boxYPos" step="1">
-                                </div>
-                            </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Width:</label>
-                                    <input type="number" id="boxWidth" step="1" min="20">
-                                </div>
-                                <div class="form-group">
-                                    <label>Height:</label>
-                                    <input type="number" id="boxHeight" step="1" min="20">
-                                </div>
-                            </div>
-                            
-                            <div class="box-actions">
-                                <button class="btn btn-warning" onclick="duplicateSelectedBox()">Duplicate</button>
-                                <button class="btn btn-danger" onclick="deleteSelectedBox()">Delete</button>
-                            </div>
-                        </div>
                             </div>
                         </div>
                     </div>
@@ -1425,39 +1300,26 @@
 
 
 
-                <!-- Step 5: Generate & Download -->
-                <div class="drawer" id="generateDrawer">
-                    <div class="drawer-header" onclick="toggleDrawer('generateDrawer')">
-                        <span>🚀 Generate & Download</span>
-                        <span class="drawer-icon">▼</span>
-                    </div>
-                    <div class="drawer-content" id="generateContent">
-                        <div class="drawer-content-inner">
-                            <div class="form-group">
-                                <label for="downloadModeSelect">Download Mode:</label>
-                                <select id="downloadModeSelect" class="form-control" style="margin-bottom: 10px;">
-                                    <option value="single">Single Record Mode (1 PDF per record)</option>
-                                    <option value="multi" selected>Multi-Record Mode (Multiple records per PDF)</option>
-                                </select>
-                                <div style="font-size: 11px; color: #666; text-align: center; margin-bottom: 15px;">
-                                    Single: Downloads all records as individual PDFs | Multi: Groups records per PDF
-                        </div>
+                <!-- Download Section -->
+                <div class="download-section" style="border-top: 1px solid #e9ecef; padding: 15px; background: #f8f9fa; margin-bottom: 15px;">
+                    <div class="form-group">
+                        <label for="downloadModeSelect">Download Mode:</label>
+                        <select id="downloadModeSelect" class="form-control" style="margin-bottom: 10px;">
+                            <option value="single">Single Record Mode (1 PDF per record)</option>
+                            <option value="multi" selected>Multi-Record Mode (Multiple records per PDF)</option>
+                        </select>
                     </div>
                     
-                            <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()" style="width: 100%; margin-bottom: 10px;">
-                                📄 Download Current PDF
-                            </button>
-                            
-
-                            
-                            <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled style="width: 100%; margin-bottom: 10px;">
-                                Download PDFs
-                            </button>
-                            
-                            <div id="downloadLink" style="display: none;">
-                                <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block; width: 100%;">Download Original PDF</a>
-                            </div>
-                        </div>
+                    <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()" style="width: 100%; margin-bottom: 10px;">
+                        📄 Download Current PDF
+                    </button>
+                    
+                    <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled style="width: 100%; margin-bottom: 10px;">
+                        Download PDFs
+                    </button>
+                    
+                    <div id="downloadLink" style="display: none;">
+                        <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block; width: 100%;">Download Original PDF</a>
                     </div>
                 </div>
 
@@ -1481,22 +1343,7 @@
                     </div>
                 </div>
 
-                <!-- Grid Toggle -->
-                <div class="text-center mt-3" style="border-top: 1px solid #e9ecef; padding: 12px; background: #f8f9fa; margin-bottom: 15px;">
-                    <div class="form-check" style="margin: 0;">
-                        <input class="form-check-input" type="checkbox" id="snapToGridToggle" onchange="toggleSnapToGrid()">
-                        <label class="form-check-label" for="snapToGridToggle" style="font-size: 11px; color: #495057;">
-                            🔗 Snap to Grid
-                        </label>
-                    </div>
-                </div>
 
-                <!-- Reset Session Button -->
-                <div class="text-center mt-3" style="border-top: 1px solid #e9ecef; padding: 12px; background: #f8f9fa;">
-                    <button class="btn btn-sm btn-danger" onclick="resetSession()" style="font-size: 11px; padding: 6px 12px;">
-                        🔄 Reset Session
-                    </button>
-                </div>
 
 
             </div>
@@ -1607,6 +1454,13 @@
         
         // Font management system
         let availableFonts = ['Arial', 'Times New Roman', 'Helvetica', 'Georgia', 'Verdana', 'Courier New'];
+// Initialize sessionState fonts
+if (!sessionState.availableFonts) {
+    sessionState.availableFonts = [...availableFonts];
+}
+if (!sessionState.defaultFontFamily) {
+    sessionState.defaultFontFamily = 'Arial';
+}
         let loadedFonts = {};
         let defaultFontFamily = 'Arial';
         
@@ -1616,6 +1470,12 @@
 
         // Editor canvas management
         let editorCanvas = null;
+        
+        // PDF viewer management
+        let pdfViewer = null;
+        let pdfContent = null;
+        let pdfLocked = true; // PDF is locked by default when uploaded
+        let isEditorMode = false;
 
 
         
@@ -2115,6 +1975,49 @@
             });
         }
 
+        // Toggle Format Style Function
+        function toggleFormatStyle(buttonId) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.classList.toggle('active');
+                button.style.background = button.classList.contains('active') ? '#007bff' : '';
+                button.style.color = button.classList.contains('active') ? 'white' : '';
+            }
+        }
+
+        // Update Font Dropdowns Function
+        function updateFontDropdowns() {
+            const fontSelects = [
+                document.getElementById('formatAllFontFamily'),
+                document.getElementById('boxFontFamily')
+            ];
+            
+            fontSelects.forEach(select => {
+                if (select) {
+                    // Store current selection
+                    const currentValue = select.value;
+                    
+                    // Clear existing options
+                    select.innerHTML = '';
+                    
+                    // Add all available fonts
+                    sessionState.availableFonts.forEach(fontName => {
+                        const option = document.createElement('option');
+                        option.value = fontName;
+                        option.textContent = fontName;
+                        select.appendChild(option);
+                    });
+                    
+                    // Restore selection if it still exists, otherwise use default
+                    if (sessionState.availableFonts.includes(currentValue)) {
+                        select.value = currentValue;
+                    } else if (sessionState.defaultFontFamily && sessionState.availableFonts.includes(sessionState.defaultFontFamily)) {
+                        select.value = sessionState.defaultFontFamily;
+                    }
+                }
+            });
+        }
+
         // Format All Text Boxes Function
         function formatAllTextBoxes() {
             const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text');
@@ -2144,8 +2047,8 @@
                 if (box.element) {
                     const element = box.element;
                     
-                    // Update element styles
-                    element.style.fontFamily = fontFamily;
+                    // Update element styles with proper font family formatting
+                    element.style.fontFamily = `'${fontFamily}', Arial, sans-serif`;
                     element.style.fontSize = fontSize + 'px';
                     element.style.color = textColor;
                     element.style.textAlign = textAlign;
@@ -2247,6 +2150,7 @@
                     const newBox = {
                         ...templateBox,
                         id: ++boxCounter,
+                        boxId: boxCounter, // Add boxId for consistency with delete function
                         y: templateBox.y + verticalOffset, // Stack vertically with spacing
                         element: null
                     };
@@ -2282,17 +2186,7 @@
                     textBox.textContent = recordText;
                     textBox.contentEditable = false;
                     
-                    // Create delete button
-                    const deleteBtn = document.createElement('div');
-                    deleteBtn.className = 'delete-box-btn';
-                    deleteBtn.innerHTML = '×';
-                    deleteBtn.onclick = function(e) {
-                        e.stopPropagation();
-                        deleteSelectedBox();
-                    };
-                    
-                    // Add delete button to text box
-                    textBox.appendChild(deleteBtn);
+
                     
                     // Add to overlay container
                     const overlayContainer = document.getElementById('overlayContainer');
@@ -2408,15 +2302,6 @@
                     imageBox.imageUrl = '';
                     imageBox.boxIndex = i; // Track which record this box represents
 
-                    // Create delete button
-                    const deleteBtn = document.createElement('div');
-                    deleteBtn.className = 'delete-box-btn';
-                    deleteBtn.innerHTML = '×';
-                    deleteBtn.onclick = function(e) {
-                        e.stopPropagation();
-                        deleteSelectedBox();
-                    };
-
                     // Add click handler for selection
                     imageBox.addEventListener('click', function(e) {
                         e.stopPropagation();
@@ -2429,9 +2314,6 @@
                         updateBoxEditor();
                         updateBoxEditorValues(imageBox);
                     });
-
-                    // Add delete button to image box
-                    imageBox.appendChild(deleteBtn);
 
                     // Add to PDF viewer and enable drag/resize
                     const pdfViewer = document.getElementById('pdfViewer');
@@ -2627,7 +2509,6 @@
 
         // Layout Editor Variables
         let selectedBox = null;
-        let isEditorMode = false;
 
         // Page size definitions (in points)
         const PAGE_SIZES = {
@@ -2747,14 +2628,6 @@
             textBox.className = 'draggable-text-box';
             textBox.id = 'textBox_' + ++boxCounter;
             
-            // Create delete button
-            const deleteBtn = document.createElement('div');
-            deleteBtn.className = 'delete-box-btn';
-            deleteBtn.innerHTML = '×';
-            deleteBtn.onclick = function(e) {
-                e.stopPropagation();
-                deleteSelectedBox();
-            };
             textBox.style.cssText = `
                 position: absolute;
                 left: ${boxX}px;
@@ -2769,7 +2642,7 @@
                 cursor: move;
                 pointer-events: auto;
                 z-index: 20;
-                font-family: Arial, sans-serif;
+                font-family: '${sessionState.defaultFontFamily || 'Arial'}', Arial, sans-serif;
                 font-size: 16px;
                 color: #000;
                 text-align: center;
@@ -2782,9 +2655,6 @@
             textBox.textContent = sampleText;
             textBox.contentEditable = false; // Disable direct editing since we use the panel
             
-            // Add delete button to text box
-            textBox.appendChild(deleteBtn);
-            
             // Add to overlay container
             const overlayContainer = document.getElementById('overlayContainer');
             overlayContainer.appendChild(textBox);
@@ -2795,6 +2665,7 @@
             // Add to session state
             const boxData = {
                 id: boxCounter,
+                boxId: boxCounter, // Add boxId for consistency with delete function
                 element: textBox,
                 type: 'text',
                 boxType: 'text',
@@ -2804,7 +2675,7 @@
                 italic: false,
                 underline: false,
                 fontSize: 16,
-                fontFamily: defaultFontFamily,
+                fontFamily: sessionState.defaultFontFamily || 'Arial',
                 color: '#000000',
                 textAlign: 'center',
                 x: boxX,
@@ -3387,11 +3258,17 @@
 
         // Enhanced Box Management Functions
         function updateBoxEditor() {
-            const boxEditor = document.getElementById('boxEditor');
+            const deleteBoxBtn = document.getElementById('deleteBoxBtn');
             if (sessionState.selectedBox) {
-                boxEditor.classList.add('active');
+                // Enable delete button when a box is selected
+                if (deleteBoxBtn) {
+                    deleteBoxBtn.disabled = false;
+                }
             } else {
-                boxEditor.classList.remove('active');
+                // Disable delete button when no box is selected
+                if (deleteBoxBtn) {
+                    deleteBoxBtn.disabled = true;
+                }
             }
             
             // Update the create records button state
@@ -3403,69 +3280,24 @@
 
             // Update CSV column dropdown
             const columnSelect = document.getElementById('boxColumnSelect');
-            columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
-            
-            console.log('Updating CSV column dropdown. csvData:', csvData);
-            
-            if (csvData && csvData.length > 0) {
-                const columns = Object.keys(csvData[0]);
-                console.log('CSV columns found:', columns);
-                columns.forEach(column => {
-                    const option = document.createElement('option');
-                    option.value = column;
-                    option.textContent = column;
-                    option.selected = column === box.csvColumn;
-                    columnSelect.appendChild(option);
-                });
-            } else {
-                console.log('No CSV data available for column dropdown');
-            }
-
-            // Show/hide appropriate property sections
-            const textProps = document.getElementById('textProperties');
-            const imageProps = document.getElementById('imageProperties');
-            
-            if (box.boxType === 'text') {
-                textProps.style.display = 'block';
-                imageProps.style.display = 'none';
+            if (columnSelect) {
+                columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
                 
-                // Update text properties
-                document.getElementById('boxTextInput').value = box.staticText || '';
-                document.getElementById('boxFontSize').value = box.fontSize || 16;
-                document.getElementById('boxFontFamily').value = box.fontFamily || 'Arial';
-                document.getElementById('boxTextColor').value = box.fill || '#000000';
-                document.getElementById('boxBold').checked = box.bold || false;
-                document.getElementById('boxItalic').checked = box.italic || false;
-                document.getElementById('boxUnderline').checked = box.underline || false;
-                document.getElementById('boxTextAlign').value = box.textAlign || 'center';
+                console.log('Updating CSV column dropdown. csvData:', csvData);
                 
-                // Update title
-                document.getElementById('boxEditorTitle').textContent = 'Text Box Properties';
-            } else if (box.boxType === 'image') {
-                textProps.style.display = 'none';
-                imageProps.style.display = 'block';
-                
-                // Update image properties
-                document.getElementById('boxImageSource').value = box.imageSource || 'csv';
-                document.getElementById('boxImageUrl').value = box.imageUrl || '';
-                
-                // Update title
-                document.getElementById('boxEditorTitle').textContent = 'Image Box Properties';
-            }
-
-            // Update position and size
-            if (box.style) {
-                // DOM element
-                document.getElementById('boxXPos').value = Math.round(parseFloat(box.style.left) || 0);
-                document.getElementById('boxYPos').value = Math.round(parseFloat(box.style.top) || 0);
-                document.getElementById('boxWidth').value = Math.round(parseFloat(box.style.width) || 100);
-                document.getElementById('boxHeight').value = Math.round(parseFloat(box.style.height) || 100);
-            } else {
-                // Fabric.js object
-            document.getElementById('boxXPos').value = Math.round(box.left || 0);
-            document.getElementById('boxYPos').value = Math.round(box.top || 0);
-            document.getElementById('boxWidth').value = Math.round(box.width || 100);
-            document.getElementById('boxHeight').value = Math.round(box.height || 100);
+                if (csvData && csvData.length > 0) {
+                    const columns = Object.keys(csvData[0]);
+                    console.log('CSV columns found:', columns);
+                    columns.forEach(column => {
+                        const option = document.createElement('option');
+                        option.value = column;
+                        option.textContent = column;
+                        option.selected = column === box.csvColumn;
+                        columnSelect.appendChild(option);
+                    });
+                } else {
+                    console.log('No CSV data available for column dropdown');
+                }
             }
 
             // Add event listeners
@@ -3474,130 +3306,19 @@
 
         function addBoxEditorEventListeners(box) {
             // CSV Column change
-            document.getElementById('boxColumnSelect').onchange = function() {
-                box.csvColumn = this.value;
-                if (box.boxType === 'text') {
-                updateTextBoxContent(box);
-                } else if (box.boxType === 'image' && box.imageSource === 'csv') {
-                    updateImageBoxWithCSVData(box);
-                }
-                updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
-                updateCreateRecordsButtonState();
-            };
-
-            // Text properties
-            if (box.boxType === 'text') {
-                document.getElementById('boxTextInput').oninput = function() {
-                    box.staticText = this.value;
-                    updateTextBoxContent(box);
-                };
-
-                document.getElementById('boxFontSize').oninput = function() {
-                    const size = parseInt(this.value);
-                    box.fontSize = size;
-                    updateTextBoxFont(box);
-                };
-
-                document.getElementById('boxFontFamily').onchange = function() {
-                    const family = this.value;
-                    box.fontFamily = family;
-                    updateTextBoxFont(box);
-                };
-
-                document.getElementById('boxTextColor').oninput = function() {
-                    const color = this.value;
-                    box.color = color;
-                    updateTextBoxFont(box);
-                };
-
-                document.getElementById('boxBold').onchange = function() {
-                    box.bold = this.checked;
-                    updateTextBoxFont(box);
-                };
-
-                document.getElementById('boxItalic').onchange = function() {
-                    box.italic = this.checked;
-                    updateTextBoxFont(box);
-                };
-
-                document.getElementById('boxUnderline').onchange = function() {
-                    box.underline = this.checked;
-                    updateTextBoxFont(box);
-                };
-
-                document.getElementById('boxTextAlign').onchange = function() {
-                    const align = this.value;
-                    box.textAlign = align;
-                    updateTextBoxFont(box);
-                };
-            }
-
-            // Image properties
-            if (box.boxType === 'image') {
-                document.getElementById('boxImageSource').onchange = function() {
-                    box.imageSource = this.value;
-                    if (this.value === 'csv' && box.csvColumn) {
+            const columnSelect = document.getElementById('boxColumnSelect');
+            if (columnSelect) {
+                columnSelect.onchange = function() {
+                    box.csvColumn = this.value;
+                    if (box.boxType === 'text') {
+                        updateTextBoxContent(box);
+                    } else if (box.boxType === 'image' && box.imageSource === 'csv') {
                         updateImageBoxWithCSVData(box);
                     }
-                };
-
-                document.getElementById('boxImageUrl').oninput = function() {
-                    box.imageUrl = this.value;
-                    if (box.imageSource === 'static' && this.value) {
-                        // Load static image
-                        loadStaticImage(box, this.value);
-                    }
+                    updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
+                    updateCreateRecordsButtonState();
                 };
             }
-
-            // Position and size
-            document.getElementById('boxXPos').onchange = function() {
-                const x = parseInt(this.value);
-                if (box.style) {
-                    // DOM element
-                    box.style.left = x + 'px';
-                } else {
-                    // Fabric.js object
-                box.set('left', x);
-                editorCanvas.renderAll();
-                }
-            };
-
-            document.getElementById('boxYPos').onchange = function() {
-                const y = parseInt(this.value);
-                if (box.style) {
-                    // DOM element
-                    box.style.top = y + 'px';
-                } else {
-                    // Fabric.js object
-                box.set('top', y);
-                editorCanvas.renderAll();
-                }
-            };
-
-            document.getElementById('boxWidth').onchange = function() {
-                const width = parseInt(this.value);
-                if (box.style) {
-                    // DOM element
-                    box.style.width = width + 'px';
-                } else {
-                    // Fabric.js object
-                box.set('width', width);
-                editorCanvas.renderAll();
-                }
-            };
-
-            document.getElementById('boxHeight').onchange = function() {
-                const height = parseInt(this.value);
-                if (box.style) {
-                    // DOM element
-                    box.style.height = height + 'px';
-                } else {
-                    // Fabric.js object
-                box.set('height', height);
-                editorCanvas.renderAll();
-                }
-            };
         }
 
         function duplicateSelectedBox() {
@@ -3620,18 +3341,7 @@
                 clone.style.left = (originalLeft + 20) + 'px';
                 clone.style.top = (originalTop + 20) + 'px';
                 
-                // Ensure delete button exists and has correct event handler
-                let deleteBtn = clone.querySelector('.delete-box-btn');
-                if (!deleteBtn) {
-                    deleteBtn = document.createElement('div');
-                    deleteBtn.className = 'delete-box-btn';
-                    deleteBtn.innerHTML = '×';
-                    clone.appendChild(deleteBtn);
-                }
-                deleteBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    deleteSelectedBox();
-                };
+
                 
                 // Add click handler for selection
                 clone.addEventListener('click', function(e) {
@@ -4008,9 +3718,6 @@
         let isDragging = false;
         let lastMousePos = { x: 0, y: 0 };
         let currentTransform = { x: 0, y: 0, scale: 1 };
-        let pdfViewer = null;
-        let pdfContent = null;
-        let pdfLocked = true; // PDF is locked by default when uploaded
 
         function initPDFDragging() {
             pdfViewer = document.getElementById('pdfViewer');
@@ -5696,6 +5403,9 @@
             if (addFontUrlBtn && fontUrlInput) {
                 addFontUrlBtn.addEventListener('click', handleGoogleFontUrl);
             }
+            
+            // Initialize font dropdowns
+            updateFontDropdowns();
         }
 
         function handleFontUpload(file) {
@@ -5737,23 +5447,45 @@
                     document.head.appendChild(style);
                     
                     // Add to available fonts if not already present
-                    if (!availableFonts.includes(fontName)) {
-                        availableFonts.push(fontName);
-                        updateFontDropdown();
+                    if (!sessionState.availableFonts) {
+                        sessionState.availableFonts = [];
+                    }
+                    if (!sessionState.availableFonts.includes(fontName)) {
+                        sessionState.availableFonts.push(fontName);
+                        updateFontDropdowns();
                     }
                     
                     // Set as default font for new text boxes
-                    defaultFontFamily = fontName;
+                    sessionState.defaultFontFamily = fontName;
+                    
+                    // Update existing text boxes that use the old default
+                    sessionState.boxes.forEach(box => {
+                        if (box.boxType === 'text' && (!box.fontFamily || box.fontFamily === 'Arial')) {
+                            box.fontFamily = fontName;
+                            if (box.element) {
+                                box.element.style.fontFamily = `'${fontName}', Arial, sans-serif`;
+                            }
+                        }
+                    });
+                    
+                    // Update the format all dropdown to show the new font
+                    const formatAllFontFamily = document.getElementById('formatAllFontFamily');
+                    if (formatAllFontFamily) {
+                        formatAllFontFamily.value = fontName;
+                    }
                     
                     // Update current text box if selected
-                    if (sessionState.selectedBox && sessionState.selectedBox.type === 'text') {
+                    if (sessionState.selectedBox && sessionState.selectedBox.boxType === 'text') {
                         sessionState.selectedBox.fontFamily = fontName;
                         updateTextBoxFont(sessionState.selectedBox);
                         // Update the dropdown to show the new font
-                        document.getElementById('boxFontFamily').value = fontName;
+                        const boxFontFamily = document.getElementById('boxFontFamily');
+                        if (boxFontFamily) {
+                            boxFontFamily.value = fontName;
+                        }
                     }
                     
-                    status.textContent = `Font "${fontName}" loaded successfully!`;
+                    status.textContent = `Font "${fontName}" loaded successfully and applied to text boxes!`;
                     status.className = 'font-status success';
                     
                 } catch (error) {
