@@ -24,7 +24,8 @@ try {
     $contentType = isset($headers['Content-Type']) ? $headers['Content-Type'] : 'image/png';
     header('Content-Type: ' . $contentType);
     header('Access-Control-Allow-Origin: *');
-    header('Cache-Control: public, max-age=3600');
+    header('Cache-Control: public, max-age=86400'); // Cache for 24 hours
+    header('ETag: "' . md5($url) . '"'); // Add ETag for better caching
     
     $imageContent = file_get_contents($url);
     if ($imageContent === false) {

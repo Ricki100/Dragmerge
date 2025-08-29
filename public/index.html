@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Viewer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -1130,35 +1131,23 @@
 
     <div class="main-container">
         <div class="sidebar">
-            <div class="sidebar-header">
-                <h1>PDF Viewer</h1>
-                <button class="toggle-sidebar" onclick="toggleSidebar()">≡</button>
-            </div>
             <div class="sidebar-content">
 
 
-                <!-- Step 1: File Uploads -->
-                <div class="drawer" id="uploadDrawer">
-                    <div class="drawer-header active" onclick="toggleDrawer('uploadDrawer')">
-                        <span>📁 File Uploads</span>
-                        <span class="drawer-icon">▼</span>
+                <!-- File Uploads -->
+                <div class="section">
+                    <div class="form-group">
+                        <label class="file-input" for="pdfFile">
+                            <input type="file" id="pdfFile" accept="application/pdf">
+                            <div id="fileLabel">📄 Click to select PDF file</div>
+                        </label>
                     </div>
-                    <div class="drawer-content" id="uploadContent">
-                        <div class="drawer-content-inner">
-                            <div class="form-group">
-                    <label class="file-input" for="pdfFile">
-                        <input type="file" id="pdfFile" accept="application/pdf">
-                                    <div id="fileLabel">📄 Click to select PDF file</div>
-                    </label>
-                            </div>
-                    
-                            <div class="form-group">
-                    <label class="file-input" for="csvFile">
-                        <input type="file" id="csvFile" accept=".csv,text/csv">
-                                    <div id="csvLabel">📊 Click to select CSV file</div>
-                    </label>
-                            </div>
-                        </div>
+                
+                    <div class="form-group">
+                        <label class="file-input" for="csvFile">
+                            <input type="file" id="csvFile" accept=".csv,text/csv">
+                            <div id="csvLabel">📊 Click to select CSV file</div>
+                        </label>
                     </div>
                 </div>
 
@@ -1188,111 +1177,109 @@
                     </div>
                 </div>
 
-                <!-- Step 2: Layout Editor -->
-                <div class="drawer" id="layoutDrawer">
-                    <div class="drawer-header" onclick="toggleDrawer('layoutDrawer')">
-                        <span>🎨 Layout Editor</span>
-                        <span class="drawer-icon">▼</span>
+                <!-- Page Navigation -->
+                <div id="pageNavigation" class="page-navigation" style="border-top: 1px solid #e9ecef; padding: 12px; background: #f8f9fa; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <button id="prevPageBtn" class="btn btn-sm btn-outline-secondary" onclick="previousPage()" style="font-size: 11px; padding: 4px 8px; min-width: 60px;">
+                            ← Prev
+                        </button>
+                        <div style="text-align: center; flex: 1;">
+                            <div id="pageInfo" style="font-size: 11px; color: #495057; font-weight: 500;">
+                                Page 1 of 1
+                        </div>
+                            <div id="pageRecordsInfo" style="font-size: 10px; color: #6c757d;">
+                                Records 1-4
+                        </div>
+                        </div>
+                        <button id="nextPageBtn" class="btn btn-sm btn-outline-secondary" onclick="nextPage()" style="font-size: 11px; padding: 4px 8px; min-width: 60px;">
+                            Next →
+                        </button>
                     </div>
-                    <div class="drawer-content" id="layoutContent">
-                        <div class="drawer-content-inner">
-                            <!-- Font Upload Section (First) -->
-                            <div class="form-group" style="margin-bottom: 10px;">
-                                <label style="font-weight: bold; color: #333;">📁 Upload Custom Font:</label>
-                                <div class="font-upload-area" id="fontUploadArea">
-                                    <input type="file" id="fontUploadInput" accept=".ttf,.otf" style="display: none;">
-                                    <div class="font-upload-content">
-                                        <span>📁</span>
-                                        <p>Drop TTF/OTF file here or click to browse</p>
-                                    </div>
-                                </div>
-                                <div id="fontUploadStatus" class="font-status"></div>
                 </div>
 
-                    <div class="box-controls">
-                        
-
-                        
-
-
-                        <!-- Text Box Properties & Formatting -->
-                        <div class="form-group" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef;">
-                            <label style="font-weight: bold; color: #333;">🎨 Text Box Properties & Formatting:</label>
-                            
-                            <!-- CSV Column Selection -->
-                            <div class="form-group" style="margin-top: 10px;">
-                                <label>CSV Column:</label>
-                                <select id="boxColumnSelect" class="form-control">
-                                    <option value="">Select CSV column...</option>
-                                </select>
-                            </div>
-                            
-                            <!-- Font Family -->
-                            <div class="form-group">
-                                <label>Font Family:</label>
-                                <select id="formatAllFontFamily" class="form-control">
-                                    <option value="Arial">Arial</option>
-                                    <option value="Helvetica">Helvetica</option>
-                                    <option value="Times New Roman">Times New Roman</option>
-                                    <option value="Georgia">Georgia</option>
-                                    <option value="Verdana">Verdana</option>
-                                    <option value="Courier New">Courier New</option>
-                                    <option value="Impact">Impact</option>
-                                    <option value="Comic Sans MS">Comic Sans MS</option>
-                                </select>
-                            </div>
-
-                            <!-- Font Size -->
-                            <div class="form-group">
-                                <label>Font Size:</label>
-                                <input type="number" id="formatAllFontSize" class="form-control" value="16" min="8" max="72">
-                            </div>
-
-                            <!-- Text Color -->
-                            <div class="form-group">
-                                <label>Text Color:</label>
-                                <input type="color" id="formatAllTextColor" class="form-control" value="#000000">
-                            </div>
-
-                            <!-- Text Alignment -->
-                            <div class="form-group">
-                                <label>Text Alignment:</label>
-                                <select id="formatAllTextAlign" class="form-control">
-                                    <option value="left">Left</option>
-                                    <option value="center" selected>Center</option>
-                                    <option value="right">Right</option>
-                                    <option value="justify">Justify</option>
-                                </select>
-                            </div>
-
-                            <!-- Text Style Buttons -->
-                            <div class="form-group">
-                                <label>Text Style:</label>
-                                <div style="display: flex; gap: 5px; margin-top: 5px;">
-                                    <button type="button" id="formatAllBold" class="btn btn-sm btn-outline-secondary" style="flex: 1;" onclick="toggleFormatStyle('formatAllBold')">B</button>
-                                    <button type="button" id="formatAllItalic" class="btn btn-sm btn-outline-secondary" style="flex: 1;" onclick="toggleFormatStyle('formatAllItalic')">I</button>
-                                    <button type="button" id="formatAllUnderline" class="btn btn-sm btn-outline-secondary" style="flex: 1;" onclick="toggleFormatStyle('formatAllUnderline')">U</button>
-                                </div>
-                            </div>
-
-                            <!-- Apply Format Button -->
-                            <div class="form-group" style="margin-top: 15px;">
-                                <button class="btn btn-warning" onclick="formatAllTextBoxes()" style="width: 100%; margin-bottom: 10px;">
-                                    🎨 Apply to All Text Boxes
-                                </button>
-                            </div>
-                            
-                            <!-- Delete Selected Box Button -->
-                            <div class="form-group" style="margin-top: 10px;">
-                                <button class="btn btn-danger" onclick="deleteSelectedBox()" style="width: 100%;" id="deleteBoxBtn" disabled>
-                                    🗑️ Delete Selected Box
-                                </button>
+                <!-- Compact Layout Editor -->
+                <div class="section">
+                    <!-- Font Upload -->
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="font-size: 12px; font-weight: bold; color: #333;">Add Font:</label>
+                        <div class="font-upload-area" id="fontUploadArea" style="height: 50px; font-size: 11px; border: 2px dashed #007bff; border-radius: 6px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
+                            <input type="file" id="fontUploadInput" accept=".ttf,.otf" style="display: none;">
+                            <div class="font-upload-content" style="text-align: center;">
+                                <p style="margin: 0; font-size: 11px; color: #495057;">Drop TTF/OTF file here or click to browse</p>
                             </div>
                         </div>
-                        
+                        <div id="fontUploadStatus" class="font-status" style="font-size: 10px;"></div>
+                    </div>
 
-                            </div>
+                    <!-- CSV Column Selection -->
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="font-size: 12px; font-weight: bold;">CSV Column:</label>
+                        <select id="boxColumnSelect" class="form-control" style="font-size: 11px; padding: 4px 8px;">
+                            <option value="">Select CSV column...</option>
+                        </select>
+                    </div>
+
+                    <!-- Apply Mode Toggle -->
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="font-size: 12px; font-weight: bold;">Apply To:</label>
+                        <div style="display: flex; gap: 4px;">
+                            <button type="button" id="applyToAllBtn" class="btn btn-sm btn-primary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="setApplyMode('all')">All Boxes</button>
+                            <button type="button" id="applyToSelectedBtn" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="setApplyMode('selected')">Selected Only</button>
                         </div>
+                    </div>
+
+                    <!-- Compact Formatting Controls -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                        <div class="form-group" style="margin: 0;">
+                            <label style="font-size: 11px;">Font:</label>
+                            <select id="formatAllFontFamily" class="form-control" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
+                                <option value="Arial">Arial</option>
+                                <option value="Helvetica">Helvetica</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Verdana">Verdana</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Impact">Impact</option>
+                                <option value="Comic Sans MS">Comic Sans MS</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label style="font-size: 11px;">Size:</label>
+                            <input type="number" id="formatAllFontSize" class="form-control" value="16" min="8" max="72" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                        <div class="form-group" style="margin: 0;">
+                            <label style="font-size: 11px;">Color:</label>
+                            <input type="color" id="formatAllTextColor" class="form-control" value="#000000" style="height: 30px; padding: 2px;" onchange="applyLiveFormatting()">
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label style="font-size: 11px;">Align:</label>
+                            <select id="formatAllTextAlign" class="form-control" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
+                                <option value="left">Left</option>
+                                <option value="center" selected>Center</option>
+                                <option value="right">Right</option>
+                                <option value="justify">Justify</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Text Style Buttons -->
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="font-size: 11px;">Style:</label>
+                        <div style="display: flex; gap: 4px;">
+                            <button type="button" id="formatAllBold" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="toggleFormatStyle('formatAllBold')">B</button>
+                            <button type="button" id="formatAllItalic" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="toggleFormatStyle('formatAllItalic')">I</button>
+                            <button type="button" id="formatAllUnderline" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="toggleFormatStyle('formatAllUnderline')">U</button>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                        <button class="btn btn-danger" onclick="deleteSelectedBox()" style="flex: 1; font-size: 11px; padding: 6px 8px;" id="deleteBoxBtn" disabled>
+                            🗑️ Delete
+                        </button>
                     </div>
                 </div>
 
@@ -1320,26 +1307,6 @@
                     
                     <div id="downloadLink" style="display: none;">
                         <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block; width: 100%;">Download Original PDF</a>
-                    </div>
-                </div>
-
-                <!-- Page Navigation -->
-                <div id="pageNavigation" class="page-navigation" style="border-top: 1px solid #e9ecef; padding: 12px; background: #f8f9fa; margin-bottom: 15px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                        <button id="prevPageBtn" class="btn btn-sm btn-outline-secondary" onclick="previousPage()" style="font-size: 11px; padding: 4px 8px; min-width: 60px;">
-                            ← Prev
-                        </button>
-                        <div style="text-align: center; flex: 1;">
-                            <div id="pageInfo" style="font-size: 11px; color: #495057; font-weight: 500;">
-                                Page 1 of 1
-                        </div>
-                            <div id="pageRecordsInfo" style="font-size: 10px; color: #6c757d;">
-                                Records 1-4
-                        </div>
-                        </div>
-                        <button id="nextPageBtn" class="btn btn-sm btn-outline-secondary" onclick="nextPage()" style="font-size: 11px; padding: 4px 8px; min-width: 60px;">
-                            Next →
-                        </button>
                     </div>
                 </div>
 
@@ -1476,6 +1443,13 @@ if (!sessionState.defaultFontFamily) {
         let pdfContent = null;
         let pdfLocked = true; // PDF is locked by default when uploaded
         let isEditorMode = false;
+        
+        // PDF transform management
+        let currentTransform = { x: 0, y: 0, scale: 1 };
+        
+        // PDF dragging state
+        let isDragging = false;
+        let lastMousePos = { x: 0, y: 0 };
 
 
         
@@ -1771,10 +1745,13 @@ if (!sessionState.defaultFontFamily) {
 
         
         // Initialize snap-to-grid toggle
-        document.getElementById('snapToGridToggle').addEventListener('change', function() {
-            snapToGridEnabled = this.checked;
-            console.log('Snap to grid:', snapToGridEnabled ? 'enabled' : 'disabled');
-        });
+        const snapToGridToggle = document.getElementById('snapToGridToggle');
+        if (snapToGridToggle) {
+            snapToGridToggle.addEventListener('change', function() {
+                snapToGridEnabled = this.checked;
+                console.log('Snap to grid:', snapToGridEnabled ? 'enabled' : 'disabled');
+            });
+        }
         
         // Function to update download button state
         function updateDownloadButtonState() {
@@ -2073,6 +2050,101 @@ if (!sessionState.defaultFontFamily) {
             alert(`Applied formatting to ${textBoxes.length} text box(es)!`);
         }
 
+        // Global variable for apply mode (default: all boxes)
+        let applyMode = 'all';
+
+        // Function to set apply mode (all boxes vs selected only)
+        function setApplyMode(mode) {
+            applyMode = mode;
+            
+            // Update button styles
+            const allBtn = document.getElementById('applyToAllBtn');
+            const selectedBtn = document.getElementById('applyToSelectedBtn');
+            
+            if (allBtn && selectedBtn) {
+                if (mode === 'all') {
+                    allBtn.className = 'btn btn-sm btn-primary';
+                    selectedBtn.className = 'btn btn-sm btn-outline-secondary';
+                } else {
+                    allBtn.className = 'btn btn-sm btn-outline-secondary';
+                    selectedBtn.className = 'btn btn-sm btn-primary';
+                }
+            }
+        }
+
+        // Function to apply live formatting instantly
+        function applyLiveFormatting() {
+            // Get formatting values from the form
+            const fontFamily = document.getElementById('formatAllFontFamily').value;
+            const fontSize = document.getElementById('formatAllFontSize').value;
+            const textColor = document.getElementById('formatAllTextColor').value;
+            const textAlign = document.getElementById('formatAllTextAlign').value;
+            
+            // Get text style states
+            const boldBtn = document.getElementById('formatAllBold');
+            const italicBtn = document.getElementById('formatAllItalic');
+            const underlineBtn = document.getElementById('formatAllUnderline');
+            
+            const isBold = boldBtn.classList.contains('active');
+            const isItalic = italicBtn.classList.contains('active');
+            const isUnderline = underlineBtn.classList.contains('active');
+
+            // Determine which boxes to format based on apply mode
+            let boxesToFormat = [];
+            if (applyMode === 'all') {
+                boxesToFormat = sessionState.boxes.filter(box => box.boxType === 'text');
+            } else {
+                // Format only selected box
+                if (sessionState.selectedBox && sessionState.selectedBox.boxType === 'text') {
+                    boxesToFormat = [sessionState.selectedBox];
+                }
+            }
+
+            if (boxesToFormat.length === 0) {
+                return; // No boxes to format
+            }
+
+            // Apply formatting to the determined boxes
+            boxesToFormat.forEach(box => {
+                if (box.element) {
+                    const element = box.element;
+                    
+                    // Update element styles with proper font family formatting
+                    element.style.fontFamily = `'${fontFamily}', Arial, sans-serif`;
+                    element.style.fontSize = fontSize + 'px';
+                    element.style.color = textColor;
+                    element.style.textAlign = textAlign;
+                    
+                    // Apply text styles
+                    element.style.fontWeight = isBold ? 'bold' : 'normal';
+                    element.style.fontStyle = isItalic ? 'italic' : 'normal';
+                    element.style.textDecoration = isUnderline ? 'underline' : 'none';
+                    
+                    // Update box data in session state
+                    box.fontFamily = fontFamily;
+                    box.fontSize = parseInt(fontSize);
+                    box.color = textColor;
+                    box.textAlign = textAlign;
+                    box.bold = isBold;
+                    box.italic = isItalic;
+                    box.underline = isUnderline;
+                }
+            });
+        }
+
+        // Updated function to toggle format styles with live application
+        function toggleFormatStyle(buttonId) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.classList.toggle('active');
+                button.style.background = button.classList.contains('active') ? '#007bff' : '';
+                button.style.color = button.classList.contains('active') ? 'white' : '';
+                
+                // Apply formatting immediately after style toggle
+                applyLiveFormatting();
+            }
+        }
+
         // Add event listeners for text style buttons
         document.addEventListener('DOMContentLoaded', function() {
             // Bold button
@@ -2082,6 +2154,7 @@ if (!sessionState.defaultFontFamily) {
                     this.classList.toggle('active');
                     this.style.background = this.classList.contains('active') ? '#007bff' : '';
                     this.style.color = this.classList.contains('active') ? 'white' : '';
+                    applyLiveFormatting(); // Apply formatting immediately
                 });
             }
 
@@ -2092,6 +2165,7 @@ if (!sessionState.defaultFontFamily) {
                     this.classList.toggle('active');
                     this.style.background = this.classList.contains('active') ? '#007bff' : '';
                     this.style.color = this.classList.contains('active') ? 'white' : '';
+                    applyLiveFormatting(); // Apply formatting immediately
                 });
             }
 
@@ -2102,7 +2176,26 @@ if (!sessionState.defaultFontFamily) {
                     this.classList.toggle('active');
                     this.style.background = this.classList.contains('active') ? '#007bff' : '';
                     this.style.color = this.classList.contains('active') ? 'white' : '';
+                    applyLiveFormatting(); // Apply formatting immediately
                 });
+            }
+
+            // CSV file input handler
+            const csvFileInput = document.getElementById('csvFile');
+            console.log('Looking for CSV file input:', csvFileInput);
+            if (csvFileInput) {
+                console.log('CSV file input found, adding event listener');
+                csvFileInput.addEventListener('change', function(e) {
+                    console.log('CSV file selected:', e.target.files[0]);
+                    const file = e.target.files[0];
+                    if (file) {
+                        parseCSVFile(file);
+                    } else {
+                        console.log('No file selected');
+                    }
+                });
+            } else {
+                console.error('CSV file input not found!');
             }
         });
 
@@ -2453,37 +2546,7 @@ if (!sessionState.defaultFontFamily) {
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing simple system...');
             updateRecordsInfo();
-            initializeDrawers();
         });
-
-        // Drawer functionality
-        function initializeDrawers() {
-            // Open the first drawer by default with a small delay to ensure DOM is ready
-            setTimeout(() => {
-                toggleDrawer('uploadDrawer');
-            }, 100);
-        }
-
-        function toggleDrawer(drawerId) {
-            const drawer = document.getElementById(drawerId);
-            const header = drawer.querySelector('.drawer-header');
-            const content = drawer.querySelector('.drawer-content');
-            
-            // Close all other drawers first
-            const allDrawers = document.querySelectorAll('.drawer');
-            allDrawers.forEach(d => {
-                if (d.id !== drawerId) {
-                    const otherHeader = d.querySelector('.drawer-header');
-                    const otherContent = d.querySelector('.drawer-content');
-                    otherHeader.classList.remove('active');
-                    otherContent.classList.remove('open');
-                }
-            });
-            
-            // Toggle the clicked drawer
-            header.classList.toggle('active');
-            content.classList.toggle('open');
-        }
 
 
         
@@ -2796,7 +2859,7 @@ if (!sessionState.defaultFontFamily) {
 
             // Load image if URL is available
             if (sampleImageUrl && sampleImageUrl.trim() !== '') {
-                loadImageFromUrl(sampleImageUrl, imageBox);
+                loadImageFromUrlOptimized(sampleImageUrl, imageBox);
             }
 
             // Add click handler for selection
@@ -3715,9 +3778,6 @@ if (!sessionState.defaultFontFamily) {
         }
 
         // PDF Dragging and Zooming Functionality
-        let isDragging = false;
-        let lastMousePos = { x: 0, y: 0 };
-        let currentTransform = { x: 0, y: 0, scale: 1 };
 
         function initPDFDragging() {
             pdfViewer = document.getElementById('pdfViewer');
@@ -3875,15 +3935,33 @@ if (!sessionState.defaultFontFamily) {
             });
         }
         
-        // Function to pre-load all images for html2canvas capture with progress bar
-        async function preloadAllImages() {
-            const imageBoxes = document.querySelectorAll('.draggable-image-box img');
+        // Global image cache to avoid re-downloading the same images
+        const imageCache = new Map();
+        
+        // Function to clear old cache entries (older than 1 hour)
+        function clearOldCacheEntries() {
+            const oneHourAgo = Date.now() - (60 * 60 * 1000);
+            for (const [url, data] of imageCache.entries()) {
+                if (data.timestamp < oneHourAgo) {
+                    imageCache.delete(url);
+                }
+            }
+        }
+        
+        // Clear old cache entries every 30 minutes
+        setInterval(clearOldCacheEntries, 30 * 60 * 1000);
+        
+        // Function to pre-load and cache images with better performance
+        async function preloadAndCacheImages(imageUrls) {
+            const uniqueUrls = [...new Set(imageUrls.filter(url => url && url.trim() !== ''))];
             
-            if (imageBoxes.length === 0) {
+            if (uniqueUrls.length === 0) {
                 console.log('No images to preload');
                 return;
             }
 
+            console.log(`Preloading ${uniqueUrls.length} unique images...`);
+            
             // Show progress overlay
             const overlay = document.getElementById('imageLoadingOverlay');
             const progressBar = document.getElementById('imageProgressBar');
@@ -3891,49 +3969,138 @@ if (!sessionState.defaultFontFamily) {
             const subtitle = document.getElementById('imageLoadingSubtitle');
             
             overlay.classList.add('active');
-            subtitle.textContent = `Loading ${imageBoxes.length} image${imageBoxes.length > 1 ? 's' : ''}...`;
+            subtitle.textContent = `Loading ${uniqueUrls.length} image${uniqueUrls.length > 1 ? 's' : ''}...`;
             
             let loadedCount = 0;
-            const totalImages = imageBoxes.length;
+            const totalImages = uniqueUrls.length;
             
-            const imagePromises = Array.from(imageBoxes).map((img, index) => {
-                return new Promise((resolve, reject) => {
-                    if (img.complete && img.naturalWidth > 0) {
-                        // Image already loaded
+            // Create promises for parallel loading with better error handling
+            const imagePromises = uniqueUrls.map((url, index) => {
+                return new Promise((resolve) => {
+                    // Check if already cached
+                    if (imageCache.has(url)) {
                         loadedCount++;
                         updateProgress(loadedCount, totalImages, progressBar, progressText);
                         resolve();
-                    } else {
-                        img.onload = () => {
-                            loadedCount++;
-                            updateProgress(loadedCount, totalImages, progressBar, progressText);
-                            resolve();
-                        };
-                        img.onerror = () => {
-                            // Continue even if some images fail
-                            loadedCount++;
-                            updateProgress(loadedCount, totalImages, progressBar, progressText);
-                            resolve();
-                        };
-                        // Force reload if needed
-                        if (img.src) {
-                            img.src = img.src;
-                        }
+                        return;
                     }
+                    
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    
+                    img.onload = () => {
+                        // Cache the loaded image
+                        imageCache.set(url, {
+                            element: img,
+                            loaded: true,
+                            timestamp: Date.now()
+                        });
+                        loadedCount++;
+                        updateProgress(loadedCount, totalImages, progressBar, progressText);
+                        resolve();
+                    };
+                    
+                    img.onerror = () => {
+                        // Cache failed loads to avoid retrying
+                        imageCache.set(url, {
+                            element: null,
+                            loaded: false,
+                            timestamp: Date.now()
+                        });
+                        loadedCount++;
+                        updateProgress(loadedCount, totalImages, progressBar, progressText);
+                        resolve();
+                    };
+                    
+                    // Use proxy with cache headers
+                    img.src = `proxy_image.php?url=${encodeURIComponent(url)}&cache=${Date.now()}`;
                 });
             });
             
-            // Wait for all images to load (with timeout)
+            // Wait for all images to load with timeout
             await Promise.allSettled(imagePromises);
             
             // Additional wait to ensure images are fully rendered
             subtitle.textContent = 'Finalizing image preparation...';
-            await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 200ms
+            await new Promise(resolve => setTimeout(resolve, 50)); // Reduced from 100ms
             
             // Hide progress overlay
             overlay.classList.remove('active');
             
-            console.log(`All ${totalImages} images pre-loaded for capture`);
+            console.log(`All ${totalImages} images pre-loaded and cached`);
+        }
+        
+        // Function to get all unique image URLs from current CSV data
+        function getAllImageUrls() {
+            const urls = new Set();
+            
+            if (!csvData) return Array.from(urls);
+            
+            // Get image URLs from all image boxes
+            sessionState.boxes.forEach(box => {
+                if (box.boxType === 'image' && box.csvColumn) {
+                    csvData.forEach(row => {
+                        const url = row[box.csvColumn];
+                        if (url && url.trim() !== '') {
+                            urls.add(url);
+                        }
+                    });
+                }
+            });
+            
+            return Array.from(urls);
+        }
+        
+        // Optimized function to load image from URL with caching
+        function loadImageFromUrlOptimized(imageUrl, imageBox) {
+            if (!imageUrl || imageUrl.trim() === '') {
+                console.log('No image URL provided');
+                return;
+            }
+
+            console.log('Loading image from URL (optimized):', imageUrl);
+            
+            // Check cache first
+            if (imageCache.has(imageUrl)) {
+                const cached = imageCache.get(imageUrl);
+                if (cached.loaded && cached.element) {
+                    console.log('Using cached image:', imageUrl);
+                    // Clone the cached image
+                    const imgClone = cached.element.cloneNode(true);
+                    imageBox.innerHTML = '';
+                    imageBox.appendChild(imgClone);
+                    
+                    // Apply styling
+                    imgClone.style.width = '100%';
+                    imgClone.style.height = '100%';
+                    imgClone.style.objectFit = 'contain';
+                    imgClone.style.objectPosition = 'center';
+                    imgClone.style.display = 'block';
+                    imgClone.style.aspectRatio = 'auto';
+                    imgClone.style.imageRendering = 'auto';
+                    
+                    imageBox.style.border = '2px dashed #007bff';
+                    imageBox.style.background = 'rgba(255,255,255,0.2)';
+                    return;
+                }
+            }
+            
+            // Fallback to original loading method
+            loadImageFromUrl(imageUrl, imageBox);
+        }
+
+        // Function to pre-load all images for html2canvas capture with progress bar
+        async function preloadAllImages() {
+            // Get all unique image URLs from CSV data
+            const allImageUrls = getAllImageUrls();
+            
+            if (allImageUrls.length === 0) {
+                console.log('No images to preload');
+                return;
+            }
+
+            // Use the new optimized preloading function
+            await preloadAndCacheImages(allImageUrls);
         }
 
         // Helper function to update progress bar
@@ -4179,6 +4346,14 @@ if (!sessionState.defaultFontFamily) {
                 // Get download mode
                 const downloadMode = document.getElementById('downloadModeSelect').value;
                 console.log(`=== HYBRID HIGH QUALITY PDF GENERATION (${downloadMode.toUpperCase()} MODE) ===`);
+                
+                // Performance optimization: Cache DOM elements to reduce queries
+                const viewer = document.getElementById('viewer');
+                const clonedViewer = viewer.cloneNode(true);
+                clonedViewer.style.position = 'absolute';
+                clonedViewer.style.left = '-9999px';
+                clonedViewer.style.top = '-9999px';
+                document.body.appendChild(clonedViewer);
                 
                 // Step 1: Validate inputs
                 console.log('Step 1: Validating inputs...');
@@ -4528,10 +4703,14 @@ if (!sessionState.defaultFontFamily) {
                         }
                         
                     } else {
-                        // MULTI-RECORD MODE: Multiple records per PDF
-                        console.log('=== MULTI-RECORD MODE ===');
+                        // MULTI-RECORD MODE: Download individual PDFs instead of zip
+                        console.log('=== MULTI-RECORD MODE (Individual Downloads) ===');
                         const totalPages = Math.ceil(totalRecords / recordsPerPage);
                         console.log(`Records per page: ${recordsPerPage}, Total pages: ${totalPages}`);
+                        
+                        // Update progress title for individual downloads
+                        progressTitle.textContent = 'Downloading Individual PDFs';
+                        progressSubtitle.textContent = `Will download ${totalPages} PDF files individually...`;
                         
                         for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
                             console.log(`\n--- Processing Page ${pageIndex + 1}/${totalPages} ---`);
@@ -4566,9 +4745,9 @@ if (!sessionState.defaultFontFamily) {
                             await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 150ms
                             
                             // Pre-load all images to ensure they're ready for capture
-                            progressSubtitle.textContent = 'Loading images...';
+                            progressSubtitle.textContent = `Loading images for page ${pageIndex + 1}...`;
                             await preloadAllImages();
-                            progressSubtitle.textContent = `Processing ${totalRecords} records...`;
+                            progressSubtitle.textContent = `Processing page ${pageIndex + 1} of ${totalPages}...`;
                             
                             // Wait for UI to update
                             await new Promise(resolve => setTimeout(resolve, 100));
@@ -4705,44 +4884,47 @@ if (!sessionState.defaultFontFamily) {
                             console.log('Step 3f: Saving hybrid PDF...');
                             const pdfBytes = await pdfDoc.save();
                             
-                            // Step 3g: Add to zip
+                            // Step 3g: Download individual PDF immediately
                             const fileName = `multi_page_${pageIndex + 1}_records_${startRecord + 1}-${endRecord}.pdf`;
-                            zip.file(fileName, pdfBytes);
+                            const url = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = fileName;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
                             
-                            console.log(`✓ Multi-record page ${pageIndex + 1} added to zip: ${fileName}`);
+                            console.log(`✓ Multi-record page ${pageIndex + 1} downloaded: ${fileName}`);
                             
                             // Update progress for multi-record mode
-                            updateProgress(recordsOnThisPage, 'Page completed');
+                            updateProgress(recordsOnThisPage, 'PDF downloaded');
                         }
+                        
+                        // For multi-record mode, we don't need to create a zip file
+                        console.log('✓ All individual PDFs downloaded successfully!');
+                    } else {
+                        // Step 4: Download zip file (only for single record mode)
+                        console.log('Step 4: Generating zip file...');
+                        progressSubtitle.textContent = 'Creating zip file...';
+                        const zipBlob = await zip.generateAsync({ type: 'blob' });
+                        
+                        // Create download link with mode-specific naming
+                        const url = URL.createObjectURL(zipBlob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `single_record_high_quality_pdfs_${totalRecords}_records.zip`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        
+                        console.log(`✓ Single Record high-quality download complete!`);
                     }
-                    
-                    // Step 4: Download zip file
-                    console.log('Step 4: Generating zip file...');
-                    progressSubtitle.textContent = 'Creating zip file...';
-                    const zipBlob = await zip.generateAsync({ type: 'blob' });
-                    
-                    // Create download link with mode-specific naming
-                    const url = URL.createObjectURL(zipBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    const modeName = downloadMode === 'single' ? 'single_record' : 'multi_record';
-                    a.download = `${modeName}_high_quality_pdfs_${totalRecords}_records.zip`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    console.log(`✓ ${downloadMode === 'single' ? 'Single Record' : 'Multi-Record'} high-quality download complete!`);
                     
                 } catch (error) {
-                    console.error('Error during PDF generation:', error);
-                    
-                    // Remove progress overlay on error
-                    if (progressOverlay && progressOverlay.parentNode) {
-                        progressOverlay.parentNode.removeChild(progressOverlay);
-                    }
-                    
-                    throw error;
+                    console.error('PDF generation failed:', error);
+                    alert('Error generating PDFs: ' + error.message);
                 } finally {
                     // Restore original state
                     currentPage = 0;
@@ -4752,20 +4934,10 @@ if (!sessionState.defaultFontFamily) {
                     if (progressOverlay && progressOverlay.parentNode) {
                         progressOverlay.parentNode.removeChild(progressOverlay);
                     }
-                }
-                
-                            } catch (error) {
-                    console.error('Download failed:', error);
-                    alert('Error generating PDFs: ' + error.message);
                     
-                    // Remove progress overlay on error
-                    if (progressOverlay && progressOverlay.parentNode) {
-                        progressOverlay.parentNode.removeChild(progressOverlay);
-                    }
-                } finally {
-                    // Remove progress overlay
-                    if (progressOverlay && progressOverlay.parentNode) {
-                        progressOverlay.parentNode.removeChild(progressOverlay);
+                    // Clean up cloned viewer
+                    if (clonedViewer && clonedViewer.parentNode) {
+                        clonedViewer.parentNode.removeChild(clonedViewer);
                     }
                     
                     // Restore button state
@@ -4774,6 +4946,7 @@ if (!sessionState.defaultFontFamily) {
                     downloadBtn.textContent = 'Download PDFs';
                 }
         }
+
 
         // Take Screenshot function
         async function takeScreenshot() {
@@ -5210,16 +5383,10 @@ if (!sessionState.defaultFontFamily) {
             }
         }
 
-        // CSV file input handler
-        document.getElementById('csvFile').addEventListener('change', function(e) {
-            console.log('CSV file selected:', e.target.files[0]);
-            const file = e.target.files[0];
-            if (file) {
-                parseCSVFile(file);
-            }
-        });
+
 
         function parseCSVFile(file) {
+            console.log('parseCSVFile function called with file:', file);
             console.log('Parsing CSV file:', file.name, file.size);
             Papa.parse(file, {
                 header: true,
@@ -5277,6 +5444,16 @@ if (!sessionState.defaultFontFamily) {
                     
                     // Update create records button state
                     updateCreateRecordsButtonState();
+                    
+                    // Preload all images for better performance
+                    console.log('Starting image preloading for better performance...');
+                    const allImageUrls = getAllImageUrls();
+                    if (allImageUrls.length > 0) {
+                        // Preload images in background without blocking UI
+                        setTimeout(() => {
+                            preloadAndCacheImages(allImageUrls);
+                        }, 1000); // Delay to let UI settle first
+                    }
                 },
                 error: function(error) {
                     console.error('CSV parsing error:', error);
@@ -5331,20 +5508,32 @@ if (!sessionState.defaultFontFamily) {
             serverPdfUrl = null;
 
             // Reset UI
-            document.getElementById('fileLabel').textContent = 'Click to select PDF file';
-            document.getElementById('downloadLink').style.display = 'none';
-            document.getElementById('noPdf').style.display = 'block';
-            document.getElementById('noPdf').innerHTML = `
-                <h3>No PDF selected</h3>
-                <p>Choose a PDF file to start viewing</p>
-            `;
-            document.getElementById('loadingPdf').style.display = 'none';
-            document.getElementById('viewer').style.display = 'none';
+            const fileLabel = document.getElementById('fileLabel');
+            const downloadLink = document.getElementById('downloadLink');
+            const noPdf = document.getElementById('noPdf');
+            const loadingPdf = document.getElementById('loadingPdf');
+            const viewer = document.getElementById('viewer');
+            
+            if (fileLabel) fileLabel.textContent = 'Click to select PDF file';
+            if (downloadLink) downloadLink.style.display = 'none';
+            if (noPdf) {
+                noPdf.style.display = 'block';
+                noPdf.innerHTML = `
+                    <h3>No PDF selected</h3>
+                    <p>Choose a PDF file to start viewing</p>
+                `;
+            }
+            if (loadingPdf) loadingPdf.style.display = 'none';
+            if (viewer) viewer.style.display = 'none';
 
             // Clear file inputs
-            document.getElementById('pdfFile').value = '';
-            document.getElementById('csvFile').value = '';
-            document.getElementById('csvLabel').textContent = 'Click to select CSV file';
+            const pdfFileInput = document.getElementById('pdfFile');
+            const csvFileInput = document.getElementById('csvFile');
+            const csvLabel = document.getElementById('csvLabel');
+            
+            if (pdfFileInput) pdfFileInput.value = '';
+            if (csvFileInput) csvFileInput.value = '';
+            if (csvLabel) csvLabel.textContent = 'Click to select CSV file';
             // csvPreview element was removed
 
             // Disable Generate From Template button
@@ -5714,7 +5903,7 @@ if (!sessionState.defaultFontFamily) {
             
             // Load the new image
             if (imageUrl && imageUrl.trim() !== '') {
-                loadImageFromUrl(imageUrl, box.element);
+                loadImageFromUrlOptimized(imageUrl, box.element);
             } else {
                 // Show placeholder if no image URL
                 box.element.textContent = 'No Image';
@@ -5776,7 +5965,7 @@ if (!sessionState.defaultFontFamily) {
             
             // Load the new image
             if (imageUrl && imageUrl.trim() !== '') {
-                loadImageFromUrl(imageUrl, box.element);
+                loadImageFromUrlOptimized(imageUrl, box.element);
             } else {
                 // Show placeholder if no image URL
                 box.element.textContent = 'No Image';
