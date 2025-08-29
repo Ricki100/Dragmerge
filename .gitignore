@@ -12,15 +12,6 @@ composer.lock
 *.pdf
 *.csv
 
-# Web files (now in root)
-index.html
-editor.html
-upload.php
-serve.php
-proxy_image.php
-.htaccess
-robots.txt
-
 # Node modules (if using frontend build tools)
 /node_modules/
 
