@@ -343,7 +343,7 @@
         .font-status.warning {
             color: #ffc107;
         }
-
+        
         /* Collapsible Drawers */
         .drawer {
             border-bottom: 1px solid #e0e0e0;
@@ -1005,17 +1005,18 @@
             z-index: 20;
             transition: all 0.1s ease;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: block;
             overflow: hidden;
             word-wrap: break-word;
             white-space: normal;
+            line-height: 1.2;
         }
 
         .draggable-text-box.selected .resize-handle {
             background: #007bff !important;
         }
+
+
 
         /* Image box styles - matching MERGE-ONLINE behavior */
         .draggable-image-box {
@@ -1137,17 +1138,17 @@
                 <!-- File Uploads -->
                 <div class="section">
                     <div class="form-group">
-                        <label class="file-input" for="pdfFile">
-                            <input type="file" id="pdfFile" accept="application/pdf">
+                    <label class="file-input" for="pdfFile">
+                        <input type="file" id="pdfFile" accept="application/pdf">
                             <div id="fileLabel">📄 Click to select PDF file</div>
-                        </label>
+                    </label>
                     </div>
-                
+                    
                     <div class="form-group">
-                        <label class="file-input" for="csvFile">
-                            <input type="file" id="csvFile" accept=".csv,text/csv">
+                    <label class="file-input" for="csvFile">
+                        <input type="file" id="csvFile" accept=".csv,text/csv">
                             <div id="csvLabel">📊 Click to select CSV file</div>
-                        </label>
+                    </label>
                     </div>
                 </div>
 
@@ -1173,23 +1174,23 @@
                             <option value="12">12 Boxes</option>
                             <option value="15">15 Boxes</option>
                             <option value="20">20 Boxes</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Page Navigation -->
+                            </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Page Navigation -->
                 <div id="pageNavigation" class="page-navigation" style="border-top: 1px solid #e9ecef; padding: 12px; background: #f8f9fa; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                         <button id="prevPageBtn" class="btn btn-sm btn-outline-secondary" onclick="previousPage()" style="font-size: 11px; padding: 4px 8px; min-width: 60px;">
                             ← Prev
-                        </button>
+                                </button>
                         <div style="text-align: center; flex: 1;">
                             <div id="pageInfo" style="font-size: 11px; color: #495057; font-weight: 500;">
-                                Page 1 of 1
-                        </div>
+                                    Page 1 of 1
+                            </div>
                             <div id="pageRecordsInfo" style="font-size: 10px; color: #6c757d;">
                                 Records 1-4
-                        </div>
+                            </div>
                         </div>
                         <button id="nextPageBtn" class="btn btn-sm btn-outline-secondary" onclick="nextPage()" style="font-size: 11px; padding: 4px 8px; min-width: 60px;">
                             Next →
@@ -1209,46 +1210,46 @@
                             </div>
                         </div>
                         <div id="fontUploadStatus" class="font-status" style="font-size: 10px;"></div>
-                    </div>
-
+                        </div>
+                        
                     <!-- CSV Column Selection -->
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 12px; font-weight: bold;">CSV Column:</label>
                         <select id="boxColumnSelect" class="form-control" style="font-size: 11px; padding: 4px 8px;">
-                            <option value="">Select CSV column...</option>
-                        </select>
-                    </div>
-
+                                        <option value="">Select CSV column...</option>
+                                    </select>
+                                </div>
+                                
                     <!-- Apply Mode Toggle -->
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 12px; font-weight: bold;">Apply To:</label>
                         <div style="display: flex; gap: 4px;">
                             <button type="button" id="applyToAllBtn" class="btn btn-sm btn-primary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="setApplyMode('all')">All Boxes</button>
                             <button type="button" id="applyToSelectedBtn" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="setApplyMode('selected')">Selected Only</button>
-                        </div>
-                    </div>
-
+                                </div>
+                                </div>
+                                
                     <!-- Compact Formatting Controls -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
                         <div class="form-group" style="margin: 0;">
                             <label style="font-size: 11px;">Font:</label>
                             <select id="formatAllFontFamily" class="form-control" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
-                                <option value="Arial">Arial</option>
-                                <option value="Helvetica">Helvetica</option>
+                                        <option value="Arial">Arial</option>
+                                        <option value="Helvetica">Helvetica</option>
                                 <option value="Times New Roman">Times New Roman</option>
-                                <option value="Georgia">Georgia</option>
-                                <option value="Verdana">Verdana</option>
-                                <option value="Courier New">Courier New</option>
+                                        <option value="Georgia">Georgia</option>
+                                        <option value="Verdana">Verdana</option>
+                                        <option value="Courier New">Courier New</option>
                                 <option value="Impact">Impact</option>
                                 <option value="Comic Sans MS">Comic Sans MS</option>
-                            </select>
-                        </div>
+                                    </select>
+                                </div>
                         <div class="form-group" style="margin: 0;">
                             <label style="font-size: 11px;">Size:</label>
                             <input type="number" id="formatAllFontSize" class="form-control" value="16" min="8" max="72" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
-                        </div>
-                    </div>
-
+                                    </div>
+                                </div>
+                                
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
                         <div class="form-group" style="margin: 0;">
                             <label style="font-size: 11px;">Color:</label>
@@ -1257,46 +1258,38 @@
                         <div class="form-group" style="margin: 0;">
                             <label style="font-size: 11px;">Align:</label>
                             <select id="formatAllTextAlign" class="form-control" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
-                                <option value="left">Left</option>
-                                <option value="center" selected>Center</option>
-                                <option value="right">Right</option>
+                                        <option value="left">Left</option>
+                                        <option value="center" selected>Center</option>
+                                        <option value="right">Right</option>
                                 <option value="justify">Justify</option>
-                            </select>
+                                    </select>
                         </div>
-                    </div>
-
+                                </div>
+                                
                     <!-- Text Style Buttons -->
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 11px;">Style:</label>
                         <div style="display: flex; gap: 4px;">
-                            <button type="button" id="formatAllBold" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="toggleFormatStyle('formatAllBold')">B</button>
-                            <button type="button" id="formatAllItalic" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="toggleFormatStyle('formatAllItalic')">I</button>
-                            <button type="button" id="formatAllUnderline" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="toggleFormatStyle('formatAllUnderline')">U</button>
-                        </div>
-                    </div>
+                                            <button type="button" id="formatAllBold" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;">B</button>
+                <button type="button" id="formatAllItalic" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;">I</button>
+                <button type="button" id="formatAllUnderline" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;">U</button>
+                                    </div>
+                                </div>
 
                     <!-- Action Buttons -->
                     <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-                        <button class="btn btn-danger" onclick="deleteSelectedBox()" style="flex: 1; font-size: 11px; padding: 6px 8px;" id="deleteBoxBtn" disabled>
+                        <button class="btn btn-danger" onclick="deleteSelectedBox()" style="flex: 1; font-size: 11px; padding: 6px 8px;" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
                             🗑️ Delete
                         </button>
-                    </div>
-                </div>
-
+                                </div>
+                            </div>
+                            
 
 
 
 
                 <!-- Download Section -->
                 <div class="download-section" style="border-top: 1px solid #e9ecef; padding: 15px; background: #f8f9fa; margin-bottom: 15px;">
-                    <div class="form-group">
-                        <label for="downloadModeSelect">Download Mode:</label>
-                        <select id="downloadModeSelect" class="form-control" style="margin-bottom: 10px;">
-                            <option value="single">Single Record Mode (1 PDF per record)</option>
-                            <option value="multi" selected>Multi-Record Mode (Multiple records per PDF)</option>
-                        </select>
-                    </div>
-                    
                     <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()" style="width: 100%; margin-bottom: 10px;">
                         📄 Download Current PDF
                     </button>
@@ -1309,7 +1302,7 @@
                         <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block; width: 100%;">Download Original PDF</a>
                     </div>
                 </div>
-
+                            
 
 
 
@@ -1344,7 +1337,7 @@
                                     <div class="pdf-content" id="pdfContent">
                     <canvas id="viewer"></canvas>
                         <canvas id="editorCanvas" style="display: none;"></canvas>
-                        <div id="pdfAreaOutline" class="pdf-area-outline" style="display: none;"></div>
+                    <div id="pdfAreaOutline" class="pdf-area-outline" style="display: none;"></div>
                 </div>
                 </div>
             </div>
@@ -1761,6 +1754,8 @@ if (!sessionState.defaultFontFamily) {
             
             const downloadBtn = document.getElementById('downloadPdfsBtn');
             if (downloadBtn) {
+                // Enable button if we have template, CSV data, and at least one box
+                // Multiple boxes are allowed for single record downloads
                 downloadBtn.disabled = !(hasTemplate && hasCSV && hasBoxes);
             }
         }
@@ -2003,7 +1998,7 @@ if (!sessionState.defaultFontFamily) {
                 alert('No text boxes found to format.');
                 return;
             }
-
+            
             // Get formatting values from the form
             const fontFamily = document.getElementById('formatAllFontFamily').value;
             const fontSize = document.getElementById('formatAllFontSize').value;
@@ -2074,6 +2069,8 @@ if (!sessionState.defaultFontFamily) {
 
         // Function to apply live formatting instantly
         function applyLiveFormatting() {
+            console.log('applyLiveFormatting called');
+            
             // Get formatting values from the form
             const fontFamily = document.getElementById('formatAllFontFamily').value;
             const fontSize = document.getElementById('formatAllFontSize').value;
@@ -2088,6 +2085,8 @@ if (!sessionState.defaultFontFamily) {
             const isBold = boldBtn.classList.contains('active');
             const isItalic = italicBtn.classList.contains('active');
             const isUnderline = underlineBtn.classList.contains('active');
+            
+            console.log('Style states:', { isBold, isItalic, isUnderline });
 
             // Determine which boxes to format based on apply mode
             let boxesToFormat = [];
@@ -2147,13 +2146,26 @@ if (!sessionState.defaultFontFamily) {
 
         // Add event listeners for text style buttons
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize alignment dropdown to center by default
+            const alignmentSelect = document.getElementById('formatAllTextAlign');
+            if (alignmentSelect) {
+                alignmentSelect.value = 'center';
+            }
+
             // Bold button
             const boldBtn = document.getElementById('formatAllBold');
             if (boldBtn) {
                 boldBtn.addEventListener('click', function() {
                     this.classList.toggle('active');
-                    this.style.background = this.classList.contains('active') ? '#007bff' : '';
-                    this.style.color = this.classList.contains('active') ? 'white' : '';
+                    if (this.classList.contains('active')) {
+                        this.style.background = '#007bff';
+                        this.style.color = 'white';
+                        this.style.borderColor = '#007bff';
+                    } else {
+                        this.style.background = '';
+                        this.style.color = '';
+                        this.style.borderColor = '';
+                    }
                     applyLiveFormatting(); // Apply formatting immediately
                 });
             }
@@ -2163,8 +2175,15 @@ if (!sessionState.defaultFontFamily) {
             if (italicBtn) {
                 italicBtn.addEventListener('click', function() {
                     this.classList.toggle('active');
-                    this.style.background = this.classList.contains('active') ? '#007bff' : '';
-                    this.style.color = this.classList.contains('active') ? 'white' : '';
+                    if (this.classList.contains('active')) {
+                        this.style.background = '#007bff';
+                        this.style.color = 'white';
+                        this.style.borderColor = '#007bff';
+                    } else {
+                        this.style.background = '';
+                        this.style.color = '';
+                        this.style.borderColor = '';
+                    }
                     applyLiveFormatting(); // Apply formatting immediately
                 });
             }
@@ -2174,8 +2193,15 @@ if (!sessionState.defaultFontFamily) {
             if (underlineBtn) {
                 underlineBtn.addEventListener('click', function() {
                     this.classList.toggle('active');
-                    this.style.background = this.classList.contains('active') ? '#007bff' : '';
-                    this.style.color = this.classList.contains('active') ? 'white' : '';
+                    if (this.classList.contains('active')) {
+                        this.style.background = '#007bff';
+                        this.style.color = 'white';
+                        this.style.borderColor = '#007bff';
+                    } else {
+                        this.style.background = '';
+                        this.style.color = '';
+                        this.style.borderColor = '';
+                    }
                     applyLiveFormatting(); // Apply formatting immediately
                 });
             }
@@ -2197,6 +2223,9 @@ if (!sessionState.defaultFontFamily) {
             } else {
                 console.error('CSV file input not found!');
             }
+
+            // Setup keyboard shortcuts for box management
+            setupKeyboardShortcuts();
         });
 
         // Simple Multiple Records Management
@@ -2240,70 +2269,73 @@ if (!sessionState.defaultFontFamily) {
                     // Create text box (existing logic)
                     const recordText = record[templateBox.csvColumn] || `Record ${i + 1}`;
                     
-                    const newBox = {
+                const newBox = {
                         ...templateBox,
-                        id: ++boxCounter,
+                    id: ++boxCounter,
                         boxId: boxCounter, // Add boxId for consistency with delete function
                         y: templateBox.y + verticalOffset, // Stack vertically with spacing
-                        element: null
-                    };
-                    
-                    // Create the text box element
-                    const textBox = document.createElement('div');
-                    textBox.className = 'draggable-text-box';
-                    textBox.id = 'textBox_' + newBox.id;
-                    textBox.style.cssText = `
-                        position: absolute;
-                        left: ${newBox.x}px;
-                        top: ${newBox.y}px;
-                        width: ${newBox.width}px;
-                        height: ${newBox.height}px;
-                        min-width: 80px;
-                        min-height: 25px;
-                        background: transparent;
-                        border: none;
-                        padding: 5px;
-                        cursor: move;
-                        pointer-events: auto;
-                        z-index: 20;
-                        font-family: ${newBox.fontFamily}, sans-serif;
-                        font-size: ${newBox.fontSize}px;
-                        color: ${newBox.color};
-                        text-align: ${newBox.textAlign};
-                        user-select: none;
-                        box-sizing: border-box;
-                        overflow: hidden;
-                        box-shadow: none;
-                        transition: all 0.1s ease;
-                    `;
-                    textBox.textContent = recordText;
-                    textBox.contentEditable = false;
+                    element: null
+                };
+                
+                // Create the text box element
+                const textBox = document.createElement('div');
+                textBox.className = 'draggable-text-box';
+                textBox.id = 'textBox_' + newBox.id;
+                textBox.style.cssText = `
+                    position: absolute;
+                    left: ${newBox.x}px;
+                    top: ${newBox.y}px;
+                    width: ${newBox.width}px;
+                    height: ${newBox.height}px;
+                    min-width: 80px;
+                    min-height: 25px;
+                    background: transparent;
+                    border: none;
+                    padding: 5px;
+                    cursor: move;
+                    pointer-events: auto;
+                    z-index: 20;
+                    font-family: ${newBox.fontFamily}, sans-serif;
+                    font-size: ${newBox.fontSize}px;
+                    color: ${newBox.color};
+                    text-align: ${newBox.textAlign};
+                    user-select: none;
+                    box-sizing: border-box;
+                    overflow: hidden;
+                    box-shadow: none;
+                    transition: all 0.1s ease;
+                    display: block;
+                    line-height: 1.2;
+                `;
+                textBox.textContent = recordText;
+                textBox.contentEditable = false;
                     
 
-                    
-                    // Add to overlay container
-                    const overlayContainer = document.getElementById('overlayContainer');
-                    overlayContainer.appendChild(textBox);
-                    
-                    // Make it draggable
-                    makeDraggable(textBox);
-                    
-                    // Add click handler
-                    textBox.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        document.querySelectorAll('.draggable-text-box').forEach(box => {
-                            box.style.border = 'none';
-                            box.classList.remove('selected');
-                        });
-                        textBox.style.border = 'none';
-                        textBox.classList.add('selected');
-                        sessionState.selectedBox = newBox;
-                        updateBoxEditor();
-                        updateBoxEditorValues(newBox);
+                
+                // Add to overlay container
+                const overlayContainer = document.getElementById('overlayContainer');
+                overlayContainer.appendChild(textBox);
+                
+                // Make it draggable
+                makeDraggable(textBox);
+                
+                // Add click handler
+                textBox.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // Remove selection from all boxes
+                    document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
+                        box.style.border = 'none';
+                        box.classList.remove('selected');
                     });
-                    
-                    newBox.element = textBox;
-                    sessionState.boxes.push(newBox);
+                    textBox.style.border = 'none';
+                    textBox.classList.add('selected');
+                    sessionState.selectedBox = newBox;
+                    updateBoxEditor();
+                    updateBoxEditorValues(newBox);
+                });
+                
+                newBox.element = textBox;
+                sessionState.boxes.push(newBox);
                 });
             }
             
@@ -2398,7 +2430,8 @@ if (!sessionState.defaultFontFamily) {
                     // Add click handler for selection
                     imageBox.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        document.querySelectorAll('.draggable-image-box.selected, .draggable-text-box.selected').forEach(box => {
+                        // Remove selection from all boxes
+                        document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
                             box.classList.remove('selected');
                         });
                         imageBox.classList.add('selected');
@@ -2459,8 +2492,9 @@ if (!sessionState.defaultFontFamily) {
                 return;
             }
             
-            // Calculate pages
-            recordsPerPage = 4; // Default value since recordsCountSelect was removed
+            // Calculate records per page based on number of boxes
+            const totalBoxes = sessionState.boxes.length;
+            recordsPerPage = totalBoxes > 0 ? totalBoxes : 1; // At least 1 record per page
             totalPages = Math.ceil(sessionState.csvRows.length / recordsPerPage);
             
             // Update page info
@@ -2714,6 +2748,8 @@ if (!sessionState.defaultFontFamily) {
                 overflow: hidden;
                 box-shadow: none;
                 transition: all 0.1s ease;
+                display: block;
+                line-height: 1.2;
             `;
             textBox.textContent = sampleText;
             textBox.contentEditable = false; // Disable direct editing since we use the panel
@@ -2751,13 +2787,13 @@ if (!sessionState.defaultFontFamily) {
             textBox.addEventListener('click', function(e) {
                 e.stopPropagation();
                 
-                // Remove selection from all boxes (no borders)
-                document.querySelectorAll('.draggable-text-box').forEach(box => {
+                // Remove selection from all boxes
+                document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
                     box.style.border = 'none';
                     box.classList.remove('selected');
                 });
                 
-                // Select this box (no border)
+                // Select this box
                 textBox.style.border = 'none';
                 textBox.classList.add('selected');
                 sessionState.selectedBox = boxData;
@@ -2859,14 +2895,14 @@ if (!sessionState.defaultFontFamily) {
 
             // Load image if URL is available
             if (sampleImageUrl && sampleImageUrl.trim() !== '') {
-                loadImageFromUrlOptimized(sampleImageUrl, imageBox);
+                loadImageFromUrl(sampleImageUrl, imageBox);
             }
 
             // Add click handler for selection
             imageBox.addEventListener('click', function(e) {
                 e.stopPropagation();
                 // Remove selected class from all boxes
-                document.querySelectorAll('.draggable-image-box.selected, .draggable-text-box.selected').forEach(box => {
+                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
                     box.classList.remove('selected');
                 });
                 // Add selected class to this box
@@ -3344,20 +3380,20 @@ if (!sessionState.defaultFontFamily) {
             // Update CSV column dropdown
             const columnSelect = document.getElementById('boxColumnSelect');
             if (columnSelect) {
-                columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
+            columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
                 
                 console.log('Updating CSV column dropdown. csvData:', csvData);
-                
-                if (csvData && csvData.length > 0) {
-                    const columns = Object.keys(csvData[0]);
+            
+            if (csvData && csvData.length > 0) {
+                const columns = Object.keys(csvData[0]);
                     console.log('CSV columns found:', columns);
-                    columns.forEach(column => {
-                        const option = document.createElement('option');
-                        option.value = column;
-                        option.textContent = column;
-                        option.selected = column === box.csvColumn;
-                        columnSelect.appendChild(option);
-                    });
+                columns.forEach(column => {
+                    const option = document.createElement('option');
+                    option.value = column;
+                    option.textContent = column;
+                    option.selected = column === box.csvColumn;
+                    columnSelect.appendChild(option);
+                });
                 } else {
                     console.log('No CSV data available for column dropdown');
                 }
@@ -3372,14 +3408,14 @@ if (!sessionState.defaultFontFamily) {
             const columnSelect = document.getElementById('boxColumnSelect');
             if (columnSelect) {
                 columnSelect.onchange = function() {
-                    box.csvColumn = this.value;
+                box.csvColumn = this.value;
                     if (box.boxType === 'text') {
-                        updateTextBoxContent(box);
+                updateTextBoxContent(box);
                     } else if (box.boxType === 'image' && box.imageSource === 'csv') {
                         updateImageBoxWithCSVData(box);
                     }
-                    updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
-                    updateCreateRecordsButtonState();
+                updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
+                updateCreateRecordsButtonState();
                 };
             }
         }
@@ -3409,7 +3445,8 @@ if (!sessionState.defaultFontFamily) {
                 // Add click handler for selection
                 clone.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    document.querySelectorAll('.draggable-image-box.selected, .draggable-text-box.selected').forEach(box => {
+                    // Remove selection from all boxes
+                    document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
                         box.classList.remove('selected');
                     });
                     clone.classList.add('selected');
@@ -3494,6 +3531,179 @@ if (!sessionState.defaultFontFamily) {
             updateTextBoxScaling();
         }
 
+        // Enhanced delete function that works with both DOM elements and box objects
+        function deleteBox(box) {
+            if (!box) return;
+            
+            // If it's a DOM element, find the corresponding box object
+            let boxElement = box;
+            let boxObject = null;
+            
+            if (box.element) {
+                // It's a box object, get the element
+                boxElement = box.element;
+                boxObject = box;
+            } else if (box.classList && box.classList.contains('draggable-text-box') || box.classList.contains('draggable-image-box')) {
+                // It's a DOM element, find the box object
+                boxObject = sessionState.boxes.find(b => b.element === box);
+            }
+            
+            if (!boxElement || !boxObject) return;
+            
+            // Remove from DOM
+            if (boxElement.remove) {
+                boxElement.remove();
+            }
+            
+            // Remove from session state
+            sessionState.boxes = sessionState.boxes.filter(b => b.boxId !== boxObject.boxId);
+            
+            // Clear selection if this was the selected box
+            if (sessionState.selectedBox && sessionState.selectedBox.boxId === boxObject.boxId) {
+                sessionState.selectedBox = null;
+                updateBoxEditor();
+            }
+            
+            updateEditorStatus('Box deleted');
+            updateDownloadButtonState();
+            updateImageBoxScaling();
+            updateTextBoxScaling();
+        }
+
+
+
+        // Keyboard shortcuts for box management
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Delete key to delete selected box
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    if (sessionState.selectedBox) {
+                        e.preventDefault();
+                        deleteSelectedBox();
+                    }
+                }
+                
+                // Escape key to deselect
+                if (e.key === 'Escape') {
+                    if (sessionState.selectedBox) {
+                        e.preventDefault();
+                        document.querySelectorAll('.draggable-text-box.selected, .draggable-image-box.selected').forEach(box => {
+                            box.classList.remove('selected');
+                        });
+                        sessionState.selectedBox = null;
+                        updateBoxEditor();
+                    }
+                }
+            });
+
+            // Right-click context menu for boxes
+            document.addEventListener('contextmenu', function(e) {
+                const target = e.target;
+                if (target.classList.contains('draggable-text-box') || target.classList.contains('draggable-image-box')) {
+                    e.preventDefault();
+                    
+                    // Select the box if not already selected
+                    if (!target.classList.contains('selected')) {
+                        document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
+                            box.classList.remove('selected');
+                        });
+                        target.classList.add('selected');
+                        
+                        // Update session state
+                        const boxObject = sessionState.boxes.find(b => b.element === target);
+                        if (boxObject) {
+                            sessionState.selectedBox = boxObject;
+                            updateBoxEditor();
+                            updateBoxEditorValues(boxObject);
+                        }
+                    }
+                    
+                    // Show context menu
+                    showBoxContextMenu(e.clientX, e.clientY, target);
+                }
+            });
+        }
+
+        // Context menu for boxes
+        function showBoxContextMenu(x, y, boxElement) {
+            // Remove existing context menu
+            const existingMenu = document.getElementById('boxContextMenu');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+            
+            // Create context menu
+            const contextMenu = document.createElement('div');
+            contextMenu.id = 'boxContextMenu';
+            contextMenu.style.cssText = `
+                position: fixed;
+                top: ${y}px;
+                left: ${x}px;
+                background: white;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                z-index: 1000;
+                min-width: 150px;
+                font-size: 14px;
+            `;
+            
+            // Delete option
+            const deleteOption = document.createElement('div');
+            deleteOption.style.cssText = `
+                padding: 8px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            `;
+            deleteOption.innerHTML = '🗑️ Delete Box';
+            deleteOption.addEventListener('click', function() {
+                deleteBox(boxElement);
+                contextMenu.remove();
+            });
+            deleteOption.addEventListener('mouseenter', function() {
+                this.style.background = '#f8f9fa';
+            });
+            deleteOption.addEventListener('mouseleave', function() {
+                this.style.background = 'white';
+            });
+            
+            // Duplicate option
+            const duplicateOption = document.createElement('div');
+            duplicateOption.style.cssText = `
+                padding: 8px 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            `;
+            duplicateOption.innerHTML = '📋 Duplicate Box';
+            duplicateOption.addEventListener('click', function() {
+                duplicateSelectedBox();
+                contextMenu.remove();
+            });
+            duplicateOption.addEventListener('mouseenter', function() {
+                this.style.background = '#f8f9fa';
+            });
+            duplicateOption.addEventListener('mouseleave', function() {
+                this.style.background = 'white';
+            });
+            
+            contextMenu.appendChild(deleteOption);
+            contextMenu.appendChild(duplicateOption);
+            document.body.appendChild(contextMenu);
+            
+            // Close context menu when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu() {
+                    contextMenu.remove();
+                    document.removeEventListener('click', closeMenu);
+                });
+            }, 100);
+        }
+
         // Simple drag functionality for text boxes
         function makeDraggable(element) {
             let isDragging = false;
@@ -3540,8 +3750,20 @@ if (!sessionState.defaultFontFamily) {
                 if (e.target === element) {
                     isDragging = true;
                     isResizing = false;
-                    initialX = e.clientX - xOffset;
-                    initialY = e.clientY - yOffset;
+                    
+                    // Get current position (accounting for any existing transform)
+                    const currentLeft = parseInt(element.style.left) || 0;
+                    const currentTop = parseInt(element.style.top) || 0;
+                    
+                    // Reset any existing transform
+                    element.style.transform = 'translate(0px, 0px)';
+                    
+                    // Initialize drag tracking
+                    initialX = e.clientX - currentLeft;
+                    initialY = e.clientY - currentTop;
+                    xOffset = currentLeft;
+                    yOffset = currentTop;
+                    
                     element.style.cursor = 'grabbing';
                     element.style.zIndex = '30';
                 }
@@ -3554,23 +3776,62 @@ if (!sessionState.defaultFontFamily) {
                     const deltaX = e.clientX - initialX;
                     const deltaY = e.clientY - initialY;
                     
-                    // Only resize, don't move the box position
-                    if (resizeHandle.includes('e')) { // right
-                        element.style.width = Math.max(80, initialWidth + deltaX) + 'px';
+                    // Get the PDF viewer container for boundary constraints
+                    const pdfViewer = document.getElementById('pdfViewer');
+                    const viewerRect = pdfViewer.getBoundingClientRect();
+                    const elementRect = element.getBoundingClientRect();
+                    
+                    // Calculate new dimensions and positions with constraints
+                    let newWidth = initialWidth;
+                    let newHeight = initialHeight;
+                    let newLeft = parseInt(element.style.left) || 0;
+                    let newTop = parseInt(element.style.top) || 0;
+                    
+                    // Handle right edge resize
+                    if (resizeHandle.includes('e')) {
+                        newWidth = Math.max(80, initialWidth + deltaX);
+                        // Constrain to viewer width
+                        const maxWidth = viewerRect.width - newLeft;
+                        newWidth = Math.min(newWidth, maxWidth);
                     }
-                    if (resizeHandle.includes('w')) { // right edge stays fixed, left edge moves
-                        const newWidth = Math.max(80, initialWidth - deltaX);
-                        element.style.width = newWidth + 'px';
-                        element.style.left = (parseInt(element.style.left) + (initialWidth - newWidth)) + 'px';
+                    
+                    // Handle left edge resize
+                    if (resizeHandle.includes('w')) {
+                        const proposedWidth = Math.max(80, initialWidth - deltaX);
+                        const proposedLeft = newLeft + (initialWidth - proposedWidth);
+                        
+                        // Constrain to viewer boundaries
+                        if (proposedLeft >= 0 && proposedLeft + proposedWidth <= viewerRect.width) {
+                            newWidth = proposedWidth;
+                            newLeft = proposedLeft;
+                        }
                     }
-                    if (resizeHandle.includes('s')) { // bottom
-                        element.style.height = Math.max(25, initialHeight + deltaY) + 'px';
+                    
+                    // Handle bottom edge resize
+                    if (resizeHandle.includes('s')) {
+                        newHeight = Math.max(25, initialHeight + deltaY);
+                        // Constrain to viewer height
+                        const maxHeight = viewerRect.height - newTop;
+                        newHeight = Math.min(newHeight, maxHeight);
                     }
-                    if (resizeHandle.includes('n')) { // bottom edge stays fixed, top edge moves
-                        const newHeight = Math.max(25, initialHeight - deltaY);
-                        element.style.height = newHeight + 'px';
-                        element.style.top = (parseInt(element.style.top) + (initialHeight - newHeight)) + 'px';
+                    
+                    // Handle top edge resize
+                    if (resizeHandle.includes('n')) {
+                        const proposedHeight = Math.max(25, initialHeight - deltaY);
+                        const proposedTop = newTop + (initialHeight - proposedHeight);
+                        
+                        // Constrain to viewer boundaries
+                        if (proposedTop >= 0 && proposedTop + proposedHeight <= viewerRect.height) {
+                            newHeight = proposedHeight;
+                            newTop = proposedTop;
+                        }
                     }
+                    
+                    // Apply the constrained values
+                    element.style.width = newWidth + 'px';
+                    element.style.height = newHeight + 'px';
+                    element.style.left = newLeft + 'px';
+                    element.style.top = newTop + 'px';
                     
                     // Update font size based on box size
                     updateTextSize(element);
@@ -3582,9 +3843,24 @@ if (!sessionState.defaultFontFamily) {
                     xOffset = currentX;
                     yOffset = currentY;
 
-                    // Apply snap-to-grid
-                    const snappedPosition = snapToGrid(currentX, currentY, element);
-                    element.style.transform = `translate(${snappedPosition.x}px, ${snappedPosition.y}px)`;
+                    // Get the PDF viewer container for boundary constraints
+                    const pdfViewer = document.getElementById('pdfViewer');
+                    const viewerRect = pdfViewer.getBoundingClientRect();
+                    const elementRect = element.getBoundingClientRect();
+                    
+                    // Constrain dragging within viewer boundaries
+                    const maxX = viewerRect.width - elementRect.width;
+                    const maxY = viewerRect.height - elementRect.height;
+                    
+                    currentX = Math.max(0, Math.min(currentX, maxX));
+                    currentY = Math.max(0, Math.min(currentY, maxY));
+                    
+                    xOffset = currentX;
+                    yOffset = currentY;
+
+                    // Apply constrained position directly
+                    element.style.left = currentX + 'px';
+                    element.style.top = currentY + 'px';
                 }
             }
 
@@ -3599,6 +3875,14 @@ if (!sessionState.defaultFontFamily) {
                     resizeHandle = '';
                     element.classList.remove('resizing');
                     
+                    // Update the box data in session state
+                    if (sessionState.selectedBox && sessionState.selectedBox.element === element) {
+                        sessionState.selectedBox.width = parseInt(element.style.width);
+                        sessionState.selectedBox.height = parseInt(element.style.height);
+                        sessionState.selectedBox.x = parseInt(element.style.left);
+                        sessionState.selectedBox.y = parseInt(element.style.top);
+                    }
+                    
                 } else if (isDragging) {
                     initialX = currentX;
                     initialY = currentY;
@@ -3606,6 +3890,12 @@ if (!sessionState.defaultFontFamily) {
                     element.style.cursor = 'move';
                     element.style.zIndex = '20';
                     clearSnapGuides();
+                    
+                    // Update the box data in session state
+                    if (sessionState.selectedBox && sessionState.selectedBox.element === element) {
+                        sessionState.selectedBox.x = parseInt(element.style.left);
+                        sessionState.selectedBox.y = parseInt(element.style.top);
+                    }
                 }
             }
         }
@@ -3935,33 +4225,15 @@ if (!sessionState.defaultFontFamily) {
             });
         }
         
-        // Global image cache to avoid re-downloading the same images
-        const imageCache = new Map();
-        
-        // Function to clear old cache entries (older than 1 hour)
-        function clearOldCacheEntries() {
-            const oneHourAgo = Date.now() - (60 * 60 * 1000);
-            for (const [url, data] of imageCache.entries()) {
-                if (data.timestamp < oneHourAgo) {
-                    imageCache.delete(url);
-                }
-            }
-        }
-        
-        // Clear old cache entries every 30 minutes
-        setInterval(clearOldCacheEntries, 30 * 60 * 1000);
-        
-        // Function to pre-load and cache images with better performance
-        async function preloadAndCacheImages(imageUrls) {
-            const uniqueUrls = [...new Set(imageUrls.filter(url => url && url.trim() !== ''))];
+        // Function to pre-load all images for html2canvas capture with progress bar
+        async function preloadAllImages() {
+            const imageBoxes = document.querySelectorAll('.draggable-image-box img');
             
-            if (uniqueUrls.length === 0) {
+            if (imageBoxes.length === 0) {
                 console.log('No images to preload');
                 return;
             }
 
-            console.log(`Preloading ${uniqueUrls.length} unique images...`);
-            
             // Show progress overlay
             const overlay = document.getElementById('imageLoadingOverlay');
             const progressBar = document.getElementById('imageProgressBar');
@@ -3969,138 +4241,49 @@ if (!sessionState.defaultFontFamily) {
             const subtitle = document.getElementById('imageLoadingSubtitle');
             
             overlay.classList.add('active');
-            subtitle.textContent = `Loading ${uniqueUrls.length} image${uniqueUrls.length > 1 ? 's' : ''}...`;
+            subtitle.textContent = `Loading ${imageBoxes.length} image${imageBoxes.length > 1 ? 's' : ''}...`;
             
             let loadedCount = 0;
-            const totalImages = uniqueUrls.length;
+            const totalImages = imageBoxes.length;
             
-            // Create promises for parallel loading with better error handling
-            const imagePromises = uniqueUrls.map((url, index) => {
-                return new Promise((resolve) => {
-                    // Check if already cached
-                    if (imageCache.has(url)) {
+            const imagePromises = Array.from(imageBoxes).map((img, index) => {
+                return new Promise((resolve, reject) => {
+                    if (img.complete && img.naturalWidth > 0) {
+                        // Image already loaded
                         loadedCount++;
                         updateProgress(loadedCount, totalImages, progressBar, progressText);
                         resolve();
-                        return;
+                    } else {
+                        img.onload = () => {
+                            loadedCount++;
+                            updateProgress(loadedCount, totalImages, progressBar, progressText);
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            // Continue even if some images fail
+                            loadedCount++;
+                            updateProgress(loadedCount, totalImages, progressBar, progressText);
+                            resolve();
+                        };
+                        // Force reload if needed
+                        if (img.src) {
+                            img.src = img.src;
+                        }
                     }
-                    
-                    const img = new Image();
-                    img.crossOrigin = 'anonymous';
-                    
-                    img.onload = () => {
-                        // Cache the loaded image
-                        imageCache.set(url, {
-                            element: img,
-                            loaded: true,
-                            timestamp: Date.now()
-                        });
-                        loadedCount++;
-                        updateProgress(loadedCount, totalImages, progressBar, progressText);
-                        resolve();
-                    };
-                    
-                    img.onerror = () => {
-                        // Cache failed loads to avoid retrying
-                        imageCache.set(url, {
-                            element: null,
-                            loaded: false,
-                            timestamp: Date.now()
-                        });
-                        loadedCount++;
-                        updateProgress(loadedCount, totalImages, progressBar, progressText);
-                        resolve();
-                    };
-                    
-                    // Use proxy with cache headers
-                    img.src = `proxy_image.php?url=${encodeURIComponent(url)}&cache=${Date.now()}`;
                 });
             });
             
-            // Wait for all images to load with timeout
+            // Wait for all images to load (with timeout)
             await Promise.allSettled(imagePromises);
             
             // Additional wait to ensure images are fully rendered
             subtitle.textContent = 'Finalizing image preparation...';
-            await new Promise(resolve => setTimeout(resolve, 50)); // Reduced from 100ms
+            await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 200ms
             
             // Hide progress overlay
             overlay.classList.remove('active');
             
-            console.log(`All ${totalImages} images pre-loaded and cached`);
-        }
-        
-        // Function to get all unique image URLs from current CSV data
-        function getAllImageUrls() {
-            const urls = new Set();
-            
-            if (!csvData) return Array.from(urls);
-            
-            // Get image URLs from all image boxes
-            sessionState.boxes.forEach(box => {
-                if (box.boxType === 'image' && box.csvColumn) {
-                    csvData.forEach(row => {
-                        const url = row[box.csvColumn];
-                        if (url && url.trim() !== '') {
-                            urls.add(url);
-                        }
-                    });
-                }
-            });
-            
-            return Array.from(urls);
-        }
-        
-        // Optimized function to load image from URL with caching
-        function loadImageFromUrlOptimized(imageUrl, imageBox) {
-            if (!imageUrl || imageUrl.trim() === '') {
-                console.log('No image URL provided');
-                return;
-            }
-
-            console.log('Loading image from URL (optimized):', imageUrl);
-            
-            // Check cache first
-            if (imageCache.has(imageUrl)) {
-                const cached = imageCache.get(imageUrl);
-                if (cached.loaded && cached.element) {
-                    console.log('Using cached image:', imageUrl);
-                    // Clone the cached image
-                    const imgClone = cached.element.cloneNode(true);
-                    imageBox.innerHTML = '';
-                    imageBox.appendChild(imgClone);
-                    
-                    // Apply styling
-                    imgClone.style.width = '100%';
-                    imgClone.style.height = '100%';
-                    imgClone.style.objectFit = 'contain';
-                    imgClone.style.objectPosition = 'center';
-                    imgClone.style.display = 'block';
-                    imgClone.style.aspectRatio = 'auto';
-                    imgClone.style.imageRendering = 'auto';
-                    
-                    imageBox.style.border = '2px dashed #007bff';
-                    imageBox.style.background = 'rgba(255,255,255,0.2)';
-                    return;
-                }
-            }
-            
-            // Fallback to original loading method
-            loadImageFromUrl(imageUrl, imageBox);
-        }
-
-        // Function to pre-load all images for html2canvas capture with progress bar
-        async function preloadAllImages() {
-            // Get all unique image URLs from CSV data
-            const allImageUrls = getAllImageUrls();
-            
-            if (allImageUrls.length === 0) {
-                console.log('No images to preload');
-                return;
-            }
-
-            // Use the new optimized preloading function
-            await preloadAndCacheImages(allImageUrls);
+            console.log(`All ${totalImages} images pre-loaded for capture`);
         }
 
         // Helper function to update progress bar
@@ -4141,14 +4324,8 @@ if (!sessionState.defaultFontFamily) {
                 handle.style.display = 'none';
             });
             
-            // Hide delete buttons to prevent capture
-            const deleteButtons = clonedViewer.querySelectorAll('.delete-box-btn');
-            deleteButtons.forEach(btn => {
-                btn.style.display = 'none';
-            });
-            
             // Hide any other UI elements that shouldn't be captured
-            const uiElements = clonedViewer.querySelectorAll('.delete-box-btn, .resize-handle, .pdf-controls');
+            const uiElements = clonedViewer.querySelectorAll('.resize-handle, .pdf-controls');
             uiElements.forEach(element => {
                 element.style.display = 'none';
             });
@@ -4340,20 +4517,10 @@ if (!sessionState.defaultFontFamily) {
             }
         }
 
-        // Download PDFs function - Hybrid High Quality with Mode Selection
+        // Download PDFs function - Hybrid High Quality (Single Record Mode Only)
         async function downloadPdfs() {
             try {
-                // Get download mode
-                const downloadMode = document.getElementById('downloadModeSelect').value;
-                console.log(`=== HYBRID HIGH QUALITY PDF GENERATION (${downloadMode.toUpperCase()} MODE) ===`);
-                
-                // Performance optimization: Cache DOM elements to reduce queries
-                const viewer = document.getElementById('viewer');
-                const clonedViewer = viewer.cloneNode(true);
-                clonedViewer.style.position = 'absolute';
-                clonedViewer.style.left = '-9999px';
-                clonedViewer.style.top = '-9999px';
-                document.body.appendChild(clonedViewer);
+                console.log(`=== HYBRID HIGH QUALITY PDF GENERATION (SINGLE RECORD MODE) ===`);
                 
                 // Step 1: Validate inputs
                 console.log('Step 1: Validating inputs...');
@@ -4379,7 +4546,7 @@ if (!sessionState.defaultFontFamily) {
 
                 const downloadBtn = document.getElementById('downloadPdfsBtn');
                 downloadBtn.disabled = true;
-                downloadBtn.textContent = `Generating ${downloadMode === 'single' ? 'Single Record' : 'Multi-Record'} PDFs...`;
+                downloadBtn.textContent = `Generating Single Record PDFs...`;
 
                 // Step 2: Load JSZip
                 console.log('Step 2: Loading JSZip...');
@@ -4431,7 +4598,7 @@ if (!sessionState.defaultFontFamily) {
                     color: #333;
                     margin-bottom: 20px;
                 `;
-                progressTitle.textContent = `Generating ${downloadMode === 'single' ? 'Single Record' : 'Multi-Record'} PDFs`;
+                progressTitle.textContent = `Generating Single Record PDFs`;
                 
                 const progressSubtitle = document.createElement('div');
                 progressSubtitle.style.cssText = `
@@ -4495,9 +4662,8 @@ if (!sessionState.defaultFontFamily) {
                 };
 
                 try {
-                    if (downloadMode === 'single') {
-                        // SINGLE RECORD MODE: One PDF per record
-                        console.log('=== SINGLE RECORD MODE ===');
+                    // SINGLE RECORD MODE: One PDF per record
+                    console.log('=== SINGLE RECORD MODE ===');
                         
                         for (let recordIndex = 0; recordIndex < totalRecords; recordIndex++) {
                             console.log(`\n--- Processing Record ${recordIndex + 1}/${totalRecords} ---`);
@@ -4639,34 +4805,36 @@ if (!sessionState.defaultFontFamily) {
                                         // Hide PDF controls (top right corner buttons)
                                         const pdfControls = clonedViewer.querySelector('.pdf-controls');
                                         if (pdfControls) pdfControls.style.display = 'none';
+                                        
+                                        // Fix image stretching for all image boxes before capture
+                                        const imageImgs = clonedViewer.querySelectorAll('.draggable-image-box img');
+                                        imageImgs.forEach(img => {
+                                            if (img.naturalWidth && img.naturalHeight) {
+                                                const naturalWidth = img.naturalWidth;
+                                                const naturalHeight = img.naturalHeight;
+                                                const boxWidth = img.parentElement.offsetWidth;
+                                                const boxHeight = img.parentElement.offsetHeight;
+                                                
+                                                const imageAspect = naturalWidth / naturalHeight;
+                                                const boxAspect = boxWidth / boxHeight;
+                                                
+                                                if (imageAspect > boxAspect) {
+                                                    img.style.width = '100%';
+                                                    img.style.height = 'auto';
+                                                } else {
+                                                    img.style.width = 'auto';
+                                                    img.style.height = '100%';
+                                                }
+                                                
+                                                img.style.objectFit = 'none';
+                                                img.style.objectPosition = 'center';
+                                            }
+                                        });
                                     }
                                 }
                             });
                             
-                            // Fix image stretching for all image boxes before capture
-                            const imageBoxes = clonedViewer.querySelectorAll('.draggable-image-box img');
-                            imageBoxes.forEach(img => {
-                                if (img.naturalWidth && img.naturalHeight) {
-                                    const naturalWidth = img.naturalWidth;
-                                    const naturalHeight = img.naturalHeight;
-                                    const boxWidth = img.parentElement.offsetWidth;
-                                    const boxHeight = img.parentElement.offsetHeight;
-                                    
-                                    const imageAspect = naturalWidth / naturalHeight;
-                                    const boxAspect = boxWidth / boxHeight;
-                                    
-                                    if (imageAspect > boxAspect) {
-                                        img.style.width = '100%';
-                                        img.style.height = 'auto';
-                                    } else {
-                                        img.style.width = 'auto';
-                                        img.style.height = '100%';
-                                    }
-                                    
-                                    img.style.objectFit = 'none';
-                                    img.style.objectPosition = 'center';
-                                }
-                            });
+
                             
                             // Step 3d: Convert overlay to PNG with transparency
                             console.log('Step 3d: Converting overlay to PNG...');
@@ -4701,230 +4869,33 @@ if (!sessionState.defaultFontFamily) {
                             // Update progress
                             updateProgress(1, 'PDF generated');
                         }
-                        
-                    } else {
-                        // MULTI-RECORD MODE: Download individual PDFs instead of zip
-                        console.log('=== MULTI-RECORD MODE (Individual Downloads) ===');
-                        const totalPages = Math.ceil(totalRecords / recordsPerPage);
-                        console.log(`Records per page: ${recordsPerPage}, Total pages: ${totalPages}`);
-                        
-                        // Update progress title for individual downloads
-                        progressTitle.textContent = 'Downloading Individual PDFs';
-                        progressSubtitle.textContent = `Will download ${totalPages} PDF files individually...`;
-                        
-                        for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
-                            console.log(`\n--- Processing Page ${pageIndex + 1}/${totalPages} ---`);
-                            
-                            // Calculate which records belong to this page
-                            const startRecord = pageIndex * recordsPerPage;
-                            const endRecord = Math.min(startRecord + recordsPerPage, totalRecords);
-                            const recordsOnThisPage = endRecord - startRecord;
-                            
-                            console.log(`Records on this page: ${startRecord + 1} to ${endRecord} (${recordsOnThisPage} records)`);
-
-                            // Step 3a: Load the template PDF (crisp vector background)
-                            console.log('Step 3a: Loading template PDF...');
-                            const pdfDoc = await PDFLib.PDFDocument.load(sessionState.templatePdfBytes);
-                            
-                            // Get the first page
-                            const pages = pdfDoc.getPages();
-                            if (pages.length === 0) {
-                                throw new Error('Template PDF has no pages');
-                            }
-                            
-                            const page = pages[0];
-                            
-                            // Step 3b: Update UI to show current page data
-                            console.log('Step 3b: Updating UI for overlay capture...');
-                            currentPage = pageIndex;
-                            
-                            // Update all boxes with current page data
-                            updateAllTextBoxesWithCSVData();
-                            
-                            // Wait for UI to update and ensure images are loaded
-                            await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 150ms
-                            
-                            // Pre-load all images to ensure they're ready for capture
-                            progressSubtitle.textContent = `Loading images for page ${pageIndex + 1}...`;
-                            await preloadAllImages();
-                            progressSubtitle.textContent = `Processing page ${pageIndex + 1} of ${totalPages}...`;
-                            
-                            // Wait for UI to update
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            
-                            // Step 3c: Capture high-resolution overlay (text boxes and image boxes)
-                            console.log('Step 3c: Capturing high-res overlays...');
-                            const pdfViewer = document.getElementById('pdfViewer');
-                            const canvas = document.getElementById('viewer');
-                            
-                            if (!pdfViewer || !canvas) {
-                                throw new Error('PDF viewer not found');
-                            }
-                            
-                            // Get PDF area dimensions
-                            const canvasRect = canvas.getBoundingClientRect();
-                            const viewerRect = pdfViewer.getBoundingClientRect();
-                            const pdfAreaX = canvasRect.left - viewerRect.left;
-                            const pdfAreaY = canvasRect.top - viewerRect.top;
-                            const pdfAreaWidth = canvasRect.width;
-                            const pdfAreaHeight = canvasRect.height;
-                            
-                            // Calculate optimized scale factor for overlays (balanced quality/speed)
-                            let scale = 4; // Reduced from 8 for better performance
-                            const img = canvas.querySelector('img');
-                            if (img && img.naturalWidth && img.width) {
-                                const originalScale = img.naturalWidth / img.width;
-                                scale = Math.max(3, originalScale * 1.5); // Reduced multiplier for speed
-                            }
-                            scale = Math.max(2, Math.min(8, scale)); // Reduced range for faster processing
-                            
-                            // Capture only the overlay elements with transparency
-                            const overlayCanvas = await html2canvas(pdfViewer, {
-                                scale: scale,
-                                useCORS: true,
-                                allowTaint: true,
-                                backgroundColor: null, // Transparent background
-                                logging: false,
-                                x: pdfAreaX,
-                                y: pdfAreaY,
-                                width: pdfAreaWidth,
-                                height: pdfAreaHeight,
-                                onclone: (clonedDoc) => {
-                                    const clonedViewer = clonedDoc.getElementById('pdfViewer');
-                                    if (clonedViewer) {
-                                        // Hide the PDF background completely
-                                        const pdfCanvas = clonedDoc.getElementById('viewer');
-                                        if (pdfCanvas) {
-                                            pdfCanvas.style.display = 'none';
-                                        }
-                                        
-                                        // Hide UI elements
-                                        const outline = clonedDoc.getElementById('pdfAreaOutline');
-                                        if (outline) outline.style.display = 'none';
-                                        
-                                        const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
-                                        if (lockIndicator) lockIndicator.style.display = 'none';
-                                        
-                                        // Keep only text boxes and image boxes with their styling
-                                        const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box, .draggable-image-box');
-                                        allBoxes.forEach(box => {
-                                            if (box.classList.contains('draggable-text-box')) {
-                                                // Text box styling
-                                                box.style.border = 'none';
-                                                box.style.background = 'transparent';
-                                                box.style.boxShadow = 'none';
-                                                box.style.outline = 'none';
-                                                // Keep font styling for quality
-                                                box.style.fontFamily = box.style.fontFamily || 'Arial, sans-serif';
-                                                box.style.fontSize = box.style.fontSize || '16px';
-                                                box.style.fontWeight = box.style.fontWeight || 'normal';
-                                                box.style.color = box.style.color || '#000000';
-                                            } else if (box.classList.contains('draggable-image-box')) {
-                                                // Image box styling
-                                                box.style.border = 'none';
-                                                box.style.background = 'transparent';
-                                                box.style.boxShadow = 'none';
-                                                box.style.outline = 'none';
-                                                // Ensure images are visible and properly sized
-                                                const img = box.querySelector('img');
-                                                if (img) {
-                                                    img.style.width = '100%';
-                                                    img.style.height = '100%';
-                                                    img.style.objectFit = 'contain';
-                                                    img.style.display = 'block';
-                                                }
-                                            }
-                                        });
-                                        
-                                        // Remove resize handles (use !important to override CSS)
-                                        const resizeHandles = clonedViewer.querySelectorAll('.resize-handle');
-                                        resizeHandles.forEach(handle => {
-                                            handle.style.setProperty('display', 'none', 'important');
-                                            handle.style.setProperty('opacity', '0', 'important');
-                                        });
-                                        
-                                        // Hide "No Image" text in downloaded PDFs
-                                        const imageBoxes = clonedViewer.querySelectorAll('.draggable-image-box');
-                                        imageBoxes.forEach(box => {
-                                            if (box.textContent === 'No Image') {
-                                                box.textContent = '';
-                                            }
-                                        });
-                                        
-                                        // Make background transparent
-                                        clonedViewer.style.background = 'transparent';
-                                        
-                                        // Hide PDF controls (top right corner buttons)
-                                        const pdfControls = clonedViewer.querySelector('.pdf-controls');
-                                        if (pdfControls) pdfControls.style.display = 'none';
-                                    }
-                                }
-                            });
-                            
-                            // Step 3d: Convert overlay to PNG with transparency
-                            console.log('Step 3d: Converting overlay to PNG...');
-                            const overlayPngDataUrl = overlayCanvas.toDataURL('image/png', 1.0);
-                            
-                            // Step 3e: Embed overlay image into PDF
-                            console.log('Step 3e: Embedding overlay into PDF...');
-                            const overlayImage = await pdfDoc.embedPng(overlayPngDataUrl);
-                            
-                            // Get page dimensions
-                            const { width: pageWidth, height: pageHeight } = page.getSize();
-                            
-                            // Add overlay image to page (full page coverage)
-                            page.drawImage(overlayImage, {
-                                x: 0,
-                                y: 0,
-                                width: pageWidth,
-                                height: pageHeight,
-                            });
-                            
-                            // Step 3f: Save the hybrid PDF
-                            console.log('Step 3f: Saving hybrid PDF...');
-                            const pdfBytes = await pdfDoc.save();
-                            
-                            // Step 3g: Download individual PDF immediately
-                            const fileName = `multi_page_${pageIndex + 1}_records_${startRecord + 1}-${endRecord}.pdf`;
-                            const url = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = fileName;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                            
-                            console.log(`✓ Multi-record page ${pageIndex + 1} downloaded: ${fileName}`);
-                            
-                            // Update progress for multi-record mode
-                            updateProgress(recordsOnThisPage, 'PDF downloaded');
-                        }
-                        
-                        // For multi-record mode, we don't need to create a zip file
-                        console.log('✓ All individual PDFs downloaded successfully!');
-                    } else {
-                        // Step 4: Download zip file (only for single record mode)
-                        console.log('Step 4: Generating zip file...');
-                        progressSubtitle.textContent = 'Creating zip file...';
-                        const zipBlob = await zip.generateAsync({ type: 'blob' });
-                        
-                        // Create download link with mode-specific naming
-                        const url = URL.createObjectURL(zipBlob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `single_record_high_quality_pdfs_${totalRecords}_records.zip`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                        
-                        console.log(`✓ Single Record high-quality download complete!`);
-                    }
+                    
+                    // Step 4: Download zip file
+                    console.log('Step 4: Generating zip file...');
+                    progressSubtitle.textContent = 'Creating zip file...';
+                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    
+                    // Create download link with single record naming
+                    const url = URL.createObjectURL(zipBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `single_record_high_quality_pdfs_${totalRecords}_records.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    console.log(`✓ Single Record high-quality download complete!`);
                     
                 } catch (error) {
-                    console.error('PDF generation failed:', error);
-                    alert('Error generating PDFs: ' + error.message);
+                    console.error('Error during PDF generation:', error);
+                    
+                    // Remove progress overlay on error
+                    if (progressOverlay && progressOverlay.parentNode) {
+                        progressOverlay.parentNode.removeChild(progressOverlay);
+                    }
+                    
+                    throw error;
                 } finally {
                     // Restore original state
                     currentPage = 0;
@@ -4934,19 +4905,28 @@ if (!sessionState.defaultFontFamily) {
                     if (progressOverlay && progressOverlay.parentNode) {
                         progressOverlay.parentNode.removeChild(progressOverlay);
                     }
+                }
+                
+            } catch (error) {
+                console.error('Download failed:', error);
+                alert('Error generating PDFs: ' + error.message);
                     
-                    // Clean up cloned viewer
-                    if (clonedViewer && clonedViewer.parentNode) {
-                        clonedViewer.parentNode.removeChild(clonedViewer);
+                    // Remove progress overlay on error
+                    if (progressOverlay && progressOverlay.parentNode) {
+                        progressOverlay.parentNode.removeChild(progressOverlay);
+                    }
+            } finally {
+                    // Remove progress overlay
+                    if (progressOverlay && progressOverlay.parentNode) {
+                        progressOverlay.parentNode.removeChild(progressOverlay);
                     }
                     
-                    // Restore button state
-                    const downloadBtn = document.getElementById('downloadPdfsBtn');
-                    downloadBtn.disabled = false;
-                    downloadBtn.textContent = 'Download PDFs';
-                }
+                // Restore button state
+                const downloadBtn = document.getElementById('downloadPdfsBtn');
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = 'Download PDFs';
+            }
         }
-
 
         // Take Screenshot function
         async function takeScreenshot() {
@@ -5444,16 +5424,6 @@ if (!sessionState.defaultFontFamily) {
                     
                     // Update create records button state
                     updateCreateRecordsButtonState();
-                    
-                    // Preload all images for better performance
-                    console.log('Starting image preloading for better performance...');
-                    const allImageUrls = getAllImageUrls();
-                    if (allImageUrls.length > 0) {
-                        // Preload images in background without blocking UI
-                        setTimeout(() => {
-                            preloadAndCacheImages(allImageUrls);
-                        }, 1000); // Delay to let UI settle first
-                    }
                 },
                 error: function(error) {
                     console.error('CSV parsing error:', error);
@@ -5519,9 +5489,9 @@ if (!sessionState.defaultFontFamily) {
             if (noPdf) {
                 noPdf.style.display = 'block';
                 noPdf.innerHTML = `
-                    <h3>No PDF selected</h3>
-                    <p>Choose a PDF file to start viewing</p>
-                `;
+                <h3>No PDF selected</h3>
+                <p>Choose a PDF file to start viewing</p>
+            `;
             }
             if (loadingPdf) loadingPdf.style.display = 'none';
             if (viewer) viewer.style.display = 'none';
@@ -5903,7 +5873,7 @@ if (!sessionState.defaultFontFamily) {
             
             // Load the new image
             if (imageUrl && imageUrl.trim() !== '') {
-                loadImageFromUrlOptimized(imageUrl, box.element);
+                loadImageFromUrl(imageUrl, box.element);
             } else {
                 // Show placeholder if no image URL
                 box.element.textContent = 'No Image';
@@ -5965,7 +5935,7 @@ if (!sessionState.defaultFontFamily) {
             
             // Load the new image
             if (imageUrl && imageUrl.trim() !== '') {
-                loadImageFromUrlOptimized(imageUrl, box.element);
+                loadImageFromUrl(imageUrl, box.element);
             } else {
                 // Show placeholder if no image URL
                 box.element.textContent = 'No Image';
