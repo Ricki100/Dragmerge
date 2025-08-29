@@ -1263,9 +1263,9 @@
                                         <option value="right">Right</option>
                                 <option value="justify">Justify</option>
                                     </select>
-                        </div>
                                 </div>
-                                
+                            </div>
+                            
                     <!-- Text Style Buttons -->
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 11px;">Style:</label>
@@ -1273,9 +1273,9 @@
                                             <button type="button" id="formatAllBold" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;">B</button>
                 <button type="button" id="formatAllItalic" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;">I</button>
                 <button type="button" id="formatAllUnderline" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;">U</button>
-                                    </div>
                                 </div>
-
+                            </div>
+                            
                     <!-- Action Buttons -->
                     <div style="display: flex; gap: 6px; margin-bottom: 10px;">
                         <button class="btn btn-danger" onclick="deleteSelectedBox()" style="flex: 1; font-size: 11px; padding: 6px 8px;" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
@@ -1302,7 +1302,7 @@
                         <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block; width: 100%;">Download Original PDF</a>
                     </div>
                 </div>
-                            
+
 
 
 
@@ -4702,66 +4702,66 @@ if (!sessionState.defaultFontFamily) {
                             
                             // Step 3c: Capture high-resolution overlay (text boxes and image boxes)
                             console.log('Step 3c: Capturing high-res overlays...');
-                            const pdfViewer = document.getElementById('pdfViewer');
-                            const canvas = document.getElementById('viewer');
-                            
-                            if (!pdfViewer || !canvas) {
-                                throw new Error('PDF viewer not found');
-                            }
-                            
-                            // Get PDF area dimensions
-                            const canvasRect = canvas.getBoundingClientRect();
-                            const viewerRect = pdfViewer.getBoundingClientRect();
-                            const pdfAreaX = canvasRect.left - viewerRect.left;
-                            const pdfAreaY = canvasRect.top - viewerRect.top;
-                            const pdfAreaWidth = canvasRect.width;
-                            const pdfAreaHeight = canvasRect.height;
-                            
+                        const pdfViewer = document.getElementById('pdfViewer');
+                        const canvas = document.getElementById('viewer');
+                        
+                        if (!pdfViewer || !canvas) {
+                            throw new Error('PDF viewer not found');
+                        }
+                        
+                        // Get PDF area dimensions
+                        const canvasRect = canvas.getBoundingClientRect();
+                        const viewerRect = pdfViewer.getBoundingClientRect();
+                        const pdfAreaX = canvasRect.left - viewerRect.left;
+                        const pdfAreaY = canvasRect.top - viewerRect.top;
+                        const pdfAreaWidth = canvasRect.width;
+                        const pdfAreaHeight = canvasRect.height;
+                        
                             // Calculate optimized scale factor for overlays (balanced quality/speed)
                             let scale = 4; // Reduced from 8 for better performance
-                            const img = canvas.querySelector('img');
-                            if (img && img.naturalWidth && img.width) {
-                                const originalScale = img.naturalWidth / img.width;
+                        const img = canvas.querySelector('img');
+                        if (img && img.naturalWidth && img.width) {
+                            const originalScale = img.naturalWidth / img.width;
                                 scale = Math.max(3, originalScale * 1.5); // Reduced multiplier for speed
                             }
                             scale = Math.max(2, Math.min(8, scale)); // Reduced range for faster processing
                             
                             // Capture only the overlay elements with transparency
                             const overlayCanvas = await html2canvas(pdfViewer, {
-                                scale: scale,
-                                useCORS: true,
-                                allowTaint: true,
+                            scale: scale,
+                            useCORS: true,
+                            allowTaint: true,
                                 backgroundColor: null, // Transparent background
-                                logging: false,
-                                x: pdfAreaX,
-                                y: pdfAreaY,
-                                width: pdfAreaWidth,
-                                height: pdfAreaHeight,
-                                onclone: (clonedDoc) => {
-                                    const clonedViewer = clonedDoc.getElementById('pdfViewer');
-                                    if (clonedViewer) {
+                            logging: false,
+                            x: pdfAreaX,
+                            y: pdfAreaY,
+                            width: pdfAreaWidth,
+                            height: pdfAreaHeight,
+                            onclone: (clonedDoc) => {
+                                const clonedViewer = clonedDoc.getElementById('pdfViewer');
+                                if (clonedViewer) {
                                         // Hide the PDF background completely
                                         const pdfCanvas = clonedDoc.getElementById('viewer');
                                         if (pdfCanvas) {
                                             pdfCanvas.style.display = 'none';
                                         }
                                         
-                                        // Hide UI elements
-                                        const outline = clonedDoc.getElementById('pdfAreaOutline');
-                                        if (outline) outline.style.display = 'none';
-                                        
-                                        const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
-                                        if (lockIndicator) lockIndicator.style.display = 'none';
-                                        
+                                    // Hide UI elements
+                                    const outline = clonedDoc.getElementById('pdfAreaOutline');
+                                    if (outline) outline.style.display = 'none';
+                                    
+                                    const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
+                                    if (lockIndicator) lockIndicator.style.display = 'none';
+                                    
                                         // Keep only text boxes and image boxes with their styling
                                         const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box, .draggable-image-box');
-                                        allBoxes.forEach(box => {
+                                    allBoxes.forEach(box => {
                                             if (box.classList.contains('draggable-text-box')) {
                                                 // Text box styling
-                                                box.style.border = 'none';
-                                                box.style.background = 'transparent';
-                                                box.style.boxShadow = 'none';
-                                                box.style.outline = 'none';
+                                        box.style.border = 'none';
+                                        box.style.background = 'transparent';
+                                        box.style.boxShadow = 'none';
+                                        box.style.outline = 'none';
                                                 // Keep font styling for quality
                                                 box.style.fontFamily = box.style.fontFamily || 'Arial, sans-serif';
                                                 box.style.fontSize = box.style.fontSize || '16px';
@@ -4785,8 +4785,8 @@ if (!sessionState.defaultFontFamily) {
                                         });
                                         
                                         // Remove resize handles (use !important to override CSS)
-                                        const resizeHandles = clonedViewer.querySelectorAll('.resize-handle');
-                                        resizeHandles.forEach(handle => {
+                                    const resizeHandles = clonedViewer.querySelectorAll('.resize-handle');
+                                    resizeHandles.forEach(handle => {
                                             handle.style.setProperty('display', 'none', 'important');
                                             handle.style.setProperty('opacity', '0', 'important');
                                         });
@@ -4862,13 +4862,13 @@ if (!sessionState.defaultFontFamily) {
                             // Step 3g: Add to zip with record-specific naming
                             const recordNumber = recordIndex + 1;
                             const fileName = `single_record_${recordNumber}_of_${totalRecords}.pdf`;
-                            zip.file(fileName, pdfBytes);
-                            
+                        zip.file(fileName, pdfBytes);
+                        
                             console.log(`✓ Single record ${recordNumber} added to zip: ${fileName}`);
                             
                             // Update progress
                             updateProgress(1, 'PDF generated');
-                        }
+                    }
                     
                     // Step 4: Download zip file
                     console.log('Step 4: Generating zip file...');

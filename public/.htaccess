@@ -5,19 +5,51 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [QSA,L]
 
-# Security headers
+# Security Headers
 Header always set X-Content-Type-Options nosniff
 Header always set X-Frame-Options DENY
 Header always set X-XSS-Protection "1; mode=block"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'"
+
+# Prevent access to sensitive files
+<Files "composer.json">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "composer.lock">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ".gitignore">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Protect uploads directory from direct access
+<Directory "../uploads">
+    Order allow,deny
+    Deny from all
+</Directory>
+
+# Allow only PDF files in uploads
+<FilesMatch "\.(pdf)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# Disable directory browsing
+Options -Indexes
+
+# Force HTTPS (uncomment when you have SSL)
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Cache control for static assets
 <FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|svg)$">
     ExpiresActive On
     ExpiresDefault "access plus 1 month"
-</FilesMatch>
-
-# Prevent access to sensitive files
-<FilesMatch "\.(env|log|sql|bak|backup)$">
-    Order allow,deny
-    Deny from all
 </FilesMatch>
