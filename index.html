@@ -1314,6 +1314,11 @@
                     <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled style="width: 100%; margin-bottom: 10px;">
                         Download PDFs
                     </button>
+                    <div id="downloadPdfsMessage" class="text-muted" style="font-size: 12px; text-align: center; margin-bottom: 10px; display: none;">
+                        Multiple boxes detected. Use single page download instead.
+                    </div>
+                    
+                    
                     
                     <div id="downloadLink" style="display: none;">
                         <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block; width: 100%;">Download Original PDF</a>
@@ -1425,7 +1430,9 @@
             selectedBox: null,
             // File metadata for change detection
             pdfMetadata: null,
-            csvMetadata: null
+            csvMetadata: null,
+            // Live file monitoring
+            liveMonitoringEnabled: false
         };
 
         // Enhanced box management system
@@ -1836,14 +1843,48 @@ if (!sessionState.defaultFontFamily) {
             const hasTemplate = sessionState.templatePdfBytes !== null;
             const hasCSV = sessionState.csvRows.length > 0;
             const hasBoxes = sessionState.boxes.length > 0;
+            const boxCount = sessionState.boxes.length;
             
             const downloadBtn = document.getElementById('downloadPdfsBtn');
+            const messageDiv = document.getElementById('downloadPdfsMessage');
+            
+            console.log('updateDownloadButtonState called:', {
+                hasTemplate,
+                hasCSV,
+                hasBoxes,
+                boxCount,
+                shouldDisable: !(hasTemplate && hasCSV && hasBoxes) || boxCount > 1
+            });
+            
             if (downloadBtn) {
-                // Enable button if we have template, CSV data, and at least one box
-                // Multiple boxes are allowed for single record downloads
-                downloadBtn.disabled = !(hasTemplate && hasCSV && hasBoxes);
+                // Disable "Download PDFs" button if more than one box is present
+                // This prevents bulk PDF generation with multiple boxes
+                // Single page downloads (screenshot, current page) remain active
+                const shouldDisable = !(hasTemplate && hasCSV && hasBoxes) || boxCount > 1;
+                downloadBtn.disabled = shouldDisable;
+                
+                // Update button text to indicate why it's disabled
+                if (boxCount > 1) {
+                    downloadBtn.title = 'Multiple boxes detected. Use single page download instead.';
+                } else if (!(hasTemplate && hasCSV && hasBoxes)) {
+                    downloadBtn.title = 'Requires template PDF, CSV data, and at least one box.';
+                } else {
+                    downloadBtn.title = 'Download PDFs for all CSV records';
+                }
+            }
+            
+            // Show/hide the message about multiple boxes
+            if (messageDiv) {
+                if (boxCount > 1) {
+                    messageDiv.style.display = 'block';
+                    messageDiv.textContent = `Multiple boxes detected (${boxCount}). Use single page download instead.`;
+                } else {
+                    messageDiv.style.display = 'none';
+                }
             }
         }
+        
+
         
         // Function to update PDF area outline
         function updatePdfAreaOutline() {
@@ -2326,6 +2367,9 @@ if (!sessionState.defaultFontFamily) {
              
              // Setup enhanced zoom functionality
              setupMouseWheelZoom();
+             
+             // Add live file monitoring controls
+             setupLiveFileMonitoringControls();
          });
 
                  // File change monitoring system
@@ -2347,6 +2391,11 @@ if (!sessionState.defaultFontFamily) {
                          
                          // Load the PDF
                          loadPdf(file);
+                         
+                         // If live monitoring is enabled, keep the file selected
+                         if (sessionState.liveMonitoringEnabled) {
+                             console.log('Live monitoring enabled - keeping PDF file selected for updates');
+                         }
                      }
                  });
              }
@@ -2364,6 +2413,11 @@ if (!sessionState.defaultFontFamily) {
                          
                          // Parse the CSV
                          parseCSVFile(file);
+                         
+                         // If live monitoring is enabled, keep the file selected
+                         if (sessionState.liveMonitoringEnabled) {
+                             console.log('Live monitoring enabled - keeping CSV file selected for updates');
+                         }
                      }
                  });
              }
@@ -2375,8 +2429,12 @@ if (!sessionState.defaultFontFamily) {
              if (pdfFileInput) {
                  pdfFileInput.addEventListener('input', function(e) {
                      if (e.target.files.length === 0 && sessionState.pdfMetadata) {
-                         console.log('PDF file manually removed, clearing metadata');
-                         sessionState.pdfMetadata = null;
+                         if (sessionState.liveMonitoringEnabled) {
+                             console.log('PDF file removed but live monitoring is enabled - consider re-selecting for updates');
+                         } else {
+                             console.log('PDF file manually removed, clearing metadata');
+                             sessionState.pdfMetadata = null;
+                         }
                      }
                  });
              }
@@ -2384,8 +2442,12 @@ if (!sessionState.defaultFontFamily) {
              if (csvFileInput) {
                  csvFileInput.addEventListener('input', function(e) {
                      if (e.target.files.length === 0 && sessionState.csvMetadata) {
-                         console.log('CSV file manually removed, clearing metadata');
-                         sessionState.csvMetadata = null;
+                         if (sessionState.liveMonitoringEnabled) {
+                             console.log('CSV file removed but live monitoring is enabled - consider re-selecting for updates');
+                         } else {
+                             console.log('CSV file manually removed, clearing metadata');
+                             sessionState.csvMetadata = null;
+                         }
                      }
                  });
              }
@@ -2466,6 +2528,60 @@ if (!sessionState.defaultFontFamily) {
                  console.error('Error checking for file changes:', error);
              }
          }
+
+        // Live File Monitoring Controls
+        function setupLiveFileMonitoringControls() {
+            // Add live monitoring toggle to the UI
+            const fileControls = document.querySelector('.file-controls');
+            if (fileControls) {
+                const liveMonitoringDiv = document.createElement('div');
+                liveMonitoringDiv.className = 'live-monitoring-controls';
+                liveMonitoringDiv.innerHTML = `
+                    <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px; border: 1px solid #dee2e6;">
+                        <h4 style="margin: 0 0 10px 0; color: #495057;">🔄 Live File Monitoring</h4>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 5px; font-size: 14px;">
+                                <input type="checkbox" id="enableLiveMonitoring" style="margin: 0;">
+                                Enable live updates when files change
+                            </label>
+                            <button id="refreshFilesBtn" style="padding: 5px 10px; font-size: 12px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                                🔄 Refresh Files
+                            </button>
+                        </div>
+                        <p style="margin: 10px 0 0 0; font-size: 12px; color: #6c757d;">
+                            <strong>Note:</strong> For live updates to work, files must remain selected in the file inputs above.
+                        </p>
+                    </div>
+                `;
+                
+                fileControls.appendChild(liveMonitoringDiv);
+                
+                // Add event listeners
+                document.getElementById('enableLiveMonitoring').addEventListener('change', function(e) {
+                    sessionState.liveMonitoringEnabled = e.target.checked;
+                    console.log('Live monitoring:', e.target.checked ? 'enabled' : 'disabled');
+                });
+                
+                document.getElementById('refreshFilesBtn').addEventListener('click', function() {
+                    refreshFilesForLiveMonitoring();
+                });
+            }
+        }
+        
+        // Refresh files for live monitoring
+        function refreshFilesForLiveMonitoring() {
+            if (sessionState.pdfMetadata) {
+                console.log('Refreshing PDF file for live monitoring...');
+                // This would typically prompt user to re-select the file
+                alert('Please re-select your PDF file to enable live monitoring');
+            }
+            
+            if (sessionState.csvMetadata) {
+                console.log('Refreshing CSV file for live monitoring...');
+                // This would typically prompt user to re-select the file
+                alert('Please re-select your CSV file to enable live monitoring');
+            }
+        }
 
         // Simple Multiple Records Management
         let recordsCreated = 0;
@@ -3808,6 +3924,9 @@ if (!sessionState.defaultFontFamily) {
             }
             
             updateEditorStatus('Box duplicated');
+            
+            // Update download button state after duplication
+            updateDownloadButtonState();
         }
 
         // Simple delete function based on MERGE-ONLINE approach
@@ -5886,7 +6005,9 @@ if (!sessionState.defaultFontFamily) {
                 selectedBox: null,
                 // Preserve file metadata for change detection
                 pdfMetadata: sessionState.pdfMetadata,
-                csvMetadata: sessionState.csvMetadata
+                csvMetadata: sessionState.csvMetadata,
+                // Preserve live monitoring setting
+                liveMonitoringEnabled: sessionState.liveMonitoringEnabled
             };
             
             // Reset box counter
@@ -5945,11 +6066,8 @@ if (!sessionState.defaultFontFamily) {
             // Disable Generate From Template button
                             // generateFromTemplateBtn was removed
             
-            // Disable Download PDFs button
-            const downloadBtn = document.getElementById('downloadPdfsBtn');
-            if (downloadBtn) {
-                downloadBtn.disabled = true;
-            }
+            // Update download button state
+            updateDownloadButtonState();
 
 
 
