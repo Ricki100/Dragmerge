@@ -786,7 +786,7 @@
         .textbox-mapping-item label {
             font-size: 12px;
             color: #666;
-            min-width: 80px;
+            min-width: 40px;
         }
         
         .textbox-mapping-item select {
@@ -1000,8 +1000,8 @@
             border: 2px solid #007bff;
             padding: 5px;
             cursor: move;
-            min-width: 80px;
-            min-height: 25px;
+            min-width: 20px;
+            min-height: 15px;
             font-family: Arial, sans-serif;
             font-size: 16px;
             color: #000;
@@ -1251,7 +1251,7 @@
                                 </div>
                         <div class="form-group" style="margin: 0;">
                             <label style="font-size: 11px;">Size:</label>
-                            <input type="number" id="formatAllFontSize" class="form-control" value="16" min="8" max="72" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
+                            <input type="number" id="formatAllFontSize" class="form-control" value="16" min="1" max="72" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
                                     </div>
                                 </div>
                                 
@@ -1410,7 +1410,10 @@
             csvRows: [],
             layout: null,
             boxes: [],
-            selectedBox: null
+            selectedBox: null,
+            // File metadata for change detection
+            pdfMetadata: null,
+            csvMetadata: null
         };
 
         // Enhanced box management system
@@ -1494,21 +1497,28 @@ if (!sessionState.defaultFontFamily) {
             console.log('Editor canvas initialized');
         }
 
-        // File input handler
-        document.getElementById('pdfFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                currentFile = file;
-                document.getElementById('fileLabel').textContent = file.name;
-                
-                // Hide download link
-                document.getElementById('downloadLink').style.display = 'none';
-                serverPdfUrl = null;
+                 // File input handler
+         document.getElementById('pdfFile').addEventListener('change', function(e) {
+             const file = e.target.files[0];
+             if (file) {
+                 currentFile = file;
+                 document.getElementById('fileLabel').textContent = file.name;
+                 
+                 // Store file metadata for change detection
+                 sessionState.pdfMetadata = {
+                     name: file.name,
+                     lastModified: file.lastModified,
+                     size: file.size
+                 };
+                 
+                 // Hide download link
+                 document.getElementById('downloadLink').style.display = 'none';
+                 serverPdfUrl = null;
 
-                // Automatically load and preview the PDF
-                loadPdf(file);
-            }
-        });
+                 // Automatically load and preview the PDF
+                 loadPdf(file);
+             }
+         });
 
 
 
@@ -1520,6 +1530,27 @@ if (!sessionState.defaultFontFamily) {
                 document.getElementById('noPdf').style.display = 'none';
                 document.getElementById('pdfViewer').style.display = 'none';
                 document.getElementById('loadingPdf').style.display = 'block';
+
+                // Cancel any ongoing rendering operations
+                if (window.currentRenderTask) {
+                    try {
+                        await window.currentRenderTask.cancel();
+                        console.log('Cancelled previous render task');
+                    } catch (cancelError) {
+                        console.log('Previous render task already completed or cancelled');
+                    }
+                    window.currentRenderTask = null;
+                }
+                
+                // Clear the canvas
+                const canvas = document.getElementById('viewer');
+                if (canvas) {
+                    const context = canvas.getContext('2d');
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                }
+                
+                // Reset current PDF
+                currentPdf = null;
 
                 // Read file as ArrayBuffer
                 const arrayBuffer = await file.arrayBuffer();
@@ -1625,12 +1656,25 @@ if (!sessionState.defaultFontFamily) {
             if (!currentPdf) return;
 
             try {
+                // Cancel any ongoing rendering operations
+                if (window.currentRenderTask) {
+                    try {
+                        await window.currentRenderTask.cancel();
+                        console.log('Cancelled previous render task');
+                    } catch (cancelError) {
+                        console.log('Previous render task already completed or cancelled');
+                    }
+                }
+
                 // Get page
                 const page = await currentPdf.getPage(pageNumber);
 
                 // Set up canvas
                 const canvas = document.getElementById('viewer');
                 const context = canvas.getContext('2d');
+
+                // Clear the canvas first
+                context.clearRect(0, 0, canvas.width, canvas.height);
 
                 // Render PDF at original quality without scaling down
                 const viewport = page.getViewport({scale: 1.0});
@@ -1664,7 +1708,9 @@ if (!sessionState.defaultFontFamily) {
                     viewport: viewport
                 };
 
-                await page.render(renderContext).promise;
+                // Store the render task so it can be cancelled if needed
+                window.currentRenderTask = page.render(renderContext);
+                await window.currentRenderTask.promise;
 
                 // Debug canvas visibility after rendering
                 const canvasRect = canvas.getBoundingClientRect();
@@ -1736,24 +1782,31 @@ if (!sessionState.defaultFontFamily) {
             uploadArea.style.backgroundColor = '';
         });
 
-        uploadArea.addEventListener('drop', function(e) {
-            e.preventDefault();
-            uploadArea.style.backgroundColor = '';
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0 && files[0].type === 'application/pdf') {
-                fileInput.files = files;
-                currentFile = files[0];
-                document.getElementById('fileLabel').textContent = files[0].name;
-                
-                // Hide download link
-                document.getElementById('downloadLink').style.display = 'none';
-                serverPdfUrl = null;
+                 uploadArea.addEventListener('drop', function(e) {
+             e.preventDefault();
+             uploadArea.style.backgroundColor = '';
+             
+             const files = e.dataTransfer.files;
+             if (files.length > 0 && files[0].type === 'application/pdf') {
+                 fileInput.files = files;
+                 currentFile = files[0];
+                 document.getElementById('fileLabel').textContent = files[0].name;
+                 
+                 // Store file metadata for change detection
+                 sessionState.pdfMetadata = {
+                     name: files[0].name,
+                     lastModified: files[0].lastModified,
+                     size: files[0].size
+                 };
+                 
+                 // Hide download link
+                 document.getElementById('downloadLink').style.display = 'none';
+                 serverPdfUrl = null;
 
-                // Automatically load and preview the PDF
-                loadPdf(files[0]);
-            }
-        });
+                 // Automatically load and preview the PDF
+                 loadPdf(files[0]);
+             }
+         });
 
 
         
@@ -2235,6 +2288,15 @@ if (!sessionState.defaultFontFamily) {
                     console.log('CSV file selected:', e.target.files[0]);
                     const file = e.target.files[0];
                     if (file) {
+                        console.log('CSV file selected:', file.name, file.size);
+                        
+                        // Store file metadata for change detection
+                        sessionState.csvMetadata = {
+                            name: file.name,
+                            lastModified: file.lastModified,
+                            size: file.size
+                        };
+                        
                         parseCSVFile(file);
                     } else {
                         console.log('No file selected');
@@ -2244,11 +2306,153 @@ if (!sessionState.defaultFontFamily) {
                 console.error('CSV file input not found!');
             }
 
-            // Setup keyboard shortcuts for box management
-            setupKeyboardShortcuts();
-        });
+                         // Setup keyboard shortcuts for box management
+             setupKeyboardShortcuts();
+             
+             // Setup file change monitoring
+             setupFileChangeMonitoring();
+         });
 
-        // Simple Multiple Records Management
+                 // File change monitoring system
+         function setupFileChangeMonitoring() {
+             // Monitor file inputs for changes
+             const pdfFileInput = document.getElementById('pdfFile');
+             const csvFileInput = document.getElementById('csvFile');
+             
+             if (pdfFileInput) {
+                 pdfFileInput.addEventListener('change', function(e) {
+                     const file = e.target.files[0];
+                     if (file) {
+                         // Store file metadata for change detection
+                         sessionState.pdfMetadata = {
+                             name: file.name,
+                             lastModified: file.lastModified,
+                             size: file.size
+                         };
+                         
+                         // Load the PDF
+                         loadPdf(file);
+                     }
+                 });
+             }
+             
+             if (csvFileInput) {
+                 csvFileInput.addEventListener('change', function(e) {
+                     const file = e.target.files[0];
+                     if (file) {
+                         // Store file metadata for change detection
+                         sessionState.csvMetadata = {
+                             name: file.name,
+                             lastModified: file.lastModified,
+                             size: file.size
+                         };
+                         
+                         // Parse the CSV
+                         parseCSVFile(file);
+                     }
+                 });
+             }
+             
+             // Start periodic file checking
+             setInterval(checkForFileChanges, 2000); // Check every 2 seconds
+             
+             // Also monitor for manual file removal
+             if (pdfFileInput) {
+                 pdfFileInput.addEventListener('input', function(e) {
+                     if (e.target.files.length === 0 && sessionState.pdfMetadata) {
+                         console.log('PDF file manually removed, clearing metadata');
+                         sessionState.pdfMetadata = null;
+                     }
+                 });
+             }
+             
+             if (csvFileInput) {
+                 csvFileInput.addEventListener('input', function(e) {
+                     if (e.target.files.length === 0 && sessionState.csvMetadata) {
+                         console.log('CSV file manually removed, clearing metadata');
+                         sessionState.csvMetadata = null;
+                     }
+                 });
+             }
+             
+             // Check for file changes when page becomes visible again
+             document.addEventListener('visibilitychange', function() {
+                 if (!document.hidden) {
+                     console.log('Page became visible, checking for file changes...');
+                     checkForFileChanges();
+                 }
+             });
+             
+             // Cleanup render tasks when page is unloaded
+             window.addEventListener('beforeunload', function() {
+                 if (window.currentRenderTask) {
+                     try {
+                         window.currentRenderTask.cancel();
+                     } catch (cancelError) {
+                         // Ignore errors during page unload
+                     }
+                 }
+             });
+         }
+         
+         // Check for external file changes
+         function checkForFileChanges() {
+             try {
+                 const pdfFileInput = document.getElementById('pdfFile');
+                 const csvFileInput = document.getElementById('csvFile');
+                 
+                 // Check PDF file changes
+                 if (pdfFileInput && pdfFileInput.files.length > 0 && sessionState.pdfMetadata) {
+                     const currentFile = pdfFileInput.files[0];
+                     if (currentFile.name === sessionState.pdfMetadata.name && 
+                         (currentFile.lastModified !== sessionState.pdfMetadata.lastModified || 
+                          currentFile.size !== sessionState.pdfMetadata.size)) {
+                         
+                         console.log('PDF file change detected, updating...');
+                         
+                         // Update metadata
+                         sessionState.pdfMetadata.lastModified = currentFile.lastModified;
+                         sessionState.pdfMetadata.size = currentFile.size;
+                         
+                         console.log('PDF file change detected, updating...');
+                         
+                         // Reload PDF in background (only if not currently rendering)
+                         if (!window.currentRenderTask || window.currentRenderTask.destroyed) {
+                             // Add a small delay to prevent rapid successive reloads
+                             setTimeout(() => {
+                                 loadPdf(currentFile);
+                             }, 100);
+                         } else {
+                             console.log('PDF currently rendering, will check again later');
+                         }
+                     }
+                 }
+                 
+                 // Check CSV file changes
+                 if (csvFileInput && csvFileInput.files.length > 0 && sessionState.csvMetadata) {
+                     const currentFile = csvFileInput.files[0];
+                     if (currentFile.name === sessionState.csvMetadata.name && 
+                         (currentFile.lastModified !== sessionState.csvMetadata.lastModified || 
+                          currentFile.size !== sessionState.csvMetadata.size)) {
+                         
+                         console.log('CSV file change detected, updating...');
+                         
+                         // Update metadata
+                         sessionState.csvMetadata.lastModified = currentFile.lastModified;
+                         sessionState.csvMetadata.size = currentFile.size;
+                         
+                         // Reload CSV in background (add small delay to prevent rapid successive parsing)
+                         setTimeout(() => {
+                             parseCSVFile(currentFile);
+                         }, 100);
+                     }
+                 }
+             } catch (error) {
+                 console.error('Error checking for file changes:', error);
+             }
+         }
+         
+         // Simple Multiple Records Management
         let recordsCreated = 0;
         
         function createMultipleTextRecords() {
@@ -2307,8 +2511,8 @@ if (!sessionState.defaultFontFamily) {
                     top: ${newBox.y}px;
                     width: ${newBox.width}px;
                     height: ${newBox.height}px;
-                    min-width: 80px;
-                    min-height: 25px;
+                    min-width: 20px;
+                    min-height: 15px;
                     background: transparent;
                     border: none;
                     padding: 5px;
@@ -2349,7 +2553,7 @@ if (!sessionState.defaultFontFamily) {
                     });
                     textBox.style.border = 'none';
                     textBox.classList.add('selected');
-                    sessionState.selectedBox = newBox;
+                    sessionState.selectedBox = textBox; // Store the DOM element, not the box object
                     updateBoxEditor();
                     updateBoxEditorValues(newBox);
                 });
@@ -2455,7 +2659,7 @@ if (!sessionState.defaultFontFamily) {
                             box.classList.remove('selected');
                         });
                         imageBox.classList.add('selected');
-                        sessionState.selectedBox = imageBox;
+                        sessionState.selectedBox = imageBox; // Store the DOM element
                         currentBoxId = imageBox.boxId;
                         updateBoxEditor();
                         updateBoxEditorValues(imageBox);
@@ -2466,10 +2670,20 @@ if (!sessionState.defaultFontFamily) {
                     pdfViewer.appendChild(imageBox);
                     enableDragResize(imageBox);
                     
-                    sessionState.boxes.push(imageBox);
+                    // Create a proper box object for the image box
+                    const imageBoxObject = {
+                        boxId: imageBox.boxId,
+                        boxType: 'image',
+                        csvColumn: imageBox.csvColumn,
+                        imageSource: imageBox.imageSource,
+                        imageUrl: imageBox.imageUrl,
+                        element: imageBox
+                    };
+                    
+                    sessionState.boxes.push(imageBoxObject);
                     
                     // Update the image with CSV data
-                    updateImageBoxWithCSVData(imageBox);
+                    updateImageBoxWithCSVData(imageBoxObject);
                 });
             }
             
@@ -2751,8 +2965,8 @@ if (!sessionState.defaultFontFamily) {
                 top: ${boxY}px;
                 width: 120px;
                 height: 40px;
-                min-width: 80px;
-                min-height: 25px;
+                min-width: 20px;
+                min-height: 15px;
                 background: transparent;
                 border: none;
                 padding: 5px;
@@ -2929,12 +3143,12 @@ if (!sessionState.defaultFontFamily) {
                 imageBox.classList.add('selected');
                 
                 // Update session state
-                sessionState.selectedBox = imageBox;
+                sessionState.selectedBox = imageBox; // Store the DOM element
                 currentBoxId = imageBox.boxId;
                 
                 // Update box editor
                 updateBoxEditor();
-                updateBoxEditorValues(imageBox);
+                updateBoxEditorValues(boxData); // Use the box object for editor values
             });
 
             // Add to overlay container (same as text boxes)
@@ -2960,7 +3174,7 @@ if (!sessionState.defaultFontFamily) {
             };
             
             sessionState.boxes.push(boxData);
-            sessionState.selectedBox = boxData;
+            sessionState.selectedBox = imageBox; // Store the DOM element, not the box object
             currentBoxId = imageBox.boxId;
             
             // Update box editor
@@ -3375,6 +3589,23 @@ if (!sessionState.defaultFontFamily) {
             document.getElementById('deleteBtn').disabled = !enabled;
         }
 
+        // Helper function to get box object from selected DOM element
+        function getSelectedBoxObject() {
+            if (!sessionState.selectedBox) return null;
+            
+            // If selectedBox is already a box object, return it
+            if (sessionState.selectedBox.boxId && sessionState.selectedBox.boxType) {
+                return sessionState.selectedBox;
+            }
+            
+            // If selectedBox is a DOM element, find the corresponding box object
+            if (sessionState.selectedBox.classList) {
+                return sessionState.boxes.find(box => box.element === sessionState.selectedBox);
+            }
+            
+            return null;
+        }
+
         // Enhanced Box Management Functions
         function updateBoxEditor() {
             const deleteBoxBtn = document.getElementById('deleteBoxBtn');
@@ -3444,15 +3675,16 @@ if (!sessionState.defaultFontFamily) {
             if (!sessionState.selectedBox) return;
 
             const original = sessionState.selectedBox;
+            const originalBoxObject = getSelectedBoxObject();
             
             if (original.style) {
                 // DOM element - create a new DOM element
                 const clone = original.cloneNode(true);
                 clone.boxId = ++boxCounter;
-                clone.boxType = original.boxType;
-                clone.csvColumn = original.csvColumn;
-                clone.imageSource = original.imageSource;
-                clone.imageUrl = original.imageUrl;
+                clone.boxType = originalBoxObject ? originalBoxObject.boxType : 'text';
+                clone.csvColumn = originalBoxObject ? originalBoxObject.csvColumn : '';
+                clone.imageSource = originalBoxObject ? originalBoxObject.imageSource : '';
+                clone.imageUrl = originalBoxObject ? originalBoxObject.imageUrl : '';
                 
                 // Offset the clone
                 const originalLeft = parseFloat(original.style.left) || 0;
@@ -3481,10 +3713,20 @@ if (!sessionState.defaultFontFamily) {
                 pdfViewer.appendChild(clone);
                 enableDragResize(clone);
                 
-                sessionState.boxes.push(clone);
+                // Create a proper box object for the clone
+                const cloneBoxObject = {
+                    boxId: clone.boxId,
+                    boxType: clone.boxType,
+                    csvColumn: clone.csvColumn,
+                    imageSource: clone.imageSource,
+                    imageUrl: clone.imageUrl,
+                    element: clone
+                };
+                
+                sessionState.boxes.push(cloneBoxObject);
                 sessionState.selectedBox = clone;
                 currentBoxId = clone.boxId;
-                updateBoxEditorValues(clone);
+                updateBoxEditorValues(cloneBoxObject);
             } else {
                 // Fabric.js object
                 if (!editorCanvas) return;
@@ -3519,76 +3761,87 @@ if (!sessionState.defaultFontFamily) {
             updateEditorStatus('Box duplicated');
         }
 
+        // Simple delete function based on MERGE-ONLINE approach
         function deleteSelectedBox() {
             if (!sessionState.selectedBox) return;
 
-            const boxId = sessionState.selectedBox.boxId;
+            const selectedItem = sessionState.selectedBox;
             
-            // Remove element from DOM
-            if (sessionState.selectedBox.remove) {
-                sessionState.selectedBox.remove();
+            console.log('=== DELETE DEBUG ===');
+            console.log('Selected item:', selectedItem);
+            console.log('Selected item type:', typeof selectedItem);
+            console.log('Selected item properties:', Object.keys(selectedItem));
+            console.log('sessionState.boxes:', sessionState.boxes);
+            console.log('Boxes length:', sessionState.boxes.length);
+            
+            // Determine if selectedItem is a box object or DOM element
+            let boxObject = null;
+            let domElement = null;
+            
+            if (selectedItem.element && selectedItem.boxId) {
+                // It's a box object with an element property
+                boxObject = selectedItem;
+                domElement = selectedItem.element;
+                console.log('Found box object with element property');
+            } else if (selectedItem.classList && (selectedItem.classList.contains('draggable-text-box') || selectedItem.classList.contains('draggable-image-box'))) {
+                // It's a DOM element, find the corresponding box object
+                domElement = selectedItem;
+                boxObject = sessionState.boxes.find(box => box.element === selectedItem);
+                console.log('Found DOM element, looking for box object:', boxObject);
+            } else {
+                // It's a box object stored directly
+                boxObject = selectedItem;
+                domElement = selectedItem.element || null;
+                console.log('Found box object stored directly');
             }
             
-            // Remove from session state
-            sessionState.boxes = sessionState.boxes.filter(box => box.boxId !== boxId);
-            
-            // Clear selection and remove selected class from all boxes
-            document.querySelectorAll('.draggable-text-box.selected, .draggable-image-box.selected').forEach(box => {
-                box.classList.remove('selected');
-            });
-            sessionState.selectedBox = null;
-            
-            // Hide box editor
-            updateBoxEditor();
-            
-            updateEditorStatus('Box deleted');
-            
-            // Update download button state after deletion
-            updateDownloadButtonState();
-            
-            // Update box scaling after deletion
-            updateImageBoxScaling();
-            updateTextBoxScaling();
+            if (boxObject) {
+                console.log('Box object found, removing...');
+                
+                // Remove from DOM if we have a DOM element
+                if (domElement && domElement.remove) {
+                    domElement.remove();
+                    console.log('DOM element removed');
+                } else {
+                    console.log('No DOM element to remove or remove method not available');
+                }
+                
+                // Remove from session state using ID (like MERGE-ONLINE)
+                if (boxObject.boxId) {
+                    sessionState.boxes = sessionState.boxes.filter(box => box.boxId !== boxObject.boxId);
+                } else if (boxObject.id) {
+                    sessionState.boxes = sessionState.boxes.filter(box => box.id !== boxObject.id);
+                } else {
+                    // Remove by direct reference if no ID
+                    sessionState.boxes = sessionState.boxes.filter(box => box !== boxObject);
+                }
+                console.log('Box removed from sessionState.boxes');
+                
+                // Clear selection and remove selected class from all boxes
+                document.querySelectorAll('.draggable-text-box.selected, .draggable-image-box.selected').forEach(box => {
+                    box.classList.remove('selected');
+                });
+                sessionState.selectedBox = null;
+                
+                // Hide box editor
+                updateBoxEditor();
+                
+                updateEditorStatus('Box deleted');
+                
+                // Update download button state after deletion
+                updateDownloadButtonState();
+                
+                // Update box scaling after deletion
+                updateImageBoxScaling();
+                updateTextBoxScaling();
+            } else {
+                console.error('Box not found in sessionState.boxes');
+                console.log('Available boxes:', sessionState.boxes);
+                updateEditorStatus('Error: Box not found');
+            }
         }
 
-        // Enhanced delete function that works with both DOM elements and box objects
-        function deleteBox(box) {
-            if (!box) return;
-            
-            // If it's a DOM element, find the corresponding box object
-            let boxElement = box;
-            let boxObject = null;
-            
-            if (box.element) {
-                // It's a box object, get the element
-                boxElement = box.element;
-                boxObject = box;
-            } else if (box.classList && box.classList.contains('draggable-text-box') || box.classList.contains('draggable-image-box')) {
-                // It's a DOM element, find the box object
-                boxObject = sessionState.boxes.find(b => b.element === box);
-            }
-            
-            if (!boxElement || !boxObject) return;
-            
-            // Remove from DOM
-            if (boxElement.remove) {
-                boxElement.remove();
-            }
-            
-            // Remove from session state
-            sessionState.boxes = sessionState.boxes.filter(b => b.boxId !== boxObject.boxId);
-            
-            // Clear selection if this was the selected box
-            if (sessionState.selectedBox && sessionState.selectedBox.boxId === boxObject.boxId) {
-                sessionState.selectedBox = null;
-                updateBoxEditor();
-            }
-            
-            updateEditorStatus('Box deleted');
-            updateDownloadButtonState();
-            updateImageBoxScaling();
-            updateTextBoxScaling();
-        }
+
 
 
 
@@ -3632,7 +3885,7 @@ if (!sessionState.defaultFontFamily) {
                         // Update session state
                         const boxObject = sessionState.boxes.find(b => b.element === target);
                         if (boxObject) {
-                            sessionState.selectedBox = boxObject;
+                            sessionState.selectedBox = target; // Store the DOM element for consistency
                             updateBoxEditor();
                             updateBoxEditorValues(boxObject);
                         }
@@ -3809,7 +4062,7 @@ if (!sessionState.defaultFontFamily) {
                     
                     // Handle right edge resize
                     if (resizeHandle.includes('e')) {
-                        newWidth = Math.max(80, initialWidth + deltaX);
+                        newWidth = Math.max(20, initialWidth + deltaX);
                         // Constrain to viewer width
                         const maxWidth = viewerRect.width - newLeft;
                         newWidth = Math.min(newWidth, maxWidth);
@@ -3817,7 +4070,7 @@ if (!sessionState.defaultFontFamily) {
                     
                     // Handle left edge resize
                     if (resizeHandle.includes('w')) {
-                        const proposedWidth = Math.max(80, initialWidth - deltaX);
+                        const proposedWidth = Math.max(20, initialWidth - deltaX);
                         const proposedLeft = newLeft + (initialWidth - proposedWidth);
                         
                         // Constrain to viewer boundaries
@@ -3829,7 +4082,7 @@ if (!sessionState.defaultFontFamily) {
                     
                     // Handle bottom edge resize
                     if (resizeHandle.includes('s')) {
-                        newHeight = Math.max(25, initialHeight + deltaY);
+                        newHeight = Math.max(15, initialHeight + deltaY);
                         // Constrain to viewer height
                         const maxHeight = viewerRect.height - newTop;
                         newHeight = Math.min(newHeight, maxHeight);
@@ -3837,7 +4090,7 @@ if (!sessionState.defaultFontFamily) {
                     
                     // Handle top edge resize
                     if (resizeHandle.includes('n')) {
-                        const proposedHeight = Math.max(25, initialHeight - deltaY);
+                        const proposedHeight = Math.max(15, initialHeight - deltaY);
                         const proposedTop = newTop + (initialHeight - proposedHeight);
                         
                         // Constrain to viewer boundaries
@@ -5469,6 +5722,17 @@ if (!sessionState.defaultFontFamily) {
         }
 
         function resetSession() {
+            // Cancel any ongoing PDF rendering operations
+            if (window.currentRenderTask) {
+                try {
+                    window.currentRenderTask.cancel();
+                    console.log('Cancelled render task during session reset');
+                } catch (cancelError) {
+                    console.log('Render task already completed or cancelled');
+                }
+                window.currentRenderTask = null;
+            }
+            
             // Clear session state
             sessionState = {
                 templatePdf: null,
@@ -5477,7 +5741,10 @@ if (!sessionState.defaultFontFamily) {
                 csvRows: [],
                 layout: null,
                 boxes: [],
-                selectedBox: null
+                selectedBox: null,
+                // Preserve file metadata for change detection
+                pdfMetadata: sessionState.pdfMetadata,
+                csvMetadata: sessionState.csvMetadata
             };
             
             // Reset box counter
@@ -5496,6 +5763,9 @@ if (!sessionState.defaultFontFamily) {
             currentPdf = null;
             currentFile = null;
             serverPdfUrl = null;
+            
+            // Clear PDF metadata when PDF is removed
+            sessionState.pdfMetadata = null;
 
             // Reset UI
             const fileLabel = document.getElementById('fileLabel');
@@ -5524,6 +5794,10 @@ if (!sessionState.defaultFontFamily) {
             if (pdfFileInput) pdfFileInput.value = '';
             if (csvFileInput) csvFileInput.value = '';
             if (csvLabel) csvLabel.textContent = 'Click to select CSV file';
+            
+            // Clear file metadata when files are removed
+            sessionState.pdfMetadata = null;
+            sessionState.csvMetadata = null;
             // csvPreview element was removed
 
             // Disable Generate From Template button
@@ -6013,8 +6287,8 @@ if (!sessionState.defaultFontFamily) {
             
             // Calculate new box dimensions with some padding
             const padding = 10;
-            const newWidth = Math.max(80, textWidth + padding * 2);
-            const newHeight = Math.max(25, textHeight + padding * 2);
+            const newWidth = Math.max(20, textWidth + padding * 2);
+            const newHeight = Math.max(15, textHeight + padding * 2);
             
             // Update the box dimensions
             element.style.width = newWidth + 'px';
