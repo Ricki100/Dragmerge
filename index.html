@@ -625,6 +625,30 @@
             align-items: center;
         }
 
+        .content-header .download-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .content-header .download-buttons .btn {
+            padding: 8px 16px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .content-header .download-buttons #deleteBoxBtn {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .content-header .download-buttons #downloadPdfsMessage {
+            font-size: 11px;
+            color: #6c757d;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+
         .content-header h3 {
             font-size: 14px;
             color: #333;
@@ -1295,9 +1319,6 @@
 
                     <!-- Action Buttons -->
                     <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-                        <button class="btn btn-danger" onclick="deleteSelectedBox()" style="flex: 1; font-size: 11px; padding: 6px 8px;" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
-                            🗑️ Delete
-                        </button>
                                 </div>
                             </div>
                             
@@ -1305,21 +1326,8 @@
 
 
 
-                <!-- Download Section -->
+                <!-- Download Link Section -->
                 <div class="download-section" style="border-top: 1px solid #e9ecef; padding: 15px; background: #f8f9fa; margin-bottom: 15px;">
-                    <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()" style="width: 100%; margin-bottom: 10px;">
-                        📄 Download Current PDF
-                    </button>
-                    
-                    <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled style="width: 100%; margin-bottom: 10px;">
-                        Download PDFs
-                    </button>
-                    <div id="downloadPdfsMessage" class="text-muted" style="font-size: 12px; text-align: center; margin-bottom: 10px; display: none;">
-                        Multiple boxes detected. Use single page download instead.
-                    </div>
-                    
-                    
-                    
                     <div id="downloadLink" style="display: none;">
                         <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block; width: 100%;">Download Original PDF</a>
                     </div>
@@ -1334,6 +1342,22 @@
         <div class="main-content">
             <div class="content-header">
                 <h3>PDF Viewer</h3>
+                <div class="download-buttons">
+                    <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
+                        📄 Download Current PDF
+                    </button>
+                    
+                    <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled>
+                        Download PDFs
+                    </button>
+                    <div id="downloadPdfsMessage" class="text-muted" style="display: none;">
+                        Multiple boxes detected. Use single page download instead.
+                    </div>
+                    
+                    <button class="btn btn-danger" onclick="deleteSelectedBox()" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
+                        🗑️ Delete
+                    </button>
+                </div>
             </div>
 
             <div class="viewer-container">
