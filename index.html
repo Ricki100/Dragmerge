@@ -3606,6 +3606,40 @@ if (!sessionState.defaultFontFamily) {
             return null;
         }
 
+        // Auto-cleanup function to delete temporary files on page refresh
+        function cleanupTemporaryFiles() {
+            console.log('Cleaning up temporary files...');
+            
+            // Clean up uploads folder
+            fetch('cleanup_files.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'cleanup',
+                    folders: ['uploads', 'layouts', 'runtime']
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Temporary files cleaned up successfully');
+                } else {
+                    console.log('Cleanup completed with warnings:', data.message);
+                }
+            })
+            .catch(error => {
+                console.log('Cleanup error (non-critical):', error);
+            });
+        }
+
+        // Run cleanup on page load/refresh
+        window.addEventListener('load', cleanupTemporaryFiles);
+        
+        // Also run cleanup before page unload (additional safety)
+        window.addEventListener('beforeunload', cleanupTemporaryFiles);
+
         // Enhanced Box Management Functions
         function updateBoxEditor() {
             const deleteBoxBtn = document.getElementById('deleteBoxBtn');
