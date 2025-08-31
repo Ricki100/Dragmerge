@@ -812,6 +812,7 @@
             top: 10px;
             right: 10px;
             display: flex;
+            flex-direction: column;
             gap: 5px;
             z-index: 100;
         }
@@ -829,6 +830,17 @@
 
         .pdf-control-btn:hover {
             background: rgba(0, 0, 0, 0.9);
+        }
+        
+        /* Enhanced zoom transitions for boxes */
+        .draggable-text-box,
+        .draggable-image-box {
+            transition: transform 0.2s ease-out;
+        }
+        
+        /* Smooth zoom transitions */
+        .pdf-content {
+            transition: transform 0.2s ease-out;
         }
 
         .pdf-control-btn:disabled {
@@ -1497,12 +1509,12 @@ if (!sessionState.defaultFontFamily) {
             console.log('Editor canvas initialized');
         }
 
-                 // File input handler
-         document.getElementById('pdfFile').addEventListener('change', function(e) {
-             const file = e.target.files[0];
-             if (file) {
-                 currentFile = file;
-                 document.getElementById('fileLabel').textContent = file.name;
+        // File input handler
+        document.getElementById('pdfFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                currentFile = file;
+                document.getElementById('fileLabel').textContent = file.name;
                  
                  // Store file metadata for change detection
                  sessionState.pdfMetadata = {
@@ -1510,15 +1522,15 @@ if (!sessionState.defaultFontFamily) {
                      lastModified: file.lastModified,
                      size: file.size
                  };
-                 
-                 // Hide download link
-                 document.getElementById('downloadLink').style.display = 'none';
-                 serverPdfUrl = null;
+                
+                // Hide download link
+                document.getElementById('downloadLink').style.display = 'none';
+                serverPdfUrl = null;
 
-                 // Automatically load and preview the PDF
-                 loadPdf(file);
-             }
-         });
+                // Automatically load and preview the PDF
+                loadPdf(file);
+            }
+        });
 
 
 
@@ -1782,15 +1794,15 @@ if (!sessionState.defaultFontFamily) {
             uploadArea.style.backgroundColor = '';
         });
 
-                 uploadArea.addEventListener('drop', function(e) {
-             e.preventDefault();
-             uploadArea.style.backgroundColor = '';
-             
-             const files = e.dataTransfer.files;
-             if (files.length > 0 && files[0].type === 'application/pdf') {
-                 fileInput.files = files;
-                 currentFile = files[0];
-                 document.getElementById('fileLabel').textContent = files[0].name;
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                fileInput.files = files;
+                currentFile = files[0];
+                document.getElementById('fileLabel').textContent = files[0].name;
                  
                  // Store file metadata for change detection
                  sessionState.pdfMetadata = {
@@ -1798,15 +1810,15 @@ if (!sessionState.defaultFontFamily) {
                      lastModified: files[0].lastModified,
                      size: files[0].size
                  };
-                 
-                 // Hide download link
-                 document.getElementById('downloadLink').style.display = 'none';
-                 serverPdfUrl = null;
+                
+                // Hide download link
+                document.getElementById('downloadLink').style.display = 'none';
+                serverPdfUrl = null;
 
-                 // Automatically load and preview the PDF
-                 loadPdf(files[0]);
-             }
-         });
+                // Automatically load and preview the PDF
+                loadPdf(files[0]);
+            }
+        });
 
 
         
@@ -2306,11 +2318,14 @@ if (!sessionState.defaultFontFamily) {
                 console.error('CSV file input not found!');
             }
 
-                         // Setup keyboard shortcuts for box management
-             setupKeyboardShortcuts();
+            // Setup keyboard shortcuts for box management
+            setupKeyboardShortcuts();
              
              // Setup file change monitoring
              setupFileChangeMonitoring();
+             
+             // Setup enhanced zoom functionality
+             setupMouseWheelZoom();
          });
 
                  // File change monitoring system
@@ -2451,8 +2466,8 @@ if (!sessionState.defaultFontFamily) {
                  console.error('Error checking for file changes:', error);
              }
          }
-         
-         // Simple Multiple Records Management
+
+        // Simple Multiple Records Management
         let recordsCreated = 0;
         
         function createMultipleTextRecords() {
@@ -3850,24 +3865,24 @@ if (!sessionState.defaultFontFamily) {
                     sessionState.boxes = sessionState.boxes.filter(box => box !== boxObject);
                 }
                 console.log('Box removed from sessionState.boxes');
-                
-                // Clear selection and remove selected class from all boxes
-                document.querySelectorAll('.draggable-text-box.selected, .draggable-image-box.selected').forEach(box => {
-                    box.classList.remove('selected');
-                });
-                sessionState.selectedBox = null;
-                
-                // Hide box editor
-                updateBoxEditor();
-                
-                updateEditorStatus('Box deleted');
-                
-                // Update download button state after deletion
-                updateDownloadButtonState();
-                
-                // Update box scaling after deletion
-                updateImageBoxScaling();
-                updateTextBoxScaling();
+            
+            // Clear selection and remove selected class from all boxes
+            document.querySelectorAll('.draggable-text-box.selected, .draggable-image-box.selected').forEach(box => {
+                box.classList.remove('selected');
+            });
+            sessionState.selectedBox = null;
+            
+            // Hide box editor
+            updateBoxEditor();
+            
+            updateEditorStatus('Box deleted');
+            
+            // Update download button state after deletion
+            updateDownloadButtonState();
+            
+            // Update box scaling after deletion
+            updateImageBoxScaling();
+            updateTextBoxScaling();
             } else {
                 console.error('Box not found in sessionState.boxes');
                 console.log('Available boxes:', sessionState.boxes);
@@ -4518,17 +4533,89 @@ if (!sessionState.defaultFontFamily) {
         function updateImageBoxScaling() {
             const imageBoxes = document.querySelectorAll('.draggable-image-box');
             imageBoxes.forEach(box => {
-                // Apply the same scale transform as the PDF viewer
-                box.style.transform = `scale(${currentTransform.scale})`;
+                // Get the box's original position and size from data attributes or stored values
+                const originalLeft = parseFloat(box.getAttribute('data-original-left') || box.style.left);
+                const originalTop = parseFloat(box.getAttribute('data-original-top') || box.style.top);
+                const originalWidth = parseFloat(box.getAttribute('data-original-width') || box.style.width);
+                const originalHeight = parseFloat(box.getAttribute('data-original-height') || box.style.height);
+                
+                // Store original values if not already stored
+                if (!box.hasAttribute('data-original-left')) {
+                    box.setAttribute('data-original-left', box.style.left);
+                    box.setAttribute('data-original-top', box.style.top);
+                    box.setAttribute('data-original-width', box.style.width);
+                    box.setAttribute('data-original-height', box.style.height);
+                }
+                
+                // Calculate new position and size based on zoom
+                const newLeft = originalLeft * currentTransform.scale;
+                const newTop = originalTop * currentTransform.scale;
+                const newWidth = originalWidth * currentTransform.scale;
+                const newHeight = originalHeight * currentTransform.scale;
+                
+                // Apply the transform with proper positioning
+                box.style.transform = `translate(${newLeft - originalLeft}px, ${newTop - originalTop}px) scale(${currentTransform.scale})`;
+                
+                // Add smooth transition for zoom changes
+                box.style.transition = 'transform 0.2s ease-out';
             });
         }
         
-        // Function to update text box scaling to match PDF viewer zoom
+        // Enhanced function to update text box scaling to match PDF viewer zoom
         function updateTextBoxScaling() {
             const textBoxes = document.querySelectorAll('.draggable-text-box');
             textBoxes.forEach(box => {
-                // Apply the same scale transform as the PDF viewer
-                box.style.transform = `scale(${currentTransform.scale})`;
+                // Get the box's original position and size from data attributes or stored values
+                const originalLeft = parseFloat(box.getAttribute('data-original-left') || box.style.left);
+                const originalTop = parseFloat(box.getAttribute('data-original-top') || box.style.top);
+                const originalWidth = parseFloat(box.getAttribute('data-original-width') || box.style.width);
+                const originalHeight = parseFloat(box.getAttribute('data-original-height') || box.style.height);
+                
+                // Store original values if not already stored
+                if (!box.hasAttribute('data-original-left')) {
+                    box.setAttribute('data-original-left', box.style.left);
+                    box.setAttribute('data-original-top', box.style.top);
+                    box.setAttribute('data-original-width', box.style.width);
+                    box.setAttribute('data-original-height', box.style.height);
+                }
+                
+                // Calculate new position and size based on zoom
+                const newLeft = originalLeft * currentTransform.scale;
+                const newTop = originalTop * currentTransform.scale;
+                const newWidth = originalWidth * currentTransform.scale;
+                const newHeight = originalHeight * currentTransform.scale;
+                
+                // Apply the transform with proper positioning
+                box.style.transform = `translate(${newLeft - originalLeft}px, ${newTop - originalTop}px) scale(${currentTransform.scale})`;
+                
+                // Add smooth transition for zoom changes
+                box.style.transition = 'transform 0.2s ease-out';
+            });
+        }
+        
+        // Enhanced zoom functionality with mouse wheel support
+        function setupMouseWheelZoom() {
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (!pdfViewer) return;
+            
+            pdfViewer.addEventListener('wheel', function(e) {
+                // Only zoom if Ctrl key is pressed (standard zoom behavior)
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    
+                    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                    const newScale = Math.max(0.1, Math.min(5, currentTransform.scale * zoomFactor));
+                    
+                    // Calculate zoom center (mouse position)
+                    const rect = pdfViewer.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+                    
+                    // Update transform with zoom centered on mouse
+                    currentTransform.scale = newScale;
+                    updatePDFTransform();
+                    updateOutlineOnZoom();
+                }
             });
         }
         
@@ -4685,6 +4772,27 @@ if (!sessionState.defaultFontFamily) {
         function resetView() {
             currentTransform = { x: 0, y: 0, scale: 1 };
             updatePDFTransform();
+            
+            // Reset all boxes to their original positions and remove zoom transforms
+            resetAllBoxesToOriginal();
+        }
+        
+        // Function to reset all boxes to their original positions and sizes
+        function resetAllBoxesToOriginal() {
+            const allBoxes = document.querySelectorAll('.draggable-text-box, .draggable-image-box');
+            allBoxes.forEach(box => {
+                // Remove any existing transforms
+                box.style.transform = '';
+                box.style.transition = 'none';
+                
+                // Restore original positions and sizes if they were stored
+                if (box.hasAttribute('data-original-left')) {
+                    box.style.left = box.getAttribute('data-original-left');
+                    box.style.top = box.getAttribute('data-original-top');
+                    box.style.width = box.getAttribute('data-original-width');
+                    box.style.height = box.getAttribute('data-original-height');
+                }
+            });
         }
 
         function zoomIn() {
