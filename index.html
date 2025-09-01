@@ -642,11 +642,16 @@
             font-size: 12px;
         }
 
+        .content-header .btn-danger {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
 
-
-        .content-header h3 {
+        .content-header .download-buttons h3 {
             font-size: 14px;
             color: #333;
+            margin: 0;
+            margin-right: 15px;
         }
 
         .editor-controls {
@@ -1336,19 +1341,16 @@
 
         <div class="main-content">
             <div class="content-header">
-                <h3>PDF Viewer</h3>
-                <div class="download-buttons">
-                    <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
+                <button class="btn btn-danger" onclick="deleteSelectedBox()" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
+                    🗑️ Delete
+                </button>
+                                    <div class="download-buttons">
+                        <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
                         📄 Download Current PDF
                     </button>
                     
                     <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled>
                         Download PDFs
-                    </button>
-
-                    
-                    <button class="btn btn-danger" onclick="deleteSelectedBox()" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
-                        🗑️ Delete
                     </button>
                 </div>
             </div>
@@ -3272,8 +3274,13 @@ if (!sessionState.defaultFontFamily) {
 
             // Load image if URL is available
             if (sampleImageUrl && sampleImageUrl.trim() !== '') {
+                // Clean the URL first (remove extra spaces, newlines, etc.)
+                let cleanedUrl = sampleImageUrl.trim().replace(/[\r\n\s]+/g, ' ');
+                
                 // Use proxy to handle CORS
-                const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(sampleImageUrl);
+                const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(cleanedUrl);
+                console.log('Original URL:', sampleImageUrl);
+                console.log('Cleaned URL:', cleanedUrl);
                 console.log('Loading sample image via proxy:', proxiedUrl);
                 
                 // Create image element
@@ -3288,6 +3295,8 @@ if (!sessionState.defaultFontFamily) {
                 // Add error handling
                 img.onerror = function() {
                     console.error('Failed to load sample image:', sampleImageUrl);
+                    console.error('Cleaned URL was:', cleanedUrl);
+                    console.error('Proxy URL was:', proxiedUrl);
                     imageBox.textContent = 'Load Failed';
                     imageBox.style.color = '#ffc107';
                     imageBox.style.fontWeight = 'bold';
@@ -3519,8 +3528,13 @@ if (!sessionState.defaultFontFamily) {
                 return;
             }
             
+            // Clean the URL first (remove extra spaces, newlines, etc.)
+            let cleanedUrl = imageUrl.trim().replace(/[\r\n\s]+/g, ' ');
+            console.log('Original CSV URL:', imageUrl);
+            console.log('Cleaned CSV URL:', cleanedUrl);
+            
             // Use proxy to handle CORS
-            const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(imageUrl);
+            const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(cleanedUrl);
             console.log('Proxied URL for CSV image:', proxiedUrl);
             
             // Create image element
@@ -6543,8 +6557,13 @@ if (!sessionState.defaultFontFamily) {
             if (imageUrl && imageUrl.trim() !== '') {
                 console.log('Loading image for single record:', imageUrl);
                 
+                // Clean the URL first (remove extra spaces, newlines, etc.)
+                let cleanedUrl = imageUrl.trim().replace(/[\r\n\s]+/g, ' ');
+                console.log('Original single record URL:', imageUrl);
+                console.log('Cleaned single record URL:', cleanedUrl);
+                
                 // Use proxy to handle CORS
-                const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(imageUrl);
+                const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(cleanedUrl);
                 console.log('Proxied URL for single record image:', proxiedUrl);
                 
                 // Create image element

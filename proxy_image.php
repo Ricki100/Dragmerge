@@ -39,14 +39,19 @@ if (isset($_GET['debug'])) {
 function cleanImageUrl($url) {
     if (empty($url)) return null;
     
+    error_log("cleanImageUrl called with: " . $url);
+    
     // Trim whitespace
     $url = trim($url);
+    error_log("After trim: " . $url);
     
     // Remove newlines and extra spaces
     $url = preg_replace('/[\r\n\s]+/', ' ', $url);
+    error_log("After space cleanup: " . $url);
     
     // Handle URLs with spaces in filenames - encode spaces properly
     if (strpos($url, ' ') !== false) {
+        error_log("URL contains spaces, encoding...");
         // Split URL into parts
         $parts = parse_url($url);
         if ($parts && isset($parts['path'])) {
@@ -64,25 +69,31 @@ function cleanImageUrl($url) {
             $fragment = isset($parts['fragment']) ? '#' . $parts['fragment'] : '';
             
             $url = $scheme . $host . $port . $path . $query . $fragment;
+            error_log("After space encoding: " . $url);
         }
     }
     
     // Handle concatenated URLs (common issue with CSV data)
     if (preg_match('/https?:\/\/[^\s]+\.\.\.[^\s]+/', $url)) {
+        error_log("URL contains concatenation, extracting first URL...");
         // Extract the first complete URL
         if (preg_match('/https?:\/\/[^\s]+/', $url, $matches)) {
             $url = $matches[0];
+            error_log("After concatenation fix: " . $url);
         }
     }
     
     // Ensure URL is properly formatted
     if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        error_log("URL validation failed, attempting to fix...");
         // Try to fix common issues
         if (strpos($url, 'http') !== 0) {
             $url = 'https://' . $url;
+            error_log("Added https://: " . $url);
         }
     }
     
+    error_log("Final cleaned URL: " . $url);
     return $url;
 }
 
@@ -99,6 +110,7 @@ $url = $_GET['url'];
 // Clean the URL first
 $cleanedUrl = cleanImageUrl($url);
 if (!$cleanedUrl) {
+    error_log("URL cleaning failed for: " . $url);
     http_response_code(400);
     exit('Invalid URL format');
 }
@@ -193,6 +205,7 @@ if (strpos($cleanedUrl, 'local://') === 0) {
 
 // Handle HTTP/HTTPS URLs
 if (!preg_match('/^https?:\/\//', $cleanedUrl)) {
+    error_log("URL protocol validation failed for: " . $cleanedUrl);
     http_response_code(400);
     exit('Invalid URL format');
 }
@@ -202,6 +215,8 @@ error_reporting(0);
 ini_set('display_errors', 0);
 
 try {
+    error_log("Attempting to fetch image from: " . $cleanedUrl);
+    
     // Use cURL for better HTTP handling
     $ch = curl_init();
     
@@ -236,6 +251,8 @@ try {
     
     curl_close($ch);
     
+    error_log("cURL response: HTTP " . $httpCode . ", Content-Type: " . $contentType . ", Content length: " . strlen($imageContent));
+    
     // Check if we got a successful response
     if ($httpCode !== 200 || $imageContent === false) {
         error_log("HTTP request failed with code: " . $httpCode . " for URL: " . $cleanedUrl);
@@ -268,6 +285,8 @@ try {
     header('Access-Control-Allow-Headers: Content-Type');
     header('Cache-Control: public, max-age=3600');
     header('Content-Length: ' . strlen($imageContent));
+    
+    error_log("Successfully serving image with Content-Type: " . header('Content-Type'));
     
     // Output the image content
     echo $imageContent;
