@@ -3184,7 +3184,11 @@ if (!sessionState.defaultFontFamily) {
                     
                     if (recordIndex < sessionState.csvRows.length) {
                         const record = sessionState.csvRows[recordIndex];
-                        console.log(`  Box ${index} (${box.boxType}) will show record ${recordIndex + 1}: ${box.csvColumn ? record[box.csvColumn] : 'No column assigned'}`);
+                        if (record && box.csvColumn) {
+                            console.log(`  Box ${index} (${box.boxType}) will show record ${recordIndex + 1}: ${record[box.csvColumn] || 'No data'}`);
+                        } else {
+                            console.log(`  Box ${index} (${box.boxType}) will show record ${recordIndex + 1}: No column assigned or no record data`);
+                        }
                     } else {
                         console.log(`  Box ${index} (${box.boxType}) will show empty (no more records)`);
                     }
@@ -3898,7 +3902,7 @@ if (!sessionState.defaultFontFamily) {
             
             // Update text size to fit the initial box dimensions
             updateTextSize(textBox);
-        }
+        } // End of the for loop
         
         // After all text boxes are created, highlight the corresponding image boxes
         // Find the last created text box and highlight its corresponding image box
