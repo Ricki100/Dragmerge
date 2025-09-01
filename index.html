@@ -1158,6 +1158,20 @@
             opacity: 0.8;
             background: #28a745;
         }
+        
+        /* Animation for drag identifier popup */
+        @keyframes identifierPop {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+        }
+        
+
 
 
     </style>
@@ -1283,7 +1297,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
                         <div class="form-group" style="margin: 0;">
                             <label style="font-size: 11px;">Font:</label>
-                            <select id="formatAllFontFamily" class="form-control" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
+                            <select id="formatAllFontFamily" class="form-control" style="font-size: 11px; padding: 4px 6px;" onchange="if (typeof selectedBoxes === 'undefined' || !selectedBoxes || selectedBoxes.length <= 1) applyLiveFormatting()">
                                         <option value="Arial">Arial</option>
                                         <option value="Helvetica">Helvetica</option>
                                 <option value="Times New Roman">Times New Roman</option>
@@ -1296,18 +1310,18 @@
                                 </div>
                         <div class="form-group" style="margin: 0;">
                             <label style="font-size: 11px;">Size:</label>
-                            <input type="number" id="formatAllFontSize" class="form-control" value="16" min="1" max="72" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
+                            <input type="number" id="formatAllFontSize" class="form-control" value="16" min="1" max="72" style="font-size: 11px; padding: 4px 6px;" onchange="if (typeof selectedBoxes === 'undefined' || !selectedBoxes || selectedBoxes.length <= 1) applyLiveFormatting()">
                                     </div>
                                 </div>
                                 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
                         <div class="form-group" style="margin: 0;">
                             <label style="font-size: 11px;">Color:</label>
-                            <input type="color" id="formatAllTextColor" class="form-control" value="#000000" style="height: 30px; padding: 2px;" onchange="applyLiveFormatting()">
+                            <input type="color" id="formatAllTextColor" class="form-control" value="#000000" style="height: 30px; padding: 2px;" onchange="if (typeof selectedBoxes === 'undefined' || !selectedBoxes || selectedBoxes.length <= 1) applyLiveFormatting()">
                         </div>
                         <div class="form-group" style="margin: 0;">
                             <label style="font-size: 11px;">Align:</label>
-                            <select id="formatAllTextAlign" class="form-control" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
+                            <select id="formatAllTextAlign" class="form-control" style="font-size: 11px; padding: 4px 6px;" onchange="if (typeof selectedBoxes === 'undefined' || !selectedBoxes || selectedBoxes.length <= 1) applyLiveFormatting()">
                                         <option value="left">Left</option>
                                         <option value="center" selected>Center</option>
                                         <option value="right">Right</option>
@@ -2220,6 +2234,12 @@ if (!sessionState.defaultFontFamily) {
         function applyLiveFormatting() {
             console.log('applyLiveFormatting called');
             
+            // Check if we have multiple boxes selected - if so, don't apply format all
+            if (typeof selectedBoxes !== 'undefined' && selectedBoxes && selectedBoxes.length > 1) {
+                console.log('Multiple boxes selected, skipping applyLiveFormatting to avoid conflicts');
+                return;
+            }
+            
             // Get formatting values from the form
             const fontFamily = document.getElementById('formatAllFontFamily').value;
             const fontSize = document.getElementById('formatAllFontSize').value;
@@ -2305,6 +2325,12 @@ if (!sessionState.defaultFontFamily) {
             const boldBtn = document.getElementById('formatAllBold');
             if (boldBtn) {
                 boldBtn.addEventListener('click', function() {
+                    // Check if we have multiple boxes selected - if so, don't apply format all
+                    if (typeof selectedBoxes !== 'undefined' && selectedBoxes && selectedBoxes.length > 1) {
+                        console.log('Multiple boxes selected, skipping format all bold button');
+                        return;
+                    }
+                    
                     this.classList.toggle('active');
                     if (this.classList.contains('active')) {
                         this.style.background = '#007bff';
@@ -2323,6 +2349,12 @@ if (!sessionState.defaultFontFamily) {
             const italicBtn = document.getElementById('formatAllItalic');
             if (italicBtn) {
                 italicBtn.addEventListener('click', function() {
+                    // Check if we have multiple boxes selected - if so, don't apply format all
+                    if (typeof selectedBoxes !== 'undefined' && selectedBoxes && selectedBoxes.length > 1) {
+                        console.log('Multiple boxes selected, skipping format all italic button');
+                        return;
+                    }
+                    
                     this.classList.toggle('active');
                     if (this.classList.contains('active')) {
                         this.style.background = '#007bff';
@@ -2341,6 +2373,12 @@ if (!sessionState.defaultFontFamily) {
             const underlineBtn = document.getElementById('formatAllUnderline');
             if (underlineBtn) {
                 underlineBtn.addEventListener('click', function() {
+                    // Check if we have multiple boxes selected - if so, don't apply format all
+                    if (typeof selectedBoxes !== 'undefined' && selectedBoxes && selectedBoxes.length > 1) {
+                        console.log('Multiple boxes selected, skipping format all underline button');
+                        return;
+                    }
+                    
                     this.classList.toggle('active');
                     if (this.classList.contains('active')) {
                         this.style.background = '#007bff';
@@ -2700,16 +2738,46 @@ if (!sessionState.defaultFontFamily) {
                 // Add click handler
                 textBox.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    // Remove selection from all boxes
-                    document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
-                        box.style.border = 'none';
-                        box.classList.remove('selected');
-                    });
-                    textBox.style.border = 'none';
-                    textBox.classList.add('selected');
-                    sessionState.selectedBox = textBox; // Store the DOM element, not the box object
-                    updateBoxEditor();
-                    updateBoxEditorValues(newBox);
+                    console.log('Text box clicked:', textBox);
+                    
+                    // Check if Ctrl/Cmd key is pressed for multiple selection
+                    if (e.ctrlKey || e.metaKey) {
+                        // Multiple selection mode
+                        const boxData = sessionState.boxes.find(b => b.element === textBox);
+                        if (boxData) {
+                            if (selectedBoxes.find(b => b.element === textBox)) {
+                                // Remove from multiple selection
+                                removeFromMultipleSelection(boxData);
+                            } else {
+                                // Add to multiple selection
+                                addToMultipleSelection(boxData);
+                            }
+                            updateMultiSelectionEditor();
+                        }
+                    } else {
+                        // Single selection mode
+                        clearMultipleSelection();
+                        
+                        // Remove selection from all boxes
+                        document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
+                            box.style.border = 'none';
+                            box.classList.remove('selected');
+                        });
+                        textBox.style.border = 'none';
+                        textBox.classList.add('selected');
+                        sessionState.selectedBox = textBox; // Store the DOM element, not the box object
+                        updateBoxEditor();
+                        updateBoxEditorValues(newBox);
+                        
+                        // Highlight corresponding box
+                        const boxData = sessionState.boxes.find(b => b.element === textBox);
+                        if (boxData) {
+                            console.log('Found box data for click:', boxData);
+                            highlightCorrespondingBox(boxData, true);
+                        } else {
+                            console.log('No box data found for text box:', textBox);
+                        }
+                    }
                 });
                 
                 newBox.element = textBox;
@@ -2808,15 +2876,45 @@ if (!sessionState.defaultFontFamily) {
                     // Add click handler for selection
                     imageBox.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        // Remove selection from all boxes
-                        document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
-                            box.classList.remove('selected');
-                        });
-                        imageBox.classList.add('selected');
-                        sessionState.selectedBox = imageBox; // Store the DOM element
-                        currentBoxId = imageBox.boxId;
-                        updateBoxEditor();
-                        updateBoxEditorValues(imageBox);
+                        console.log('Image box clicked (createMultiple):', imageBox);
+                        
+                        // Check if Ctrl/Cmd key is pressed for multiple selection
+                        if (e.ctrlKey || e.metaKey) {
+                            // Multiple selection mode
+                            const boxData = sessionState.boxes.find(b => b.element === imageBox);
+                            if (boxData) {
+                                if (selectedBoxes.find(b => b.element === imageBox)) {
+                                    // Remove from multiple selection
+                                    removeFromMultipleSelection(boxData);
+                                } else {
+                                    // Add to multiple selection
+                                    addToMultipleSelection(boxData);
+                                }
+                                updateMultiSelectionEditor();
+                            }
+                        } else {
+                            // Single selection mode
+                            clearMultipleSelection();
+                            
+                            // Remove selection from all boxes
+                            document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
+                                box.classList.remove('selected');
+                            });
+                            imageBox.classList.add('selected');
+                            sessionState.selectedBox = imageBox; // Store the DOM element
+                            currentBoxId = imageBox.boxId;
+                            updateBoxEditor();
+                            updateBoxEditorValues(imageBox);
+                            
+                            // Highlight corresponding box
+                            const boxData = sessionState.boxes.find(b => b.element === imageBox);
+                            if (boxData) {
+                                console.log('Found box data for image click:', boxData);
+                                highlightCorrespondingBox(boxData, true);
+                            } else {
+                                console.log('No box data found for image box:', imageBox);
+                            }
+                        }
                     });
 
                     // Add to PDF viewer and enable drag/resize
@@ -2882,8 +2980,30 @@ if (!sessionState.defaultFontFamily) {
             
             // Calculate records per page based on number of boxes
             const totalBoxes = sessionState.boxes.length;
-            recordsPerPage = totalBoxes > 0 ? totalBoxes : 1; // At least 1 record per page
+            // For synchronization, we want recordsPerPage to represent the number of unique records
+            // If we have multiple boxes per record (e.g., text + image), we need to calculate this
+            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text').length;
+            const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image').length;
+            
+            // If we have both text and image boxes, assume they should be paired
+            if (textBoxes > 0 && imageBoxes > 0) {
+                // Use the larger number as the base for records per page
+                recordsPerPage = Math.max(textBoxes, imageBoxes);
+            } else {
+                // If only one type of box, use total boxes
+                recordsPerPage = totalBoxes > 0 ? totalBoxes : 1;
+            }
+            
             totalPages = Math.ceil(sessionState.csvRows.length / recordsPerPage);
+            
+            // Debug logging
+            console.log('Navigation Debug:', {
+                totalBoxes: totalBoxes,
+                recordsPerPage: recordsPerPage,
+                totalRecords: sessionState.csvRows.length,
+                totalPages: totalPages,
+                currentPage: currentPage
+            });
             
             // Update page info
             pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages}`;
@@ -2899,21 +3019,32 @@ if (!sessionState.defaultFontFamily) {
             
             // Show navigation
             pageNav.style.display = 'block';
+            
+            // Show synchronization info for debugging
+            showBoxSyncInfo();
         }
         
         function previousPage() {
+            console.log('Previous page clicked. Current page:', currentPage);
             if (currentPage > 0) {
                 currentPage--;
+                console.log('Moving to page:', currentPage);
                 updatePageNavigation();
                 updateAllTextBoxesWithCSVData(); // This already handles both text and image boxes
+            } else {
+                console.log('Already at first page');
             }
         }
         
         function nextPage() {
+            console.log('Next page clicked. Current page:', currentPage, 'Total pages:', totalPages);
             if (currentPage < totalPages - 1) {
                 currentPage++;
+                console.log('Moving to page:', currentPage);
                 updatePageNavigation();
                 updateAllTextBoxesWithCSVData(); // This already handles both text and image boxes
+            } else {
+                console.log('Already at last page');
             }
         }
         
@@ -2969,6 +3100,66 @@ if (!sessionState.defaultFontFamily) {
             console.log('DOM loaded, initializing simple system...');
             updateRecordsInfo();
         });
+        
+        // Function to show box synchronization info
+        function showBoxSyncInfo() {
+            console.log('=== BOX SYNCHRONIZATION INFO ===');
+            console.log('Total boxes:', sessionState.boxes.length);
+            
+            if (sessionState.boxes.length === 0) {
+                console.log('No boxes created yet');
+                return;
+            }
+            
+            sessionState.boxes.forEach((box, index) => {
+                console.log(`Box ${index}:`);
+                console.log(`  - Type: ${box.type || box.boxType}`);
+                console.log(`  - CSV Column: ${box.csvColumn || 'None'}`);
+                console.log(`  - Position: ${index}`);
+            });
+            
+            if (sessionState.csvRows && sessionState.csvRows.length > 0) {
+                console.log(`CSV Data: ${sessionState.csvRows.length} records available`);
+                console.log(`Records per page: ${recordsPerPage}`);
+                console.log(`Total pages: ${totalPages}`);
+                console.log(`Current page: ${currentPage}`);
+                
+                // Show what records will be displayed on current page
+                const startRecord = currentPage * recordsPerPage;
+                const endRecord = Math.min(startRecord + recordsPerPage - 1, sessionState.csvRows.length - 1);
+                console.log(`Current page shows records ${startRecord + 1}-${endRecord + 1}`);
+                
+                // Show which record each box will display
+                sessionState.boxes.forEach((box, index) => {
+                    let recordIndex;
+                    if (box.boxType === 'image') {
+                        // For image boxes, use the same logic as updateImageBoxWithCSVData
+                        const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text').length;
+                        const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image').length;
+                        
+                        if (textBoxes > 0 && imageBoxes > 0) {
+                            const imageBoxIndex = index - textBoxes;
+                            recordIndex = currentPage * recordsPerPage + imageBoxIndex;
+                        } else {
+                            recordIndex = currentPage * recordsPerPage + index;
+                        }
+                    } else {
+                        // For text boxes, use the box index directly
+                        recordIndex = currentPage * recordsPerPage + index;
+                    }
+                    
+                    if (recordIndex < sessionState.csvRows.length) {
+                        const record = sessionState.csvRows[recordIndex];
+                        console.log(`  Box ${index} (${box.boxType}) will show record ${recordIndex + 1}: ${box.csvColumn ? record[box.csvColumn] : 'No column assigned'}`);
+                    } else {
+                        console.log(`  Box ${index} (${box.boxType}) will show empty (no more records)`);
+                    }
+                });
+            } else {
+                console.log('No CSV data loaded yet');
+            }
+            console.log('================================');
+        }
 
 
         
@@ -2988,6 +3179,436 @@ if (!sessionState.defaultFontFamily) {
             // Update all text boxes with current record data
             updateAllTextBoxesWithCSVData();
         }
+        
+        // Function to calculate optimal position for new boxes
+        function calculateOptimalBoxPosition(boxType) {
+            const existingBoxes = sessionState.boxes.filter(box => box.boxType === boxType);
+            const pdfViewer = document.getElementById('pdfViewer');
+            
+            if (existingBoxes.length === 0) {
+                // First box of this type - place in a good starting position
+                // Consider the PDF viewer's current scroll position
+                const scrollX = pdfViewer.scrollLeft || 0;
+                const scrollY = pdfViewer.scrollTop || 0;
+                const viewerWidth = pdfViewer.clientWidth;
+                const viewerHeight = pdfViewer.clientHeight;
+                
+                // Place in the visible area, slightly offset from the top-left
+                return { 
+                    x: Math.max(50, scrollX + 50), 
+                    y: Math.max(50, scrollY + 50) 
+                };
+            }
+            
+            // Find the rightmost and bottommost positions of existing boxes
+            let maxX = 0;
+            let maxY = 0;
+            let minX = Infinity;
+            let minY = Infinity;
+            
+            existingBoxes.forEach(box => {
+                const rect = box.element.getBoundingClientRect();
+                const viewerRect = pdfViewer.getBoundingClientRect();
+                
+                // Convert to relative coordinates within PDF viewer
+                const relativeX = rect.left - viewerRect.left + pdfViewer.scrollLeft;
+                const relativeY = rect.top - viewerRect.top + pdfViewer.scrollTop;
+                
+                maxX = Math.max(maxX, relativeX + rect.width);
+                maxY = Math.max(maxY, relativeY + rect.height);
+                minX = Math.min(minX, relativeX);
+                minY = Math.min(minY, relativeY);
+            });
+            
+            // Calculate spacing based on box type
+            const spacing = boxType === 'text' ? 150 : 120; // Text boxes need more space
+            
+            // Position new box to the right of existing boxes, or below if no space
+            const viewerWidth = pdfViewer.clientWidth;
+            const viewerHeight = pdfViewer.clientHeight;
+            const scrollX = pdfViewer.scrollLeft || 0;
+            const scrollY = pdfViewer.scrollTop || 0;
+            
+            let newX, newY;
+            
+            // Check if there's space to the right of existing boxes
+            if (maxX + spacing < scrollX + viewerWidth - 150) {
+                // Place to the right of existing boxes
+                newX = maxX + 20;
+                newY = minY; // Align with the top of existing boxes
+            } else if (maxY + 100 < scrollY + viewerHeight - 100) {
+                // Place below existing boxes
+                newX = minX; // Align with the left of existing boxes
+                newY = maxY + 20;
+            } else {
+                // No space in current view, place in a new row/column
+                // Try to place in a new column to the right
+                if (minX + 200 < scrollX + viewerWidth - 150) {
+                    newX = minX + 200;
+                    newY = scrollY + 50;
+                } else {
+                    // Start a new row below
+                    newX = scrollX + 50;
+                    newY = maxY + 150;
+                }
+            }
+            
+            // Ensure the new box doesn't go outside the viewer bounds
+            newX = Math.max(20, Math.min(newX, scrollX + viewerWidth - 150));
+            newY = Math.max(20, Math.min(newY, scrollY + viewerHeight - 100));
+            
+            return { x: newX, y: newY };
+        }
+        
+                // Function to show dynamic box identifier while dragging
+        function showBoxIdentifier(box, isDragging) {
+            if (!box || !box.element) return;
+            
+            const boxIndex = sessionState.boxes.indexOf(box);
+            const boxType = box.boxType;
+            
+            if (isDragging) {
+                // Create or update the identifier popup
+                let identifier = box.element.querySelector('.drag-identifier');
+                if (!identifier) {
+                    identifier = document.createElement('div');
+                    identifier.className = 'drag-identifier';
+                    identifier.style.cssText = `
+                        position: absolute;
+                        top: -25px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: ${boxType === 'text' ? '#007bff' : '#28a745'};
+                        color: white;
+                        padding: 4px 8px;
+                        border-radius: 12px;
+                        font-size: 12px;
+                        font-weight: bold;
+                        white-space: nowrap;
+                        z-index: 1000;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                        animation: identifierPop 0.3s ease-out;
+                    `;
+                    box.element.appendChild(identifier);
+                }
+                
+                // Update content
+                identifier.textContent = `${boxType === 'text' ? 'Text' : 'Image'} Box ${boxIndex + 1}`;
+                identifier.style.display = 'block';
+                
+                // Highlight the corresponding box of the other type with clean visual feedback
+                highlightCorrespondingBox(box, true);
+                
+            } else {
+                // Hide identifier
+                const identifier = box.element.querySelector('.drag-identifier');
+                if (identifier) {
+                    identifier.style.display = 'none';
+                }
+                
+                // Remove highlighting from corresponding box
+                highlightCorrespondingBox(box, false);
+            }
+        }
+        
+        // Function to highlight the corresponding box of the other type
+        function highlightCorrespondingBox(draggedBox, shouldHighlight) {
+            if (!draggedBox) {
+                console.log('highlightCorrespondingBox: No draggedBox provided');
+                return;
+            }
+            
+            console.log('highlightCorrespondingBox called with:', draggedBox, 'shouldHighlight:', shouldHighlight);
+            
+            const draggedBoxType = draggedBox.boxType || draggedBox.type;
+            console.log('Dragged box type:', draggedBoxType);
+            
+            // Get all text and image boxes
+            const textBoxes = sessionState.boxes.filter(b => (b.boxType === 'text') || (b.type === 'text'));
+            const imageBoxes = sessionState.boxes.filter(b => (b.boxType === 'image') || (b.type === 'image'));
+            
+            console.log('Text boxes:', textBoxes.length, 'Image boxes:', imageBoxes.length);
+            
+            // Find the corresponding box of the other type
+            let correspondingBox = null;
+            
+            if (draggedBoxType === 'text') {
+                // Dragging text box, find corresponding image box
+                const textBoxIndex = textBoxes.indexOf(draggedBox);
+                console.log('Text box index:', textBoxIndex);
+                if (textBoxIndex >= 0 && textBoxIndex < imageBoxes.length) {
+                    correspondingBox = imageBoxes[textBoxIndex];
+                    console.log('Found corresponding image box:', correspondingBox);
+                }
+            } else if (draggedBoxType === 'image') {
+                // Dragging image box, find corresponding text box
+                const imageBoxIndex = imageBoxes.indexOf(draggedBox);
+                console.log('Image box index:', imageBoxIndex);
+                if (imageBoxIndex >= 0 && imageBoxIndex < textBoxes.length) {
+                    correspondingBox = textBoxes[imageBoxIndex];
+                    console.log('Found corresponding text box:', correspondingBox);
+                }
+            }
+            
+            if (correspondingBox && correspondingBox.element) {
+                if (shouldHighlight) {
+                    // Add clean visual feedback - change border color and add subtle highlight
+                    const highlightColor = correspondingBox.boxType === 'text' ? '#007bff' : '#28a745';
+                    correspondingBox.element.style.border = `3px solid ${highlightColor}`;
+                    correspondingBox.element.style.backgroundColor = `${highlightColor}20`; // More visible background
+                    correspondingBox.element.style.boxShadow = `0 0 10px ${highlightColor}40`; // Add glow effect
+                    
+                    // Change transform controls color to match (more subtle)
+                    const resizeHandles = correspondingBox.element.querySelectorAll('.resize-handle');
+                    resizeHandles.forEach(handle => {
+                        handle.style.backgroundColor = `${highlightColor}80`; // 50% opacity
+                        handle.style.borderColor = `${highlightColor}CC`; // 80% opacity
+                        handle.style.boxShadow = `0 2px 4px ${highlightColor}40`; // Subtle glow
+                    });
+                    
+                    // Show record info in the popup
+                    showRecordInfo(draggedBox, correspondingBox);
+                    
+                    console.log('Highlighting applied to:', correspondingBox);
+                    
+                } else {
+                    // Remove highlighting
+                    correspondingBox.element.style.border = '';
+                    correspondingBox.element.style.backgroundColor = '';
+                    correspondingBox.element.style.boxShadow = '';
+                    
+                    // Reset transform controls
+                    const resizeHandles = correspondingBox.element.querySelectorAll('.resize-handle');
+                    resizeHandles.forEach(handle => {
+                        handle.style.backgroundColor = '';
+                        handle.style.borderColor = '';
+                        handle.style.boxShadow = '';
+                    });
+                    
+                    // Hide record info
+                    hideRecordInfo();
+                    
+                    console.log('Highlighting removed from:', correspondingBox);
+                }
+            } else {
+                console.log('No corresponding box found or no element');
+            }
+        }
+        
+        // Function to show which record the boxes represent
+        function showRecordInfo(draggedBox, correspondingBox) {
+            if (!draggedBox || !correspondingBox || !sessionState.csvRows) return;
+            
+            // Calculate which record these boxes represent
+            const textBoxes = sessionState.boxes.filter(b => b.boxType === 'text');
+            const imageBoxes = sessionState.boxes.filter(b => b.boxType === 'image');
+            
+            let recordIndex = 0;
+            if (draggedBox.boxType === 'text') {
+                const textBoxIndex = textBoxes.indexOf(draggedBox);
+                recordIndex = textBoxIndex;
+            } else {
+                const imageBoxIndex = imageBoxes.indexOf(draggedBox);
+                recordIndex = imageBoxIndex;
+            }
+            
+            if (recordIndex < sessionState.csvRows.length) {
+                const record = sessionState.csvRows[recordIndex];
+                
+                // Create or update record info popup
+                let recordInfo = document.querySelector('.record-info-popup');
+                if (!recordInfo) {
+                    recordInfo = document.createElement('div');
+                    recordInfo.className = 'record-info-popup';
+                    recordInfo.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #333;
+                        color: white;
+                        padding: 15px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        z-index: 10000;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        max-width: 300px;
+                    `;
+                    document.body.appendChild(recordInfo);
+                }
+                
+                // Show which record this is
+                recordInfo.innerHTML = `
+                    <div style="margin-bottom: 10px; font-weight: bold; color: #007bff;">
+                        📋 Record ${recordIndex + 1} of ${sessionState.csvRows.length}
+                    </div>
+                    <div style="font-size: 12px; color: #ccc;">
+                        <div><strong>Text Box:</strong> ${draggedBox.boxType === 'text' ? 'This box' : 'Will show data from this record'}</div>
+                        <div><strong>Image Box:</strong> ${draggedBox.boxType === 'image' ? 'This box' : 'Will show data from this record'}</div>
+                    </div>
+                `;
+                recordInfo.style.display = 'block';
+            }
+        }
+        
+        // Function to hide record info
+        function hideRecordInfo() {
+            const recordInfo = document.querySelector('.record-info-popup');
+            if (recordInfo) {
+                recordInfo.style.display = 'none';
+            }
+        }
+        
+        // Function to clear all highlighting
+        function clearAllHighlighting() {
+            // Remove highlighting from all boxes
+            sessionState.boxes.forEach(box => {
+                if (box.element) {
+                    box.element.style.border = '';
+                    box.element.style.backgroundColor = '';
+                    
+                    // Reset transform controls
+                    const resizeHandles = box.element.querySelectorAll('.resize-handle');
+                    resizeHandles.forEach(handle => {
+                        handle.style.backgroundColor = '';
+                        handle.style.borderColor = '';
+                    });
+                }
+            });
+            
+            // Hide record info
+            hideRecordInfo();
+        }
+        
+        // Multiple selection functionality
+        let selectedBoxes = [];
+        
+        function addToMultipleSelection(box) {
+            if (!selectedBoxes.find(b => b.element === box.element)) {
+                selectedBoxes.push(box);
+                box.element.classList.add('multi-selected');
+                box.element.style.border = '2px solid #ff6b35';
+                box.element.style.backgroundColor = 'rgba(255, 107, 53, 0.1)';
+            }
+        }
+        
+        function removeFromMultipleSelection(box) {
+            const index = selectedBoxes.findIndex(b => b.element === box.element);
+            if (index > -1) {
+                selectedBoxes.splice(index, 1);
+                box.element.classList.remove('multi-selected');
+                box.element.style.border = '';
+                box.element.style.backgroundColor = '';
+            }
+        }
+        
+        function clearMultipleSelection() {
+            selectedBoxes.forEach(box => {
+                if (box.element) {
+                    box.element.classList.remove('multi-selected');
+                    box.element.style.border = '';
+                    box.element.style.backgroundColor = '';
+                }
+            });
+            selectedBoxes = [];
+            updateMultiSelectionEditor();
+        }
+        
+        function clearAllHighlighting() {
+            // Clear highlighting from all boxes
+            sessionState.boxes.forEach(box => {
+                if (box.element) {
+                    box.element.style.border = '';
+                    box.element.style.backgroundColor = '';
+                    
+                    // Reset transform controls
+                    const resizeHandles = box.element.querySelectorAll('.resize-handle');
+                    resizeHandles.forEach(handle => {
+                        handle.style.backgroundColor = '';
+                        handle.style.borderColor = '';
+                        handle.style.boxShadow = '';
+                    });
+                }
+            });
+            
+            // Hide record info
+            hideRecordInfo();
+        }
+        
+        function updateMultiSelectionEditor() {
+            // Update the existing box editor to show multiple selection info
+            updateBoxEditorForMultipleSelection();
+        }
+        
+        function updateBoxEditorForMultipleSelection() {
+            const boxEditor = document.getElementById('boxEditor');
+            if (!boxEditor) return;
+            
+            if (selectedBoxes.length > 1) {
+                // Show multiple selection info in the existing box editor
+                const textBoxes = selectedBoxes.filter(box => box.type === 'text' || box.boxType === 'text').length;
+                const imageBoxes = selectedBoxes.filter(box => box.type === 'image' || box.boxType === 'image').length;
+                
+                // Update the box editor title to show multiple selection
+                const titleElement = boxEditor.querySelector('h4') || boxEditor.querySelector('h3');
+                if (titleElement) {
+                    titleElement.textContent = `Multiple Selection (${selectedBoxes.length} boxes)`;
+                    titleElement.style.color = '#ff6b35';
+                }
+                
+                // Add info about selected boxes
+                let infoElement = boxEditor.querySelector('.multi-selection-info');
+                if (!infoElement) {
+                    infoElement = document.createElement('div');
+                    infoElement.className = 'multi-selection-info';
+                    infoElement.style.cssText = `
+                        margin-bottom: 10px;
+                        padding: 8px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        color: #856404;
+                    `;
+                    boxEditor.insertBefore(infoElement, boxEditor.firstChild);
+                }
+                
+                infoElement.innerHTML = `
+                    <strong>Selected:</strong> ${textBoxes} text boxes, ${imageBoxes} image boxes<br>
+                    <em>Changes will apply to all selected text boxes</em>
+                `;
+                
+                // Show the box editor
+                boxEditor.style.display = 'block';
+            } else {
+                // Hide multiple selection info
+                const infoElement = boxEditor.querySelector('.multi-selection-info');
+                if (infoElement) {
+                    infoElement.remove();
+                }
+                
+                // Reset title
+                const titleElement = boxEditor.querySelector('h4') || boxEditor.querySelector('h3');
+                if (titleElement) {
+                    titleElement.textContent = 'Box Properties';
+                    titleElement.style.color = '';
+                }
+            }
+        }
+        
+
+        
+        // Add click handler to document to clear highlighting when clicking elsewhere
+        document.addEventListener('click', function(e) {
+            // Only clear if clicking on something that's not a box
+            if (!e.target.classList.contains('draggable-text-box') && 
+                !e.target.classList.contains('draggable-image-box') &&
+                !e.target.closest('.draggable-text-box') &&
+                !e.target.closest('.draggable-image-box') &&
+                !e.target.classList.contains('resize-handle')) {
+                clearAllHighlighting();
+                clearMultipleSelection();
+            }
+        });
         
         // Initialize font handling
         initializeFontHandling();
@@ -3098,10 +3719,10 @@ if (!sessionState.defaultFontFamily) {
             
             // Add multiple boxes for the same field across different records
             for (let i = 0; i < boxCount; i++) {
-                const offsetX = i * 20; // Small horizontal offset for each box
-                const offsetY = i * 15; // Small vertical offset for each box
-                const boxX = centerX + offsetX;
-                const boxY = centerY + offsetY;
+                // Calculate optimal position for this text box
+                const position = calculateOptimalBoxPosition('text');
+                const boxX = position.x + (i * 20); // Small offset for multiple boxes
+                const boxY = position.y + (i * 15);
                 
                 // Get data from the corresponding record
                 const recordIndex = i % sessionState.csvRows.length; // Cycle through records
@@ -3174,19 +3795,40 @@ if (!sessionState.defaultFontFamily) {
             // Add click handler for selection
             textBox.addEventListener('click', function(e) {
                 e.stopPropagation();
+                console.log('Text box clicked (addText):', textBox, 'boxData:', boxData);
                 
-                // Remove selection from all boxes
-                document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
-                    box.style.border = 'none';
-                    box.classList.remove('selected');
-                });
-                
-                // Select this box
-                textBox.style.border = 'none';
-                textBox.classList.add('selected');
-                sessionState.selectedBox = boxData;
-                updateBoxEditor();
-                updateBoxEditorValues(boxData);
+                // Check if Ctrl/Cmd key is pressed for multiple selection
+                if (e.ctrlKey || e.metaKey) {
+                    // Multiple selection mode
+                    if (selectedBoxes.find(b => b.element === textBox)) {
+                        // Remove from multiple selection
+                        removeFromMultipleSelection(boxData);
+                    } else {
+                        // Add to multiple selection
+                        addToMultipleSelection(boxData);
+                    }
+                    updateMultiSelectionEditor();
+                } else {
+                    // Single selection mode
+                    clearMultipleSelection();
+                    
+                    // Remove selection from all boxes
+                    document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
+                        box.style.border = 'none';
+                        box.classList.remove('selected');
+                    });
+                    
+                    // Select this box
+                    textBox.style.border = 'none';
+                    textBox.classList.add('selected');
+                    sessionState.selectedBox = boxData;
+                    updateBoxEditor();
+                    updateBoxEditorValues(boxData);
+                    
+                    // Highlight the corresponding box
+                    console.log('Highlighting corresponding box for:', boxData);
+                    highlightCorrespondingBox(boxData, true);
+                }
             });
             
             sessionState.boxes.push(boxData);
@@ -3209,6 +3851,23 @@ if (!sessionState.defaultFontFamily) {
             
             // Update text size to fit the initial box dimensions
             updateTextSize(textBox);
+        }
+        
+        // After all text boxes are created, highlight the corresponding image boxes
+        // Find the last created text box and highlight its corresponding image box
+        if (boxCount > 0) {
+            const lastCreatedBox = sessionState.boxes[sessionState.boxes.length - 1];
+            if (lastCreatedBox && lastCreatedBox.type === 'text') {
+                console.log('Text box created, highlighting corresponding image box:', lastCreatedBox);
+                // Highlight the corresponding image box for the last created text box
+                highlightCorrespondingBox(lastCreatedBox, true);
+                
+                // Auto-clear highlighting after 3 seconds
+                setTimeout(() => {
+                    console.log('Auto-clearing highlighting for text box:', lastCreatedBox);
+                    highlightCorrespondingBox(lastCreatedBox, false);
+                }, 3000);
+            }
         }
         }
 
@@ -3241,10 +3900,10 @@ if (!sessionState.defaultFontFamily) {
             
             // Add multiple image boxes for the same field across different records
             for (let i = 0; i < boxCount; i++) {
-                const offsetX = i * 20; // Small horizontal offset for each box
-                const offsetY = i * 15; // Small vertical offset for each box
-                const boxX = 50 + offsetX;
-                const boxY = 50 + offsetY;
+                // Calculate optimal position for this image box
+                const position = calculateOptimalBoxPosition('image');
+                const boxX = position.x + (i * 20); // Small offset for multiple boxes
+                const boxY = position.y + (i * 15);
                 
                 // Get data from the corresponding record
                 const recordIndex = i % sessionState.csvRows.length; // Cycle through records
@@ -3330,20 +3989,50 @@ if (!sessionState.defaultFontFamily) {
             // Add click handler for selection
             imageBox.addEventListener('click', function(e) {
                 e.stopPropagation();
-                // Remove selected class from all boxes
-                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
-                    box.classList.remove('selected');
-                });
-                // Add selected class to this box
-                imageBox.classList.add('selected');
+                console.log('Image box clicked:', imageBox);
                 
-                // Update session state
-                sessionState.selectedBox = imageBox; // Store the DOM element
-                currentBoxId = imageBox.boxId;
-                
-                // Update box editor
-                updateBoxEditor();
-                updateBoxEditorValues(boxData); // Use the box object for editor values
+                // Check if Ctrl/Cmd key is pressed for multiple selection
+                if (e.ctrlKey || e.metaKey) {
+                    // Multiple selection mode
+                    const box = sessionState.boxes.find(b => b.element === imageBox);
+                    if (box) {
+                        if (selectedBoxes.find(b => b.element === imageBox)) {
+                            // Remove from multiple selection
+                            removeFromMultipleSelection(box);
+                        } else {
+                            // Add to multiple selection
+                            addToMultipleSelection(box);
+                        }
+                        updateMultiSelectionEditor();
+                    }
+                } else {
+                    // Single selection mode
+                    clearMultipleSelection();
+                    
+                    // Remove selected class from all boxes
+                    document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
+                        box.classList.remove('selected');
+                    });
+                    // Add selected class to this box
+                    imageBox.classList.add('selected');
+                    
+                    // Update session state
+                    sessionState.selectedBox = imageBox; // Store the DOM element
+                    currentBoxId = imageBox.boxId;
+                    
+                    // Update box editor
+                    updateBoxEditor();
+                    
+                    // Highlight the corresponding box
+                    const box = sessionState.boxes.find(b => b.element === imageBox);
+                    if (box) {
+                        console.log('Found box data for image click:', box);
+                        updateBoxEditorValues(box); // Use the box object for editor values
+                        highlightCorrespondingBox(box, true);
+                    } else {
+                        console.log('No box data found for image box:', imageBox);
+                    }
+                }
             });
 
             // Add to overlay container (same as text boxes)
@@ -3390,6 +4079,23 @@ if (!sessionState.defaultFontFamily) {
             // Update image box scaling to match current PDF viewer state
             updateImageBoxScaling();
             }
+            
+            // After all image boxes are created, highlight the corresponding text boxes
+            // Find the last created image box and highlight its corresponding text box
+            if (boxCount > 0) {
+                const lastCreatedBox = sessionState.boxes[sessionState.boxes.length - 1];
+                if (lastCreatedBox && lastCreatedBox.type === 'image') {
+                    console.log('Image box created, highlighting corresponding text box:', lastCreatedBox);
+                    // Highlight the corresponding text box for the last created image box
+                    highlightCorrespondingBox(lastCreatedBox, true);
+                    
+                    // Auto-clear highlighting after 3 seconds
+                    setTimeout(() => {
+                        console.log('Auto-clearing highlighting for image box:', lastCreatedBox);
+                        highlightCorrespondingBox(lastCreatedBox, false);
+                    }, 3000);
+                }
+            }
         }
 
 
@@ -3409,6 +4115,17 @@ if (!sessionState.defaultFontFamily) {
                 listeners: {
                     start: function(event) {
                         event.target.classList.add('dragging');
+                        console.log('Drag started on:', event.target);
+                        
+                        // Find the box object and show identifier
+                        const box = sessionState.boxes.find(b => b.element === event.target);
+                        if (box) {
+                            console.log('Found box object:', box);
+                            showBoxIdentifier(box, true);
+                            highlightCorrespondingBox(box, true);
+                        } else {
+                            console.log('No box object found for element:', event.target);
+                        }
                     },
                     move: function(event) {
                         const target = event.target;
@@ -3429,6 +4146,15 @@ if (!sessionState.defaultFontFamily) {
                     end: function(event) {
                         event.target.classList.remove('dragging');
                         clearSnapGuides();
+                        console.log('Drag ended on:', event.target);
+                        
+                        // Hide identifier when dragging ends
+                        const box = sessionState.boxes.find(b => b.element === event.target);
+                        if (box) {
+                            console.log('Hiding identifier for box:', box);
+                            showBoxIdentifier(box, false);
+                            highlightCorrespondingBox(box, false);
+                        }
                     }
                 }
             });
@@ -3504,7 +4230,7 @@ if (!sessionState.defaultFontFamily) {
             img.onerror = function() {
                 console.error('Failed to load image:', imageUrl);
                 console.error('Error details:', this.src);
-                box.innerHTML = '<div style="color: red; text-align: center; padding: 10px; font-size: 12px;">Failed to load image<br>' + imageUrl + '</div>';
+                box.element.innerHTML = '<div style="color: red; text-align: center; padding: 10px; font-size: 12px;">Failed to load image<br>' + imageUrl + '</div>';
             };
             
             img.onload = function() {
@@ -3512,8 +4238,10 @@ if (!sessionState.defaultFontFamily) {
             };
             
             // Clear existing content and add image
-            box.innerHTML = '';
-            box.appendChild(img);
+            box.element.innerHTML = '';
+            box.element.style.background = 'transparent';
+            box.element.style.border = '2px dashed #ccc';
+            box.element.appendChild(img);
             
             // Update box properties
             box.imageUrl = imageUrl;
@@ -3547,8 +4275,35 @@ if (!sessionState.defaultFontFamily) {
                 return;
             }
             
+            // Calculate which record this image box should show based on its position
+            const boxIndex = sessionState.boxes.indexOf(box);
+            
+            // For image boxes, we need to map them to the correct record
+            // If we have both text and image boxes, image boxes come after text boxes
+            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text').length;
+            const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image').length;
+            
+            let recordIndex;
+            if (textBoxes > 0 && imageBoxes > 0) {
+                // If we have both types, image boxes are mapped to the same records as text boxes
+                // Image boxes come after text boxes in the array, so we need to map them back
+                const imageBoxIndex = boxIndex - textBoxes; // Get the position within image boxes
+                recordIndex = currentPage * recordsPerPage + imageBoxIndex;
+            } else {
+                // If only image boxes, use the box index directly
+                recordIndex = currentPage * recordsPerPage + boxIndex;
+            }
+            
+            console.log(`Image box update - Box index: ${boxIndex}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
+            
+            if (recordIndex >= sessionState.csvRows.length) {
+                console.log(`No more records available for image box ${boxIndex}, showing placeholder`);
+                box.element.innerHTML = '<div style="color: #6c757d; text-align: center; padding: 10px; font-size: 12px;">No Image Available</div>';
+                return;
+            }
+            
             // Get current CSV row data
-            const currentRow = sessionState.csvRows && sessionState.csvRows[currentPage * recordsPerPage + (box.boxIndex || 0)];
+            const currentRow = sessionState.csvRows[recordIndex];
             if (!currentRow) {
                 console.log('No current row data available');
                 return;
@@ -3587,7 +4342,7 @@ if (!sessionState.defaultFontFamily) {
             img.onerror = function() {
                 console.error('Failed to load CSV image:', imageUrl);
                 console.error('Error details:', this.src);
-                box.innerHTML = '<div style="color: red; text-align: center; padding: 10px; font-size: 12px;">Failed to load CSV image<br>' + imageUrl + '</div>';
+                box.element.innerHTML = '<div style="color: red; text-align: center; padding: 10px; font-size: 12px;">Failed to load CSV image<br>' + imageUrl + '</div>';
             };
             
             img.onload = function() {
@@ -3595,8 +4350,15 @@ if (!sessionState.defaultFontFamily) {
             };
             
             // Clear existing content and add image
-            box.innerHTML = '';
-            box.appendChild(img);
+            box.element.innerHTML = '';
+            box.element.style.background = 'transparent';
+            box.element.style.border = '2px dashed #ccc';
+            
+            // Remove any existing images to prevent accumulation
+            const existingImages = box.element.querySelectorAll('img');
+            existingImages.forEach(existingImg => existingImg.remove());
+            
+            box.element.appendChild(img);
             
             // Update box properties
             box.imageUrl = imageUrl;
@@ -3842,22 +4604,97 @@ if (!sessionState.defaultFontFamily) {
             // Update CSV column dropdown
             const columnSelect = document.getElementById('boxColumnSelect');
             if (columnSelect) {
-            columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
+                columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
                 
                 console.log('Updating CSV column dropdown. csvData:', csvData);
             
-            if (csvData && csvData.length > 0) {
-                const columns = Object.keys(csvData[0]);
+                if (csvData && csvData.length > 0) {
+                    const columns = Object.keys(csvData[0]);
                     console.log('CSV columns found:', columns);
-                columns.forEach(column => {
-                    const option = document.createElement('option');
-                    option.value = column;
-                    option.textContent = column;
-                    option.selected = column === box.csvColumn;
-                    columnSelect.appendChild(option);
-                });
+                    columns.forEach(column => {
+                        const option = document.createElement('option');
+                        option.value = column;
+                        option.textContent = column;
+                        
+                        // For multiple selection, show selected if all boxes have the same column
+                        if (selectedBoxes.length > 1) {
+                            const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                            const allSameColumn = textBoxes.every(b => b.csvColumn === column);
+                            option.selected = allSameColumn;
+                        } else {
+                            option.selected = column === box.csvColumn;
+                        }
+                        
+                        columnSelect.appendChild(option);
+                    });
                 } else {
                     console.log('No CSV data available for column dropdown');
+                }
+            }
+
+            // Update font size input
+            const fontSizeInput = document.getElementById('fontSizeInput');
+            if (fontSizeInput) {
+                if (selectedBoxes.length > 1) {
+                    const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                    const allSameSize = textBoxes.every(b => b.fontSize === textBoxes[0].fontSize);
+                    fontSizeInput.value = allSameSize ? textBoxes[0].fontSize : '';
+                } else {
+                    fontSizeInput.value = box.fontSize || 16;
+                }
+            }
+
+            // Update font family select
+            const fontFamilySelect = document.getElementById('fontFamilySelect');
+            if (fontFamilySelect) {
+                if (selectedBoxes.length > 1) {
+                    const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                    const allSameFamily = textBoxes.every(b => b.fontFamily === textBoxes[0].fontFamily);
+                    fontFamilySelect.value = allSameFamily ? textBoxes[0].fontFamily : '';
+                } else {
+                    fontFamilySelect.value = box.fontFamily || 'Arial';
+                }
+            }
+
+            // Update color input
+            const colorInput = document.getElementById('colorInput');
+            if (colorInput) {
+                if (selectedBoxes.length > 1) {
+                    const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                    const allSameColor = textBoxes.every(b => b.color === textBoxes[0].color);
+                    colorInput.value = allSameColor ? textBoxes[0].color : '';
+                } else {
+                    colorInput.value = box.color || '#000000';
+                }
+            }
+
+            // Update bold button
+            const boldBtn = document.getElementById('boldBtn');
+            if (boldBtn) {
+                if (selectedBoxes.length > 1) {
+                    const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                    const allBold = textBoxes.every(b => b.bold);
+                    const allNotBold = textBoxes.every(b => !b.bold);
+                    boldBtn.classList.toggle('active', allBold);
+                    boldBtn.classList.toggle('mixed', !allBold && !allNotBold);
+                } else {
+                    boldBtn.classList.toggle('active', box.bold);
+                    boldBtn.classList.remove('mixed');
+                }
+            }
+
+            // Update italic button
+            const italicBtn = document.getElementById('italicBtn');
+            if (italicBtn) {
+                if (selectedBoxes.length > 1) {
+                    const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                    const allItalic = textBoxes.every(b => b.italic);
+                    const allNotItalic = textBoxes.every(b => !b.italic);
+                    italicBtn.classList.toggle('active', allItalic);
+                    italicBtn.classList.toggle('mixed', !allItalic && !allNotItalic);
+                } else {
+                    italicBtn.classList.toggle('active', box.italic);
+                    italicBtn.classList.remove('mixed');
                 }
             }
 
@@ -3870,14 +4707,142 @@ if (!sessionState.defaultFontFamily) {
             const columnSelect = document.getElementById('boxColumnSelect');
             if (columnSelect) {
                 columnSelect.onchange = function() {
-                box.csvColumn = this.value;
-                    if (box.boxType === 'text') {
-                updateTextBoxContent(box);
-                    } else if (box.boxType === 'image' && box.imageSource === 'csv') {
-                        updateImageBoxWithCSVData(box);
+                    if (selectedBoxes.length > 1) {
+                        // Apply to all selected text boxes
+                        const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                        textBoxes.forEach(selectedBox => {
+                            selectedBox.csvColumn = this.value;
+                            if (selectedBox.boxType === 'text') {
+                                updateTextBoxContent(selectedBox);
+                            }
+                        });
+                        updateEditorStatus(`Applied CSV column to ${textBoxes.length} text boxes: ${this.value || 'None'}`);
+                    } else {
+                        // Single box
+                        box.csvColumn = this.value;
+                        if (box.boxType === 'text') {
+                            updateTextBoxContent(box);
+                        } else if (box.boxType === 'image' && box.imageSource === 'csv') {
+                            updateImageBoxWithCSVData(box);
+                        }
+                        updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
+                        
+                        // Highlight the corresponding box when field is changed
+                        console.log('Field changed for box:', box, 'highlighting corresponding box');
+                        highlightCorrespondingBox(box, true);
+                        
+                        // Auto-clear highlighting after 3 seconds
+                        setTimeout(() => {
+                            console.log('Auto-clearing highlighting after field change for box:', box);
+                            highlightCorrespondingBox(box, false);
+                        }, 3000);
                     }
-                updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
-                updateCreateRecordsButtonState();
+                    updateCreateRecordsButtonState();
+                };
+            }
+            
+            // Font size change
+            const fontSizeInput = document.getElementById('fontSizeInput');
+            if (fontSizeInput) {
+                fontSizeInput.onchange = function() {
+                    if (selectedBoxes.length > 1) {
+                        // Apply to all selected text boxes
+                        const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                        textBoxes.forEach(selectedBox => {
+                            selectedBox.fontSize = parseInt(this.value);
+                            updateTextBoxFont(selectedBox);
+                        });
+                        updateEditorStatus(`Applied font size to ${textBoxes.length} text boxes: ${this.value}`);
+                    } else {
+                        // Single box
+                        box.fontSize = parseInt(this.value);
+                        updateTextBoxFont(box);
+                        updateEditorStatus(`Font size updated: ${this.value}`);
+                    }
+                };
+            }
+            
+            // Font family change
+            const fontFamilySelect = document.getElementById('fontFamilySelect');
+            if (fontFamilySelect) {
+                fontFamilySelect.onchange = function() {
+                    if (selectedBoxes.length > 1) {
+                        // Apply to all selected text boxes
+                        const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                        textBoxes.forEach(selectedBox => {
+                            selectedBox.fontFamily = this.value;
+                            updateTextBoxFont(selectedBox);
+                        });
+                        updateEditorStatus(`Applied font family to ${textBoxes.length} text boxes: ${this.value}`);
+                    } else {
+                        // Single box
+                        box.fontFamily = this.value;
+                        updateTextBoxFont(box);
+                        updateEditorStatus(`Font family updated: ${this.value}`);
+                    }
+                };
+            }
+            
+            // Color change
+            const colorInput = document.getElementById('colorInput');
+            if (colorInput) {
+                colorInput.onchange = function() {
+                    if (selectedBoxes.length > 1) {
+                        // Apply to all selected text boxes
+                        const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                        textBoxes.forEach(selectedBox => {
+                            selectedBox.color = this.value;
+                            updateTextBoxFont(selectedBox);
+                        });
+                        updateEditorStatus(`Applied color to ${textBoxes.length} text boxes: ${this.value}`);
+                    } else {
+                        // Single box
+                        box.color = this.value;
+                        updateTextBoxFont(box);
+                        updateEditorStatus(`Color updated: ${this.value}`);
+                    }
+                };
+            }
+            
+            // Bold toggle
+            const boldBtn = document.getElementById('boldBtn');
+            if (boldBtn) {
+                boldBtn.onclick = function() {
+                    if (selectedBoxes.length > 1) {
+                        // Apply to all selected text boxes
+                        const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                        textBoxes.forEach(selectedBox => {
+                            selectedBox.bold = !selectedBox.bold;
+                            updateTextBoxFont(selectedBox);
+                        });
+                        updateEditorStatus(`Applied bold to ${textBoxes.length} text boxes`);
+                    } else {
+                        // Single box
+                        box.bold = !box.bold;
+                        updateTextBoxFont(box);
+                        updateEditorStatus(`Bold ${box.bold ? 'enabled' : 'disabled'}`);
+                    }
+                };
+            }
+            
+            // Italic toggle
+            const italicBtn = document.getElementById('italicBtn');
+            if (italicBtn) {
+                italicBtn.onclick = function() {
+                    if (selectedBoxes.length > 1) {
+                        // Apply to all selected text boxes
+                        const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                        textBoxes.forEach(selectedBox => {
+                            selectedBox.italic = !selectedBox.italic;
+                            updateTextBoxFont(selectedBox);
+                        });
+                        updateEditorStatus(`Applied italic to ${textBoxes.length} text boxes`);
+                    } else {
+                        // Single box
+                        box.italic = !box.italic;
+                        updateTextBoxFont(box);
+                        updateEditorStatus(`Italic ${box.italic ? 'enabled' : 'disabled'}`);
+                    }
                 };
             }
         }
@@ -4405,15 +5370,16 @@ if (!sessionState.defaultFontFamily) {
                 handleElement.dataset.handle = handle.position;
                 handleElement.style.cssText = `
                     position: absolute;
-                    width: 12px;
-                    height: 12px;
-                    background: #ff6b35;
-                    border: 2px solid white;
+                    width: 10px;
+                    height: 10px;
+                    background: rgba(255, 107, 53, 0.6);
+                    border: 1px solid rgba(255, 255, 255, 0.8);
                     border-radius: 2px;
                     cursor: ${handle.cursor};
                     pointer-events: auto;
                     z-index: 25;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                    transition: all 0.2s ease;
                 `;
 
                 // Position the handle
@@ -4428,6 +5394,21 @@ if (!sessionState.defaultFontFamily) {
                     case 'w': handleElement.style.top = '50%'; handleElement.style.left = '-6px'; handleElement.style.transform = 'translateY(-50%)'; break;
                 }
 
+                // Add hover effect for better visibility when needed
+                handleElement.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = 'rgba(255, 107, 53, 0.9)';
+                    this.style.borderColor = 'rgba(255, 255, 255, 1)';
+                    this.style.boxShadow = '0 2px 6px rgba(0,0,0,0.4)';
+                    this.style.transform = this.style.transform + ' scale(1.1)';
+                });
+                
+                handleElement.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = 'rgba(255, 107, 53, 0.6)';
+                    this.style.borderColor = 'rgba(255, 255, 255, 0.8)';
+                    this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)';
+                    this.style.transform = this.style.transform.replace(' scale(1.1)', '');
+                });
+                
                 element.appendChild(handleElement);
             });
         }
@@ -6511,13 +7492,22 @@ if (!sessionState.defaultFontFamily) {
         }
 
         function updateAllTextBoxesWithCSVData() {
-            sessionState.boxes.forEach(box => {
+            console.log('Updating all text boxes with CSV data. Current page:', currentPage, 'Records per page:', recordsPerPage);
+            console.log('Total boxes:', sessionState.boxes.length);
+            console.log('CSV data available:', csvData ? csvData.length : 0, 'rows');
+            
+            sessionState.boxes.forEach((box, index) => {
+                console.log(`Processing box ${index}:`, box.type || box.boxType, 'CSV column:', box.csvColumn);
                 if (box.type === 'text' && box.csvColumn) {
                     // Use current record for this text box
+                    console.log(`Updating text box ${index} with CSV data`);
                     updateTextBoxWithCSVData(box);
                 } else if (box.boxType === 'image' && box.csvColumn) {
                     // Handle image boxes
+                    console.log(`Updating image box ${index} with CSV data`);
                     updateImageBoxWithCSVData(box);
+                } else {
+                    console.log(`Box ${index} skipped - no CSV column or wrong type`);
                 }
             });
         }
@@ -6539,16 +7529,22 @@ if (!sessionState.defaultFontFamily) {
             
             // Calculate which record this text box should show based on its position
             const boxIndex = sessionState.boxes.indexOf(box);
+            // For text boxes, use the box index directly as the record index within the page
             const recordIndex = currentPage * recordsPerPage + boxIndex;
+            
+            console.log(`Text box update - Box index: ${boxIndex}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
             
             if (recordIndex >= csvData.length) {
                 // No more records, show empty
+                console.log(`No more records available for text box ${boxIndex}, showing empty`);
                 updateTextBoxContentSafely(box.element, '');
                 return;
             }
             
             const row = csvData[recordIndex];
             const text = row[box.csvColumn] || '';
+            
+            console.log(`Text box ${boxIndex} - Record ${recordIndex}: "${text}"`);
             
             // Update the text content while preserving resize handles
             updateTextBoxContentSafely(box.element, text);
@@ -6633,6 +7629,13 @@ if (!sessionState.defaultFontFamily) {
                 
                 // Clear existing content and add image
                 box.element.innerHTML = '';
+                box.element.style.background = 'transparent';
+                box.element.style.border = '2px dashed #ccc';
+                
+                // Remove any existing images to prevent accumulation
+                const existingImages = box.element.querySelectorAll('img');
+                existingImages.forEach(existingImg => existingImg.remove());
+                
                 box.element.appendChild(img);
             } else {
                 // Show placeholder if no image URL
