@@ -3452,33 +3452,45 @@ if (!sessionState.defaultFontFamily) {
                     recordInfo.className = 'record-info-popup';
                     recordInfo.style.cssText = `
                         position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        background: #333;
+                        top: 10px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: rgba(51, 51, 51, 0.95);
                         color: white;
-                        padding: 15px;
-                        border-radius: 8px;
-                        font-size: 14px;
+                        padding: 8px 16px;
+                        border-radius: 20px;
+                        font-size: 12px;
                         z-index: 10000;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                        max-width: 300px;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                        backdrop-filter: blur(10px);
+                        border: 1px solid rgba(255,255,255,0.1);
+                        white-space: nowrap;
+                        transition: all 0.3s ease;
                     `;
                     document.body.appendChild(recordInfo);
                 }
                 
-                // Show which record this is with correct page-based numbering
+                // Show compact record info
                 recordInfo.innerHTML = `
-                    <div style="margin-bottom: 10px; font-weight: bold; color: #007bff;">
-                        📋 Record ${actualRecordNumber} of ${sessionState.csvRows.length}
-                    </div>
-                    <div style="font-size: 12px; color: #ccc;">
-                        <div><strong>Text Box:</strong> ${selectedBox.boxType === 'text' || selectedBox.type === 'text' ? 'This box' : 'Will show data from this record'}</div>
-                        <div><strong>Image Box:</strong> ${selectedBox.boxType === 'image' || selectedBox.type === 'image' ? 'This box' : 'Will show data from this record'}</div>
-                        <div><strong>CSV Column:</strong> ${selectedBox.csvColumn || 'None'}</div>
-                        <div><strong>Page:</strong> ${currentPage + 1} of ${Math.ceil(sessionState.csvRows.length / recordsPerPage)}</div>
-                    </div>
+                    <span style="color: #007bff; font-weight: 600;">📋 Record ${actualRecordNumber}</span>
+                    <span style="margin: 0 8px; color: #666;">•</span>
+                    <span style="color: #ccc;">${selectedBox.csvColumn || 'No column'}</span>
+                    <span style="margin: 0 8px; color: #666;">•</span>
+                    <span style="color: #ccc;">Page ${currentPage + 1}/${Math.ceil(sessionState.csvRows.length / recordsPerPage)}</span>
+                    <span style="margin-left: 12px; cursor: pointer; color: #999; font-size: 14px;" onclick="this.parentElement.style.display='none'">×</span>
                 `;
                 recordInfo.style.display = 'block';
+                
+                // Auto-hide after 5 seconds for non-intrusive experience
+                setTimeout(() => {
+                    if (recordInfo && recordInfo.style.display === 'block') {
+                        recordInfo.style.opacity = '0.7';
+                    }
+                }, 3000);
+                
+                // Add hover effect to show full opacity
+                recordInfo.onmouseenter = () => recordInfo.style.opacity = '1';
+                recordInfo.onmouseleave = () => recordInfo.style.opacity = '0.7';
                 
                 console.log('Record info shown for box:', selectedBox, 'Box index:', boxIndex, 'Page index:', pageIndex, 'Record:', actualRecordNumber, 'of', sessionState.csvRows.length);
             } else {
@@ -4241,9 +4253,19 @@ if (!sessionState.defaultFontFamily) {
                 }
             });
 
-            // Enable resizing
+            // Enable resizing with free movement
             interact(element).resizable({
                 edges: { left: true, right: true, top: true, bottom: true },
+                // Allow free movement during resize
+                inertia: false,
+                // Remove any constraints that might cause "flying out" behavior
+                modifiers: [
+                    // Only keep minimal size constraints, no position restrictions
+                    interact.modifiers.restrictSize({
+                        min: { width: 20, height: 15 }
+                        // Removed max constraints to allow free resizing
+                    })
+                ],
                 listeners: {
                     start: function(event) {
                         console.log('Resize started on:', event.target);
@@ -4272,33 +4294,27 @@ if (!sessionState.defaultFontFamily) {
                         left += event.deltaRect.left;
                         top += event.deltaRect.top;
 
-                        if (snapToGridEnabled) {
-                            // Apply snap-to-grid when enabled
-                            const snappedPosition = snapToGrid(left, top, target);
-                            target.style.width = width + 'px';
-                            target.style.height = height + 'px';
-                            target.style.left = snappedPosition.x + 'px';
-                            target.style.top = snappedPosition.y + 'px';
-                        } else {
-                            // Apply changes with free positioning
-                            target.style.width = width + 'px';
-                            target.style.height = height + 'px';
-                            target.style.left = left + 'px';
-                            target.style.top = top + 'px';
+                        // Debug resize values
+                        console.log('Resize - Delta:', event.deltaRect, 'New size:', width + 'x' + height, 'New pos:', left + ',' + top);
+
+                        // Apply changes with free positioning
+                        target.style.width = width + 'px';
+                        target.style.height = height + 'px';
+                        target.style.left = left + 'px';
+                        target.style.top = top + 'px';
+                        
+                        // Ensure images maintain aspect ratio after resize
+                        if (target.classList.contains('draggable-image-box')) {
+                            const img = target.querySelector('img');
+                            if (img) {
+                                img.style.objectFit = 'contain';
+                                img.style.objectPosition = 'center';
+                                img.style.aspectRatio = 'auto';
+                                img.style.imageRendering = 'auto';
+                            }
                         }
-                    
-                    // Ensure images maintain aspect ratio after resize
-                    if (target.classList.contains('draggable-image-box')) {
-                        const img = target.querySelector('img');
-                        if (img) {
-                            img.style.objectFit = 'contain';
-                            img.style.objectPosition = 'center';
-                            img.style.aspectRatio = 'auto';
-                            img.style.imageRendering = 'auto';
-                        }
-                    }
-                },
-                                    end: function(event) {
+                    },
+                    end: function(event) {
                         console.log('Resize ended on:', event.target);
                         
                         // Show all transform controls when resizing ends
