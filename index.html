@@ -3284,7 +3284,37 @@ if (!sessionState.defaultFontFamily) {
 
             // Load image if URL is available
             if (sampleImageUrl && sampleImageUrl.trim() !== '') {
-                loadImageFromUrl(sampleImageUrl, imageBox);
+                // Use proxy to handle CORS
+                const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(sampleImageUrl);
+                console.log('Loading sample image via proxy:', proxiedUrl);
+                
+                // Create image element
+                const img = document.createElement('img');
+                img.crossOrigin = 'anonymous';
+                img.src = proxiedUrl;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                img.style.objectPosition = 'center';
+                
+                // Add error handling
+                img.onerror = function() {
+                    console.error('Failed to load sample image:', sampleImageUrl);
+                    imageBox.textContent = 'Load Failed';
+                    imageBox.style.color = '#ffc107';
+                    imageBox.style.fontWeight = 'bold';
+                    imageBox.style.fontSize = '12px';
+                    imageBox.style.border = '2px dashed #ffc107';
+                    imageBox.style.background = 'rgba(255, 193, 7, 0.1)';
+                };
+                
+                img.onload = function() {
+                    console.log('Sample image loaded successfully');
+                };
+                
+                // Clear existing content and add image
+                imageBox.innerHTML = '';
+                imageBox.appendChild(img);
             }
 
             // Add click handler for selection
@@ -3352,56 +3382,9 @@ if (!sessionState.defaultFontFamily) {
             }
         }
 
-        // Function to load image from URL - matching MERGE-ONLINE behavior
-        function loadImageFromUrl(imageUrl, imageBox) {
-            if (!imageUrl || imageUrl.trim() === '') {
-                console.log('No image URL provided');
-                return;
-            }
 
-            console.log('Loading image from URL:', imageUrl);
-            
-            // Create image element
-            const img = document.createElement('img');
-            img.crossOrigin = 'anonymous';
-            
-            // Clear existing content
-            imageBox.innerHTML = '';
-            
-            // Add image only (no delete button for image boxes)
-            imageBox.appendChild(img);
-            
-            // Load image with proper styling
-            img.onload = function() {
-                console.log('Image loaded successfully');
-                
-                // Apply MERGE-ONLINE style behavior
-                img.style.width = '100%';
-                img.style.height = '100%';
-                img.style.objectFit = 'contain';
-                img.style.objectPosition = 'center';
-                img.style.display = 'block';
-                img.style.aspectRatio = 'auto';
-                img.style.imageRendering = 'auto';
-                
-                // Keep the box styling (don't remove border/background)
-                imageBox.style.border = '2px dashed #007bff';
-                imageBox.style.background = 'rgba(255,255,255,0.2)';
-            };
-            
-            img.onerror = function() {
-                console.error('Failed to load image:', imageUrl);
-                imageBox.textContent = 'No Image';
-                imageBox.style.color = '#666';
-                imageBox.style.fontWeight = 'normal';
-                imageBox.style.fontSize = '12px';
-                imageBox.style.border = '2px dashed #007bff';
-                imageBox.style.background = 'rgba(255,255,255,0.2)';
-            };
-            
-            // Set image source using proxy
-            img.src = `proxy_image.php?url=${encodeURIComponent(imageUrl)}`;
-        }
+
+
 
         // Function to enable drag and resize for DOM elements (similar to MERGE-ONLINE)
         function enableDragResize(element) {
@@ -5946,6 +5929,30 @@ if (!sessionState.defaultFontFamily) {
                     if (results.data && results.data.length > 0) {
                         csvData.columns = Object.keys(results.data[0]);
                         sessionState.csvColumns = Object.keys(results.data[0]); // Add this line
+                        
+                        // Debug: Check for malformed URLs in image columns
+                        const imageColumns = Object.keys(results.data[0]).filter(col => 
+                            col.toLowerCase().includes('image') || 
+                            col.toLowerCase().includes('img') || 
+                            col.toLowerCase().includes('photo') ||
+                            col.toLowerCase().includes('url')
+                        );
+                        
+                        if (imageColumns.length > 0) {
+                            console.log('Found potential image columns:', imageColumns);
+                            // Check first few rows for malformed URLs
+                            for (let i = 0; i < Math.min(3, results.data.length); i++) {
+                                imageColumns.forEach(col => {
+                                    const url = results.data[i][col];
+                                    if (url && url.includes('http')) {
+                                        console.log(`Row ${i}, Column ${col}:`, url);
+                                        if (url.includes('http') && url.split('http').length > 2) {
+                                            console.warn(`⚠️ MALFORMED URL DETECTED in row ${i}, column ${col}:`, url);
+                                        }
+                                    }
+                                });
+                            }
+                        }
                     }
                     
                     currentRecord = 0;
@@ -6000,6 +6007,101 @@ if (!sessionState.defaultFontFamily) {
             // CSV preview section was removed, so we just log the data
             console.log('CSV loaded successfully:', data.length, 'rows');
             console.log('CSV columns:', Object.keys(data[0]));
+            
+            // Check for malformed URLs and provide user feedback
+            const malformedUrls = findMalformedUrls(data);
+            if (malformedUrls.length > 0) {
+                console.warn('⚠️ MALFORMED URLs detected in CSV:', malformedUrls.length, 'issues found');
+                showMalformedUrlWarning(malformedUrls);
+            }
+        }
+        
+        function findMalformedUrls(data) {
+            const malformed = [];
+            const imageColumns = Object.keys(data[0]).filter(col => 
+                col.toLowerCase().includes('image') || 
+                col.toLowerCase().includes('img') || 
+                col.toLowerCase().includes('photo') ||
+                col.toLowerCase().includes('url')
+            );
+            
+            data.forEach((row, index) => {
+                imageColumns.forEach(col => {
+                    const url = row[col];
+                    if (url && typeof url === 'string' && url.includes('http')) {
+                        if (url.includes('http') && url.split('http').length > 2) {
+                            malformed.push({
+                                row: index + 1,
+                                column: col,
+                                url: url,
+                                type: 'concatenated_urls'
+                            });
+                        } else if (url.includes('...') && url.includes(':')) {
+                            malformed.push({
+                                row: index + 1,
+                                column: col,
+                                url: url,
+                                type: 'domain_concat'
+                            });
+                        }
+                    }
+                });
+            });
+            
+            return malformed;
+        }
+        
+        function showMalformedUrlWarning(malformedUrls) {
+            const warningDiv = document.createElement('div');
+            warningDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 5px;
+                padding: 15px;
+                max-width: 400px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                z-index: 10000;
+                font-family: Arial, sans-serif;
+            `;
+            
+            warningDiv.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 20px; margin-right: 10px;">⚠️</span>
+                    <strong>CSV URL Issues Detected</strong>
+                </div>
+                <p style="margin: 0 0 10px 0; font-size: 14px;">
+                    Found ${malformedUrls.length} malformed image URLs in your CSV file. 
+                    The app will attempt to fix these automatically, but you may want to clean your CSV file.
+                </p>
+                <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                    <strong>Issues found:</strong><br>
+                    ${malformedUrls.slice(0, 3).map(issue => 
+                        `Row ${issue.row}, ${issue.column}: ${issue.url.substring(0, 50)}...`
+                    ).join('<br>')}
+                    ${malformedUrls.length > 3 ? `<br>... and ${malformedUrls.length - 3} more` : ''}
+                </div>
+                <button onclick="this.parentElement.remove()" style="
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 5px 15px;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    font-size: 12px;
+                ">Dismiss</button>
+            `;
+            
+            document.body.appendChild(warningDiv);
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+                if (warningDiv.parentElement) {
+                    warningDiv.remove();
+                }
+            }, 10000);
         }
 
         function toggleCSVPreview() {
@@ -6449,9 +6551,41 @@ if (!sessionState.defaultFontFamily) {
             const row = csvData[recordIndex];
             const imageUrl = row[box.csvColumn] || '';
             
-            // Load the new image
+            // Load the new image using proxy to handle CORS
             if (imageUrl && imageUrl.trim() !== '') {
-                loadImageFromUrl(imageUrl, box.element);
+                console.log('Loading image for single record:', imageUrl);
+                
+                // Use proxy to handle CORS
+                const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(imageUrl);
+                console.log('Proxied URL for single record image:', proxiedUrl);
+                
+                // Create image element
+                const img = document.createElement('img');
+                img.crossOrigin = 'anonymous';
+                img.src = proxiedUrl;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                img.style.objectPosition = 'center';
+                
+                // Add error handling
+                img.onerror = function() {
+                    console.error('Failed to load image for single record:', imageUrl);
+                    box.element.textContent = 'Load Failed';
+                    box.element.style.color = '#ffc107';
+                    box.element.style.fontWeight = 'bold';
+                    box.element.style.fontSize = '12px';
+                    box.element.style.border = '2px dashed #ffc107';
+                    box.element.style.background = 'rgba(255, 193, 7, 0.1)';
+                };
+                
+                img.onload = function() {
+                    console.log('Image loaded successfully for single record:', imageUrl);
+                };
+                
+                // Clear existing content and add image
+                box.element.innerHTML = '';
+                box.element.appendChild(img);
             } else {
                 // Show placeholder if no image URL
                 box.element.textContent = 'No Image';
@@ -6493,34 +6627,7 @@ if (!sessionState.defaultFontFamily) {
             updateTextBoxFont(box);
         }
 
-        function updateImageBoxWithCSVData(box) {
-            if (!box || !box.element || !csvData) return;
-            
-            // Calculate which record this image box should show based on its position
-            const boxIndex = sessionState.boxes.indexOf(box);
-            const recordIndex = currentPage * recordsPerPage + boxIndex;
-            
-            if (recordIndex >= csvData.length) {
-                // No more records, show placeholder
-                box.element.textContent = 'No Image';
-                box.element.style.border = '2px dashed #ccc';
-                box.element.style.background = 'transparent';
-                return;
-            }
-            
-            const row = csvData[recordIndex];
-            const imageUrl = row[box.csvColumn] || '';
-            
-            // Load the new image
-            if (imageUrl && imageUrl.trim() !== '') {
-                loadImageFromUrl(imageUrl, box.element);
-            } else {
-                // Show placeholder if no image URL
-                box.element.textContent = 'No Image';
-                box.element.style.border = '2px dashed #ccc';
-                box.element.style.background = 'transparent';
-            }
-        }
+
 
         function updateTextBoxContentSafely(element, text) {
             if (!element) return;

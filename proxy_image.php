@@ -141,26 +141,79 @@ error_reporting(0);
 ini_set('display_errors', 0);
 
 try {
-    $headers = get_headers($url, 1);
-    if ($headers === false) {
-        http_response_code(404);
-        exit('Failed to fetch image');
+    // Use cURL for better HTTP handling
+    $ch = curl_init();
+    
+    // Set cURL options
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Accept: image/*,*/*;q=0.8',
+        'Accept-Language: en-US,en;q=0.5',
+        'Accept-Encoding: gzip, deflate',
+        'Connection: keep-alive',
+        'Upgrade-Insecure-Requests: 1'
+    ]);
+    
+    // Get the response
+    $imageContent = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    
+    if (curl_errno($ch)) {
+        error_log("cURL error: " . curl_error($ch));
+        http_response_code(500);
+        exit('Failed to fetch image: ' . curl_error($ch));
     }
     
-    $contentType = isset($headers['Content-Type']) ? $headers['Content-Type'] : 'image/png';
-    header('Content-Type: ' . $contentType);
+    curl_close($ch);
+    
+    // Check if we got a successful response
+    if ($httpCode !== 200 || $imageContent === false) {
+        error_log("HTTP request failed with code: " . $httpCode);
+        http_response_code($httpCode ?: 500);
+        exit('Failed to load image (HTTP ' . $httpCode . ')');
+    }
+    
+    // Set appropriate headers
+    if ($contentType) {
+        header('Content-Type: ' . $contentType);
+    } else {
+        // Fallback content type based on URL extension
+        $extension = strtolower(pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
+        $contentTypes = [
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'bmp' => 'image/bmp',
+            'svg' => 'image/svg+xml'
+        ];
+        $fallbackType = $contentTypes[$extension] ?? 'image/png';
+        header('Content-Type: ' . $fallbackType);
+    }
+    
+    // Set CORS and caching headers
     header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type');
     header('Cache-Control: public, max-age=3600');
+    header('Content-Length: ' . strlen($imageContent));
     
-    $imageContent = file_get_contents($url);
-    if ($imageContent === false) {
-        http_response_code(404);
-        exit('Failed to load image');
-    }
-    
+    // Output the image content
     echo $imageContent;
+    
 } catch (Exception $e) {
+    error_log("Exception in proxy: " . $e->getMessage());
     http_response_code(500);
-    exit('Error loading image');
+    exit('Error loading image: ' . $e->getMessage());
 }
 ?>
