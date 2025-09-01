@@ -649,8 +649,8 @@
             }
 
                     .content-header .download-buttons h3 {
-                font-size: 14px;
-                color: #333;
+            font-size: 14px;
+            color: #333;
                 margin: 0;
                 margin-right: 15px;
             }
@@ -661,7 +661,7 @@
             
             .content-header .download-buttons button:last-child {
                 margin-right: 0;
-            }
+        }
 
         .editor-controls {
             display: flex;
@@ -1367,8 +1367,12 @@
                 <button class="btn btn-danger" onclick="deleteSelectedBox()" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
                     🗑️ Delete
                 </button>
-                                    <div class="download-buttons">
-                        <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
+                <div class="download-buttons">
+                        <button id="cleanPreviewBtn" class="btn btn-info" onclick="showAllTransformControls()" title="Show all transform controls">
+                            🔧 Show Controls
+                        </button>
+                        
+                    <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
                         📄 Download Current PDF
                     </button>
                     
@@ -1917,7 +1921,7 @@ if (!sessionState.defaultFontFamily) {
             
             // Hide the message about multiple boxes (removed as requested)
             if (messageDiv) {
-                messageDiv.style.display = 'none';
+                    messageDiv.style.display = 'none';
             }
         }
         
@@ -2758,22 +2762,24 @@ if (!sessionState.defaultFontFamily) {
                         // Single selection mode
                         clearMultipleSelection();
                         
-                        // Remove selection from all boxes
-                        document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
-                            box.style.border = 'none';
-                            box.classList.remove('selected');
-                        });
-                        textBox.style.border = 'none';
-                        textBox.classList.add('selected');
-                        sessionState.selectedBox = textBox; // Store the DOM element, not the box object
-                        updateBoxEditor();
-                        updateBoxEditorValues(newBox);
+                    // Remove selection from all boxes
+                    document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
+                        box.style.border = 'none';
+                        box.classList.remove('selected');
+                    });
+                    textBox.style.border = 'none';
+                    textBox.classList.add('selected');
+                    sessionState.selectedBox = textBox; // Store the DOM element, not the box object
+                    updateBoxEditor();
+                    updateBoxEditorValues(newBox);
                         
                         // Highlight corresponding box
                         const boxData = sessionState.boxes.find(b => b.element === textBox);
                         if (boxData) {
                             console.log('Found box data for click:', boxData);
                             highlightCorrespondingBox(boxData, true);
+                            // Show record info for the selected box
+                            showRecordInfo(boxData);
                         } else {
                             console.log('No box data found for text box:', textBox);
                         }
@@ -2856,7 +2862,7 @@ if (!sessionState.defaultFontFamily) {
                         top: ${(centerY - 50)}px;
                         width: 100px;
                         height: 100px;
-                        border: 2px dashed #007bff;
+                        border: none;
                         background: transparent;
                         cursor: move;
                         z-index: 10;
@@ -2896,15 +2902,15 @@ if (!sessionState.defaultFontFamily) {
                             // Single selection mode
                             clearMultipleSelection();
                             
-                            // Remove selection from all boxes
-                            document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
-                                box.classList.remove('selected');
-                            });
-                            imageBox.classList.add('selected');
-                            sessionState.selectedBox = imageBox; // Store the DOM element
-                            currentBoxId = imageBox.boxId;
-                            updateBoxEditor();
-                            updateBoxEditorValues(imageBox);
+                        // Remove selection from all boxes
+                        document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
+                            box.classList.remove('selected');
+                        });
+                        imageBox.classList.add('selected');
+                        sessionState.selectedBox = imageBox; // Store the DOM element
+                        currentBoxId = imageBox.boxId;
+                        updateBoxEditor();
+                        updateBoxEditorValues(imageBox);
                             
                             // Highlight corresponding box
                             const boxData = sessionState.boxes.find(b => b.element === imageBox);
@@ -2935,7 +2941,9 @@ if (!sessionState.defaultFontFamily) {
                     sessionState.boxes.push(imageBoxObject);
                     
                     // Update the image with CSV data
-                    updateImageBoxWithCSVData(imageBoxObject);
+                    // Calculate the page index for this box (it's the last box created)
+                    const pageIndex = sessionState.boxes.length;
+                    updateImageBoxWithCSVData(imageBoxObject, pageIndex);
                 });
             }
             
@@ -2982,8 +2990,8 @@ if (!sessionState.defaultFontFamily) {
             const totalBoxes = sessionState.boxes.length;
             // For synchronization, we want recordsPerPage to represent the number of unique records
             // If we have multiple boxes per record (e.g., text + image), we need to calculate this
-            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text').length;
-            const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image').length;
+            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text' || box.type === 'text').length;
+            const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image' || box.type === 'image').length;
             
             // If we have both text and image boxes, assume they should be paired
             if (textBoxes > 0 && imageBoxes > 0) {
@@ -2992,6 +3000,11 @@ if (!sessionState.defaultFontFamily) {
             } else {
                 // If only one type of box, use total boxes
                 recordsPerPage = totalBoxes > 0 ? totalBoxes : 1;
+            }
+            
+            // Ensure recordsPerPage doesn't exceed the total number of CSV records
+            if (sessionState.csvRows && sessionState.csvRows.length > 0) {
+                recordsPerPage = Math.min(recordsPerPage, sessionState.csvRows.length);
             }
             
             totalPages = Math.ceil(sessionState.csvRows.length / recordsPerPage);
@@ -3030,6 +3043,7 @@ if (!sessionState.defaultFontFamily) {
                 currentPage--;
                 console.log('Moving to page:', currentPage);
                 updatePageNavigation();
+                console.log('Updating text boxes for page:', currentPage);
                 updateAllTextBoxesWithCSVData(); // This already handles both text and image boxes
             } else {
                 console.log('Already at first page');
@@ -3042,6 +3056,7 @@ if (!sessionState.defaultFontFamily) {
                 currentPage++;
                 console.log('Moving to page:', currentPage);
                 updatePageNavigation();
+                console.log('Updating text boxes for page:', currentPage);
                 updateAllTextBoxesWithCSVData(); // This already handles both text and image boxes
             } else {
                 console.log('Already at last page');
@@ -3099,6 +3114,11 @@ if (!sessionState.defaultFontFamily) {
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing simple system...');
             updateRecordsInfo();
+            
+            // Show all transform controls by default
+            setTimeout(() => {
+                showAllTransformControls();
+            }, 100);
         });
         
         // Function to show box synchronization info
@@ -3116,6 +3136,20 @@ if (!sessionState.defaultFontFamily) {
                 console.log(`  - Type: ${box.type || box.boxType}`);
                 console.log(`  - CSV Column: ${box.csvColumn || 'None'}`);
                 console.log(`  - Position: ${index}`);
+                console.log(`  - Current Content: "${box.element ? box.element.textContent : 'No element'}"`);
+                
+                // Calculate which record this box should show
+                if (box.csvColumn && sessionState.csvRows) {
+                    const pageIndex = index % recordsPerPage;
+                    const recordIndex = currentPage * recordsPerPage + pageIndex;
+                    if (recordIndex < sessionState.csvRows.length) {
+                        const recordData = sessionState.csvRows[recordIndex];
+                        const csvText = recordData[box.csvColumn] || '';
+                        console.log(`  - Should show record ${recordIndex + 1}: "${csvText}"`);
+                    } else {
+                        console.log(`  - Record index out of bounds: ${recordIndex}`);
+                    }
+                }
             });
             
             if (sessionState.csvRows && sessionState.csvRows.length > 0) {
@@ -3358,13 +3392,8 @@ if (!sessionState.defaultFontFamily) {
                     correspondingBox.element.style.backgroundColor = `${highlightColor}20`; // More visible background
                     correspondingBox.element.style.boxShadow = `0 0 10px ${highlightColor}40`; // Add glow effect
                     
-                    // Change transform controls color to match (more subtle)
-                    const resizeHandles = correspondingBox.element.querySelectorAll('.resize-handle');
-                    resizeHandles.forEach(handle => {
-                        handle.style.backgroundColor = `${highlightColor}80`; // 50% opacity
-                        handle.style.borderColor = `${highlightColor}CC`; // 80% opacity
-                        handle.style.boxShadow = `0 2px 4px ${highlightColor}40`; // Subtle glow
-                    });
+                    // DO NOT show transform controls during highlighting - keep them hidden
+                    // showTransformControls(correspondingBox.element);
                     
                     // Show record info in the popup
                     showRecordInfo(draggedBox, correspondingBox);
@@ -3372,21 +3401,16 @@ if (!sessionState.defaultFontFamily) {
                     console.log('Highlighting applied to:', correspondingBox);
                     
                 } else {
-                    // Remove highlighting
-                    correspondingBox.element.style.border = '';
+                    // Remove highlighting and hide border completely
+                    correspondingBox.element.style.border = 'none';
                     correspondingBox.element.style.backgroundColor = '';
                     correspondingBox.element.style.boxShadow = '';
                     
-                    // Reset transform controls
-                    const resizeHandles = correspondingBox.element.querySelectorAll('.resize-handle');
-                    resizeHandles.forEach(handle => {
-                        handle.style.backgroundColor = '';
-                        handle.style.borderColor = '';
-                        handle.style.boxShadow = '';
-                    });
+                    // Ensure transform controls remain visible
+                    showTransformControls(correspondingBox.element);
                     
-                    // Hide record info
-                    hideRecordInfo();
+                    // Don't hide record info - keep it visible for selected box
+                    // hideRecordInfo();
                     
                     console.log('Highlighting removed from:', correspondingBox);
                 }
@@ -3396,21 +3420,23 @@ if (!sessionState.defaultFontFamily) {
         }
         
         // Function to show which record the boxes represent
-        function showRecordInfo(draggedBox, correspondingBox) {
-            if (!draggedBox || !correspondingBox || !sessionState.csvRows) return;
+        function showRecordInfo(selectedBox, correspondingBox = null) {
+            if (!selectedBox || !sessionState.csvRows) return;
             
-            // Calculate which record these boxes represent
-            const textBoxes = sessionState.boxes.filter(b => b.boxType === 'text');
-            const imageBoxes = sessionState.boxes.filter(b => b.boxType === 'image');
-            
-            let recordIndex = 0;
-            if (draggedBox.boxType === 'text') {
-                const textBoxIndex = textBoxes.indexOf(draggedBox);
-                recordIndex = textBoxIndex;
-            } else {
-                const imageBoxIndex = imageBoxes.indexOf(draggedBox);
-                recordIndex = imageBoxIndex;
+            // Find the box's index in the main boxes array
+            const boxIndex = sessionState.boxes.indexOf(selectedBox);
+            if (boxIndex === -1) {
+                console.log('Box not found in sessionState.boxes');
+                return;
             }
+            
+            // Calculate which record this box represents based on its position and current page
+            // Use the same logic as updateTextBoxWithCSVData for consistency
+            const pageIndex = boxIndex % recordsPerPage; // Get position within current page
+            const recordIndex = currentPage * recordsPerPage + pageIndex;
+            
+            // Calculate the actual record number (1-based for display)
+            const actualRecordNumber = recordIndex + 1;
             
             if (recordIndex < sessionState.csvRows.length) {
                 const record = sessionState.csvRows[recordIndex];
@@ -3436,17 +3462,23 @@ if (!sessionState.defaultFontFamily) {
                     document.body.appendChild(recordInfo);
                 }
                 
-                // Show which record this is
+                // Show which record this is with correct page-based numbering
                 recordInfo.innerHTML = `
                     <div style="margin-bottom: 10px; font-weight: bold; color: #007bff;">
-                        📋 Record ${recordIndex + 1} of ${sessionState.csvRows.length}
+                        📋 Record ${actualRecordNumber} of ${sessionState.csvRows.length}
                     </div>
                     <div style="font-size: 12px; color: #ccc;">
-                        <div><strong>Text Box:</strong> ${draggedBox.boxType === 'text' ? 'This box' : 'Will show data from this record'}</div>
-                        <div><strong>Image Box:</strong> ${draggedBox.boxType === 'image' ? 'This box' : 'Will show data from this record'}</div>
+                        <div><strong>Text Box:</strong> ${selectedBox.boxType === 'text' || selectedBox.type === 'text' ? 'This box' : 'Will show data from this record'}</div>
+                        <div><strong>Image Box:</strong> ${selectedBox.boxType === 'image' || selectedBox.type === 'image' ? 'This box' : 'Will show data from this record'}</div>
+                        <div><strong>CSV Column:</strong> ${selectedBox.csvColumn || 'None'}</div>
+                        <div><strong>Page:</strong> ${currentPage + 1} of ${Math.ceil(sessionState.csvRows.length / recordsPerPage)}</div>
                     </div>
                 `;
                 recordInfo.style.display = 'block';
+                
+                console.log('Record info shown for box:', selectedBox, 'Box index:', boxIndex, 'Page index:', pageIndex, 'Record:', actualRecordNumber, 'of', sessionState.csvRows.length);
+            } else {
+                console.log('Record index out of bounds:', recordIndex, 'CSV rows:', sessionState.csvRows.length);
             }
         }
         
@@ -3475,8 +3507,8 @@ if (!sessionState.defaultFontFamily) {
                 }
             });
             
-            // Hide record info
-            hideRecordInfo();
+            // Don't hide record info - keep it visible for selected box
+            // hideRecordInfo();
         }
         
         // Multiple selection functionality
@@ -3530,8 +3562,8 @@ if (!sessionState.defaultFontFamily) {
                 }
             });
             
-            // Hide record info
-            hideRecordInfo();
+            // Don't hide record info - keep it visible for selected box
+            // hideRecordInfo();
         }
         
         function updateMultiSelectionEditor() {
@@ -3597,7 +3629,7 @@ if (!sessionState.defaultFontFamily) {
         
 
         
-        // Add click handler to document to clear highlighting when clicking elsewhere
+        // Add click handler to document to show transform controls when clicking elsewhere
         document.addEventListener('click', function(e) {
             // Only clear if clicking on something that's not a box
             if (!e.target.classList.contains('draggable-text-box') && 
@@ -3605,8 +3637,10 @@ if (!sessionState.defaultFontFamily) {
                 !e.target.closest('.draggable-text-box') &&
                 !e.target.closest('.draggable-image-box') &&
                 !e.target.classList.contains('resize-handle')) {
-                clearAllHighlighting();
-                clearMultipleSelection();
+                
+                // Show all transform controls when clicking outside
+                showAllTransformControls();
+                console.log('Clicked outside boxes - showing all transform controls');
             }
         });
         
@@ -3699,6 +3733,7 @@ if (!sessionState.defaultFontFamily) {
             
             // Get number of boxes to add from dropdown
             const boxCount = parseInt(document.getElementById('boxCountSelect').value) || 1;
+            console.log('Adding text boxes - boxCount:', boxCount, 'dropdown value:', document.getElementById('boxCountSelect').value);
             
             const rect = pdfViewer.getBoundingClientRect();
             const centerX = (rect.width / 2) - 60;
@@ -3718,7 +3753,9 @@ if (!sessionState.defaultFontFamily) {
             }
             
             // Add multiple boxes for the same field across different records
+            console.log('Starting loop to create', boxCount, 'text boxes');
             for (let i = 0; i < boxCount; i++) {
+                console.log('Creating text box', i + 1, 'of', boxCount);
                 // Calculate optimal position for this text box
                 const position = calculateOptimalBoxPosition('text');
                 const boxX = position.x + (i * 20); // Small offset for multiple boxes
@@ -3733,6 +3770,7 @@ if (!sessionState.defaultFontFamily) {
             const textBox = document.createElement('div');
             textBox.className = 'draggable-text-box';
             textBox.id = 'textBox_' + ++boxCounter;
+            console.log('Created text box element with ID:', textBox.id, 'boxCounter:', boxCounter);
             
             textBox.style.cssText = `
                 position: absolute;
@@ -3769,6 +3807,9 @@ if (!sessionState.defaultFontFamily) {
             
             // Make it draggable
             makeDraggable(textBox);
+            
+            // Show transform controls for the newly created text box
+            showTransformControls(textBox);
             
             // Add to session state
             const boxData = {
@@ -3811,23 +3852,26 @@ if (!sessionState.defaultFontFamily) {
                 } else {
                     // Single selection mode
                     clearMultipleSelection();
-                    
-                    // Remove selection from all boxes
-                    document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
-                        box.style.border = 'none';
-                        box.classList.remove('selected');
-                    });
-                    
-                    // Select this box
-                    textBox.style.border = 'none';
-                    textBox.classList.add('selected');
-                    sessionState.selectedBox = boxData;
-                    updateBoxEditor();
-                    updateBoxEditorValues(boxData);
+                
+                // Remove selection from all boxes
+                document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
+                    box.style.border = 'none';
+                    box.classList.remove('selected');
+                });
+                
+                // Select this box
+                textBox.style.border = 'none';
+                textBox.classList.add('selected');
+                sessionState.selectedBox = boxData;
+                updateBoxEditor();
+                updateBoxEditorValues(boxData);
                     
                     // Highlight the corresponding box
                     console.log('Highlighting corresponding box for:', boxData);
                     highlightCorrespondingBox(boxData, true);
+                    
+                    // Show record info for the selected box
+                    showRecordInfo(boxData);
                 }
             });
             
@@ -3841,6 +3885,9 @@ if (!sessionState.defaultFontFamily) {
             
             // Update download button state
             updateDownloadButtonState();
+            
+            // Update page navigation to recalculate recordsPerPage
+            updatePageNavigation();
             
             // Update text box scaling to match current PDF viewer state
             updateTextBoxScaling();
@@ -3923,7 +3970,7 @@ if (!sessionState.defaultFontFamily) {
                 min-width: 40px;
                 min-height: 30px;
                 background: transparent;
-                border: 2px dashed #007bff;
+                border: none;
                 cursor: move;
                 pointer-events: auto;
                 z-index: 10;
@@ -4009,19 +4056,19 @@ if (!sessionState.defaultFontFamily) {
                     // Single selection mode
                     clearMultipleSelection();
                     
-                    // Remove selected class from all boxes
-                    document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
-                        box.classList.remove('selected');
-                    });
-                    // Add selected class to this box
-                    imageBox.classList.add('selected');
-                    
-                    // Update session state
-                    sessionState.selectedBox = imageBox; // Store the DOM element
-                    currentBoxId = imageBox.boxId;
-                    
-                    // Update box editor
-                    updateBoxEditor();
+                // Remove selected class from all boxes
+                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
+                    box.classList.remove('selected');
+                });
+                // Add selected class to this box
+                imageBox.classList.add('selected');
+                
+                // Update session state
+                sessionState.selectedBox = imageBox; // Store the DOM element
+                currentBoxId = imageBox.boxId;
+                
+                // Update box editor
+                updateBoxEditor();
                     
                     // Highlight the corresponding box
                     const box = sessionState.boxes.find(b => b.element === imageBox);
@@ -4029,6 +4076,9 @@ if (!sessionState.defaultFontFamily) {
                         console.log('Found box data for image click:', box);
                         updateBoxEditorValues(box); // Use the box object for editor values
                         highlightCorrespondingBox(box, true);
+                        
+                        // Show record info for the selected box
+                        showRecordInfo(box);
                     } else {
                         console.log('No box data found for image box:', imageBox);
                     }
@@ -4070,29 +4120,37 @@ if (!sessionState.defaultFontFamily) {
             
             // Add resize handles for visual feedback
             addResizeHandles(imageBox);
-
+            
             updateEditorStatus('Image box created - drag it to position and edit properties');
             
             // Update download button state to enable downloads
             updateDownloadButtonState();
             
+            // Update page navigation to recalculate recordsPerPage
+            updatePageNavigation();
+            
             // Update image box scaling to match current PDF viewer state
             updateImageBoxScaling();
             }
             
-            // After all image boxes are created, highlight the corresponding text boxes
-            // Find the last created image box and highlight its corresponding text box
+            // After all image boxes are created, show transform controls and highlight
             if (boxCount > 0) {
                 const lastCreatedBox = sessionState.boxes[sessionState.boxes.length - 1];
                 if (lastCreatedBox && lastCreatedBox.type === 'image') {
-                    console.log('Image box created, highlighting corresponding text box:', lastCreatedBox);
+                    console.log('Image box created, showing transform controls and highlighting corresponding text box:', lastCreatedBox);
+                    
+                    // Show transform controls for the last created image box
+                    showTransformControls(lastCreatedBox.element);
+                    
                     // Highlight the corresponding text box for the last created image box
                     highlightCorrespondingBox(lastCreatedBox, true);
                     
-                    // Auto-clear highlighting after 3 seconds
+                    // Auto-clear highlighting after 3 seconds but keep transform controls
                     setTimeout(() => {
                         console.log('Auto-clearing highlighting for image box:', lastCreatedBox);
                         highlightCorrespondingBox(lastCreatedBox, false);
+                        // Keep transform controls visible
+                        showTransformControls(lastCreatedBox.element);
                     }, 3000);
                 }
             }
@@ -4116,6 +4174,15 @@ if (!sessionState.defaultFontFamily) {
                     start: function(event) {
                         event.target.classList.add('dragging');
                         console.log('Drag started on:', event.target);
+                        
+                        // Show all transform controls
+                        showAllTransformControls();
+                        
+                        // Show transform controls for the dragged box
+                        showTransformControls(event.target);
+                        
+                        // Show border for the dragged box
+                        event.target.style.border = '2px dashed #007bff';
                         
                         // Find the box object and show identifier
                         const box = sessionState.boxes.find(b => b.element === event.target);
@@ -4148,6 +4215,12 @@ if (!sessionState.defaultFontFamily) {
                         clearSnapGuides();
                         console.log('Drag ended on:', event.target);
                         
+                        // Show all transform controls when dragging ends
+                        showAllTransformControls();
+                        
+                        // Hide border when dragging ends
+                        event.target.style.border = 'none';
+                        
                         // Hide identifier when dragging ends
                         const box = sessionState.boxes.find(b => b.element === event.target);
                         if (box) {
@@ -4155,6 +4228,11 @@ if (!sessionState.defaultFontFamily) {
                             showBoxIdentifier(box, false);
                             highlightCorrespondingBox(box, false);
                         }
+                        
+                        // Show all transform controls after drag operation
+                        setTimeout(() => {
+                            showAllTransformControls();
+                        }, 100);
                     }
                 }
             });
@@ -4163,6 +4241,18 @@ if (!sessionState.defaultFontFamily) {
             interact(element).resizable({
                 edges: { left: true, right: true, top: true, bottom: true },
                 listeners: {
+                    start: function(event) {
+                        console.log('Resize started on:', event.target);
+                        
+                        // Show all transform controls
+                        showAllTransformControls();
+                        
+                        // Show transform controls for the resized box
+                        showTransformControls(event.target);
+                        
+                        // Show border for the resized box
+                        event.target.style.border = '2px dashed #007bff';
+                    },
                     move: function(event) {
                         const target = event.target;
                         let width = parseFloat(target.style.width);
@@ -4203,6 +4293,20 @@ if (!sessionState.defaultFontFamily) {
                             img.style.imageRendering = 'auto';
                         }
                     }
+                },
+                                    end: function(event) {
+                        console.log('Resize ended on:', event.target);
+                        
+                        // Show all transform controls when resizing ends
+                        showAllTransformControls();
+                        
+                        // Hide border when resizing ends
+                        event.target.style.border = 'none';
+                        
+                        // Show all transform controls after resize operation
+                        setTimeout(() => {
+                            showAllTransformControls();
+                        }, 100);
                     }
                 }
             });
@@ -4268,36 +4372,20 @@ if (!sessionState.defaultFontFamily) {
         }
 
         // Function to update image box with CSV data
-        function updateImageBoxWithCSVData(box) {
-            console.log('updateImageBoxWithCSVData called with:', box);
+        function updateImageBoxWithCSVData(box, pageIndex) {
+            console.log('updateImageBoxWithCSVData called with:', box, 'pageIndex:', pageIndex);
             if (box.boxType !== 'image' || !box.csvColumn) {
                 console.log('Box is not image type or no CSV column selected');
                 return;
             }
             
-            // Calculate which record this image box should show based on its position
-            const boxIndex = sessionState.boxes.indexOf(box);
+            // Use the pageIndex parameter to calculate which record this image box should show
+            const recordIndex = currentPage * recordsPerPage + pageIndex;
             
-            // For image boxes, we need to map them to the correct record
-            // If we have both text and image boxes, image boxes come after text boxes
-            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text').length;
-            const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image').length;
-            
-            let recordIndex;
-            if (textBoxes > 0 && imageBoxes > 0) {
-                // If we have both types, image boxes are mapped to the same records as text boxes
-                // Image boxes come after text boxes in the array, so we need to map them back
-                const imageBoxIndex = boxIndex - textBoxes; // Get the position within image boxes
-                recordIndex = currentPage * recordsPerPage + imageBoxIndex;
-            } else {
-                // If only image boxes, use the box index directly
-                recordIndex = currentPage * recordsPerPage + boxIndex;
-            }
-            
-            console.log(`Image box update - Box index: ${boxIndex}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
+            console.log(`Image box update - Page index: ${pageIndex}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
             
             if (recordIndex >= sessionState.csvRows.length) {
-                console.log(`No more records available for image box ${boxIndex}, showing placeholder`);
+                console.log(`No more records available for image box ${pageIndex}, showing placeholder`);
                 box.element.innerHTML = '<div style="color: #6c757d; text-align: center; padding: 10px; font-size: 12px;">No Image Available</div>';
                 return;
             }
@@ -4604,17 +4692,17 @@ if (!sessionState.defaultFontFamily) {
             // Update CSV column dropdown
             const columnSelect = document.getElementById('boxColumnSelect');
             if (columnSelect) {
-                columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
+            columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
                 
-                console.log('Updating CSV column dropdown. csvData:', csvData);
+                console.log('Updating CSV column dropdown. CSV rows:', sessionState.csvRows);
             
-                if (csvData && csvData.length > 0) {
-                    const columns = Object.keys(csvData[0]);
+            if (sessionState.csvRows && sessionState.csvRows.length > 0) {
+                const columns = Object.keys(sessionState.csvRows[0]);
                     console.log('CSV columns found:', columns);
-                    columns.forEach(column => {
-                        const option = document.createElement('option');
-                        option.value = column;
-                        option.textContent = column;
+                columns.forEach(column => {
+                    const option = document.createElement('option');
+                    option.value = column;
+                    option.textContent = column;
                         
                         // For multiple selection, show selected if all boxes have the same column
                         if (selectedBoxes.length > 1) {
@@ -4622,11 +4710,11 @@ if (!sessionState.defaultFontFamily) {
                             const allSameColumn = textBoxes.every(b => b.csvColumn === column);
                             option.selected = allSameColumn;
                         } else {
-                            option.selected = column === box.csvColumn;
+                    option.selected = column === box.csvColumn;
                         }
                         
-                        columnSelect.appendChild(option);
-                    });
+                    columnSelect.appendChild(option);
+                });
                 } else {
                     console.log('No CSV data available for column dropdown');
                 }
@@ -4716,16 +4804,22 @@ if (!sessionState.defaultFontFamily) {
                                 updateTextBoxContent(selectedBox);
                             }
                         });
+                        
+                        // Update page navigation to ensure synchronization
+                        updatePageNavigation();
+                        
                         updateEditorStatus(`Applied CSV column to ${textBoxes.length} text boxes: ${this.value || 'None'}`);
                     } else {
                         // Single box
-                        box.csvColumn = this.value;
-                        if (box.boxType === 'text') {
-                            updateTextBoxContent(box);
-                        } else if (box.boxType === 'image' && box.imageSource === 'csv') {
-                            updateImageBoxWithCSVData(box);
-                        }
-                        updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
+                box.csvColumn = this.value;
+                    if (box.boxType === 'text') {
+                updateTextBoxContent(box);
+                    } else if (box.boxType === 'image' && box.imageSource === 'csv') {
+                        // Calculate the page index for this box
+                        const pageIndex = sessionState.boxes.indexOf(box);
+                        updateImageBoxWithCSVData(box, pageIndex);
+                    }
+                updateEditorStatus(`Box bound to CSV column: ${this.value || 'None'}`);
                         
                         // Highlight the corresponding box when field is changed
                         console.log('Field changed for box:', box, 'highlighting corresponding box');
@@ -4736,8 +4830,11 @@ if (!sessionState.defaultFontFamily) {
                             console.log('Auto-clearing highlighting after field change for box:', box);
                             highlightCorrespondingBox(box, false);
                         }, 3000);
+                        
+                        // Update page navigation to ensure synchronization
+                        updatePageNavigation();
                     }
-                    updateCreateRecordsButtonState();
+                updateCreateRecordsButtonState();
                 };
             }
             
@@ -5002,6 +5099,9 @@ if (!sessionState.defaultFontFamily) {
             });
             sessionState.selectedBox = null;
             
+            // Hide record info when no box is selected
+            hideRecordInfo();
+            
             // Hide box editor
             updateBoxEditor();
             
@@ -5013,6 +5113,9 @@ if (!sessionState.defaultFontFamily) {
             // Update box scaling after deletion
             updateImageBoxScaling();
             updateTextBoxScaling();
+            
+            // Show transform controls for remaining boxes
+            showAllTransformControls();
             } else {
                 console.error('Box not found in sessionState.boxes');
                 console.log('Available boxes:', sessionState.boxes);
@@ -5043,8 +5146,18 @@ if (!sessionState.defaultFontFamily) {
                             box.classList.remove('selected');
                         });
                         sessionState.selectedBox = null;
+                        
+                        // Hide record info when no box is selected
+                        hideRecordInfo();
+                        
                         updateBoxEditor();
                     }
+                }
+                
+                // Space key to show all transform controls
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    showAllTransformControls();
                 }
             });
 
@@ -5067,6 +5180,9 @@ if (!sessionState.defaultFontFamily) {
                             sessionState.selectedBox = target; // Store the DOM element for consistency
                             updateBoxEditor();
                             updateBoxEditorValues(boxObject);
+                            
+                            // Show record info for the selected box
+                            showRecordInfo(boxObject);
                         }
                     }
                     
@@ -5380,6 +5496,8 @@ if (!sessionState.defaultFontFamily) {
                     z-index: 25;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
                     transition: all 0.2s ease;
+                    opacity: 1;
+                    visibility: visible;
                 `;
 
                 // Position the handle
@@ -5408,9 +5526,84 @@ if (!sessionState.defaultFontFamily) {
                     this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)';
                     this.style.transform = this.style.transform.replace(' scale(1.1)', '');
                 });
-                
+
                 element.appendChild(handleElement);
             });
+        }
+        
+        // Function to show transform controls for a specific box
+        function showTransformControls(element) {
+            if (!element) {
+                console.log('showTransformControls: No element provided');
+                return;
+            }
+            
+            const handles = element.querySelectorAll('.resize-handle');
+            console.log('showTransformControls: Found', handles.length, 'handles for element:', element);
+            
+            handles.forEach(handle => {
+                handle.style.opacity = '1';
+                handle.style.visibility = 'visible';
+            });
+            
+            console.log('Transform controls shown for:', element);
+        }
+        
+        // Function to hide transform controls for a specific box
+        function hideTransformControls(element) {
+            if (!element) return;
+            
+            const handles = element.querySelectorAll('.resize-handle');
+            handles.forEach(handle => {
+                handle.style.opacity = '0';
+                handle.style.visibility = 'hidden';
+            });
+        }
+        
+        // Function to show transform controls for all boxes
+        function showAllTransformControls() {
+            const allHandles = document.querySelectorAll('.resize-handle');
+            allHandles.forEach(handle => {
+                handle.style.opacity = '1';
+                handle.style.visibility = 'visible';
+            });
+            console.log('All transform controls shown');
+        }
+        
+        // Function to hide transform controls for all boxes
+        function hideAllTransformControls() {
+            const allHandles = document.querySelectorAll('.resize-handle');
+            allHandles.forEach(handle => {
+                handle.style.opacity = '0';
+                handle.style.visibility = 'hidden';
+            });
+            console.log('All transform controls hidden');
+        }
+        
+        // Function to ensure clean preview - hide all transform controls and highlighting
+        function ensureCleanPreview(hideBorders = true) {
+            showAllTransformControls();
+            
+            if (hideBorders) {
+                clearAllHighlighting();
+                
+                // Hide all box borders/outlines for clean preview
+                sessionState.boxes.forEach(box => {
+                    if (box.element) {
+                        // Remove all border styles
+                        box.element.style.border = 'none';
+                        box.element.style.outline = 'none';
+                        box.element.style.boxShadow = 'none';
+                    }
+                });
+                
+                // Don't hide record info - keep it visible for selected box
+                // hideRecordInfo();
+                
+                console.log('Clean preview mode activated - all controls, highlighting, and borders hidden');
+            } else {
+                console.log('Transform controls hidden only - borders and highlighting preserved');
+            }
         }
 
         // Snap-to-Grid System
@@ -5557,6 +5750,10 @@ if (!sessionState.defaultFontFamily) {
                         box.classList.remove('selected');
                     });
                     sessionState.selectedBox = null;
+                    
+                    // Hide record info when no box is selected
+                    hideRecordInfo();
+                    
                     updateBoxEditor();
                 }
             });
@@ -7007,8 +7204,16 @@ if (!sessionState.defaultFontFamily) {
                     // Initialize page navigation
                     updatePageNavigation();
                     
-                    // Update create records button state
-                    updateCreateRecordsButtonState();
+                                // Update create records button state
+            updateCreateRecordsButtonState();
+            
+            // Update page navigation to recalculate recordsPerPage
+            updatePageNavigation();
+            
+            // Show all transform controls after CSV is loaded
+            showAllTransformControls();
+            
+            console.log('Text box creation complete. Total boxes in sessionState:', sessionState.boxes.length);
                 },
                 error: function(error) {
                     console.error('CSV parsing error:', error);
@@ -7494,20 +7699,28 @@ if (!sessionState.defaultFontFamily) {
         function updateAllTextBoxesWithCSVData() {
             console.log('Updating all text boxes with CSV data. Current page:', currentPage, 'Records per page:', recordsPerPage);
             console.log('Total boxes:', sessionState.boxes.length);
-            console.log('CSV data available:', csvData ? csvData.length : 0, 'rows');
+            console.log('CSV data available:', sessionState.csvRows ? sessionState.csvRows.length : 0, 'rows');
             
-            sessionState.boxes.forEach((box, index) => {
-                console.log(`Processing box ${index}:`, box.type || box.boxType, 'CSV column:', box.csvColumn);
+            // Calculate which records should be shown on the current page
+            const startRecord = currentPage * recordsPerPage;
+            const endRecord = Math.min(startRecord + recordsPerPage, sessionState.csvRows ? sessionState.csvRows.length : 0);
+            
+            console.log(`Page ${currentPage + 1}: Showing records ${startRecord + 1}-${endRecord}`);
+            
+            // Process all text and image boxes, updating them based on their position
+            sessionState.boxes.forEach((box, boxIndex) => {
                 if (box.type === 'text' && box.csvColumn) {
-                    // Use current record for this text box
-                    console.log(`Updating text box ${index} with CSV data`);
-                    updateTextBoxWithCSVData(box);
+                    // Calculate which record this text box should show based on its position
+                    const pageIndex = boxIndex % recordsPerPage; // Get position within current page
+                    console.log(`Updating text box ${boxIndex} (page index ${pageIndex}) with CSV data`);
+                    updateTextBoxWithCSVData(box, pageIndex);
                 } else if (box.boxType === 'image' && box.csvColumn) {
-                    // Handle image boxes
-                    console.log(`Updating image box ${index} with CSV data`);
-                    updateImageBoxWithCSVData(box);
+                    // Calculate which record this image box should show based on its position
+                    const pageIndex = boxIndex % recordsPerPage; // Get position within current page
+                    console.log(`Updating image box ${boxIndex} (page index ${pageIndex}) with CSV data`);
+                    updateImageBoxWithCSVData(box, pageIndex);
                 } else {
-                    console.log(`Box ${index} skipped - no CSV column or wrong type`);
+                    console.log(`Box ${boxIndex} skipped - no CSV column or wrong type`);
                 }
             });
         }
@@ -7524,27 +7737,25 @@ if (!sessionState.defaultFontFamily) {
             });
         }
 
-        function updateTextBoxWithCSVData(box) {
-            if (!box || !box.element || !csvData) return;
+        function updateTextBoxWithCSVData(box, pageIndex) {
+            if (!box || !box.element || !sessionState.csvRows) return;
             
-            // Calculate which record this text box should show based on its position
-            const boxIndex = sessionState.boxes.indexOf(box);
-            // For text boxes, use the box index directly as the record index within the page
-            const recordIndex = currentPage * recordsPerPage + boxIndex;
+            // Use the pageIndex parameter to calculate which record this text box should show
+            const recordIndex = currentPage * recordsPerPage + pageIndex;
             
-            console.log(`Text box update - Box index: ${boxIndex}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
+            console.log(`Text box update - Page index: ${pageIndex}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
             
-            if (recordIndex >= csvData.length) {
+            if (recordIndex >= sessionState.csvRows.length) {
                 // No more records, show empty
-                console.log(`No more records available for text box ${boxIndex}, showing empty`);
+                console.log(`No more records available for text box ${pageIndex}, showing empty`);
                 updateTextBoxContentSafely(box.element, '');
                 return;
             }
             
-            const row = csvData[recordIndex];
+            const row = sessionState.csvRows[recordIndex];
             const text = row[box.csvColumn] || '';
             
-            console.log(`Text box ${boxIndex} - Record ${recordIndex}: "${text}"`);
+            console.log(`Text box ${pageIndex} - Record ${recordIndex}: "${text}"`);
             
             // Update the text content while preserving resize handles
             updateTextBoxContentSafely(box.element, text);
@@ -7554,15 +7765,15 @@ if (!sessionState.defaultFontFamily) {
         }
 
         function updateTextBoxForSingleRecord(box, recordIndex) {
-            if (!box || !box.element || !csvData) return;
+            if (!box || !box.element || !sessionState.csvRows) return;
             
-            if (recordIndex >= csvData.length) {
+            if (recordIndex >= sessionState.csvRows.length) {
                 // No more records, show empty
                 updateTextBoxContentSafely(box.element, '');
                 return;
             }
             
-            const row = csvData[recordIndex];
+            const row = sessionState.csvRows[recordIndex];
             const text = row[box.csvColumn] || '';
             
             // Update the text content while preserving resize handles
@@ -7573,9 +7784,9 @@ if (!sessionState.defaultFontFamily) {
         }
 
         function updateImageBoxForSingleRecord(box, recordIndex) {
-            if (!box || !box.element || !csvData) return;
+            if (!box || !box.element || !sessionState.csvRows) return;
             
-            if (recordIndex >= csvData.length) {
+            if (recordIndex >= sessionState.csvRows.length) {
                 // No more records, show placeholder
                 box.element.textContent = 'No Image';
                 box.element.style.border = '2px dashed #ccc';
@@ -7583,7 +7794,7 @@ if (!sessionState.defaultFontFamily) {
                 return;
             }
             
-            const row = csvData[recordIndex];
+            const row = sessionState.csvRows[recordIndex];
             const imageUrl = row[box.csvColumn] || '';
             
             // Load the new image using proxy to handle CORS
@@ -7646,12 +7857,12 @@ if (!sessionState.defaultFontFamily) {
         }
         
         function updateTextBoxWithMappedCSVData(box) {
-            if (!box || !box.element || !csvData) return;
+            if (!box || !box.element || !sessionState.csvRows) return;
             
             const mappedRowIndex = textBoxMappings[box.id];
-            if (mappedRowIndex === undefined || !csvData[mappedRowIndex]) return;
+            if (mappedRowIndex === undefined || !sessionState.csvRows[mappedRowIndex]) return;
             
-            const row = csvData[mappedRowIndex];
+            const row = sessionState.csvRows[mappedRowIndex];
             const text = row[box.csvColumn] || '';
             
             // Update the text content while preserving resize handles
@@ -7666,9 +7877,9 @@ if (!sessionState.defaultFontFamily) {
             
             let text = '';
             
-            if (box.csvColumn && csvData && csvData[currentRecord]) {
+            if (box.csvColumn && sessionState.csvRows && sessionState.csvRows[currentRecord]) {
                 // Use CSV data
-                text = csvData[currentRecord][box.csvColumn] || '';
+                text = sessionState.csvRows[currentRecord][box.csvColumn] || '';
             } else {
                 // Use static text
                 text = box.staticText || 'Sample Text';
