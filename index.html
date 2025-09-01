@@ -642,12 +642,7 @@
             font-size: 12px;
         }
 
-        .content-header .download-buttons #downloadPdfsMessage {
-            font-size: 11px;
-            color: #6c757d;
-            margin-left: 10px;
-            white-space: nowrap;
-        }
+
 
         .content-header h3 {
             font-size: 14px;
@@ -1350,9 +1345,7 @@
                     <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled>
                         Download PDFs
                     </button>
-                    <div id="downloadPdfsMessage" class="text-muted" style="display: none;">
-                        Multiple boxes detected. Use single page download instead.
-                    </div>
+
                     
                     <button class="btn btn-danger" onclick="deleteSelectedBox()" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
                         🗑️ Delete
@@ -1897,14 +1890,9 @@ if (!sessionState.defaultFontFamily) {
                 }
             }
             
-            // Show/hide the message about multiple boxes
+            // Hide the message about multiple boxes (removed as requested)
             if (messageDiv) {
-                if (boxCount > 1) {
-                    messageDiv.style.display = 'block';
-                    messageDiv.textContent = `Multiple boxes detected (${boxCount}). Use single page download instead.`;
-                } else {
-                    messageDiv.style.display = 'none';
-                }
+                messageDiv.style.display = 'none';
             }
         }
         
