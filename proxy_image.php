@@ -35,6 +35,57 @@ if (isset($_GET['debug'])) {
     exit;
 }
 
+// Function to clean and fix malformed URLs
+function cleanImageUrl($url) {
+    if (empty($url)) return null;
+    
+    // Trim whitespace
+    $url = trim($url);
+    
+    // Remove newlines and extra spaces
+    $url = preg_replace('/[\r\n\s]+/', ' ', $url);
+    
+    // Handle URLs with spaces in filenames - encode spaces properly
+    if (strpos($url, ' ') !== false) {
+        // Split URL into parts
+        $parts = parse_url($url);
+        if ($parts && isset($parts['path'])) {
+            // Encode the path properly, especially spaces in filenames
+            $pathParts = explode('/', $parts['path']);
+            $encodedPathParts = array_map('urlencode', $pathParts);
+            $parts['path'] = implode('/', $encodedPathParts);
+            
+            // Rebuild URL
+            $scheme = isset($parts['scheme']) ? $parts['scheme'] . '://' : '';
+            $host = isset($parts['host']) ? $parts['host'] : '';
+            $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+            $path = $parts['path'];
+            $query = isset($parts['query']) ? '?' . $parts['query'] : '';
+            $fragment = isset($parts['fragment']) ? '#' . $parts['fragment'] : '';
+            
+            $url = $scheme . $host . $port . $path . $query . $fragment;
+        }
+    }
+    
+    // Handle concatenated URLs (common issue with CSV data)
+    if (preg_match('/https?:\/\/[^\s]+\.\.\.[^\s]+/', $url)) {
+        // Extract the first complete URL
+        if (preg_match('/https?:\/\/[^\s]+/', $url, $matches)) {
+            $url = $matches[0];
+        }
+    }
+    
+    // Ensure URL is properly formatted
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        // Try to fix common issues
+        if (strpos($url, 'http') !== 0) {
+            $url = 'https://' . $url;
+        }
+    }
+    
+    return $url;
+}
+
 // Log the request for debugging
 error_log("Proxy request for URL: " . ($_GET['url'] ?? 'none'));
 
@@ -45,10 +96,20 @@ if (!isset($_GET['url'])) {
 
 $url = $_GET['url'];
 
+// Clean the URL first
+$cleanedUrl = cleanImageUrl($url);
+if (!$cleanedUrl) {
+    http_response_code(400);
+    exit('Invalid URL format');
+}
+
+// Log the cleaned URL
+error_log("Cleaned URL: " . $cleanedUrl);
+
 // Handle local file paths (local:// protocol)
-if (strpos($url, 'local://') === 0) {
+if (strpos($cleanedUrl, 'local://') === 0) {
     // Remove 'local://' prefix and extract the path
-    $path = substr($url, 8); // Remove 'local://'
+    $path = substr($cleanedUrl, 8); // Remove 'local://'
     
     // Match the drive letter and remaining path
     if (preg_match('/^([A-Z]:\/)(.*)/i', $path, $matches)) {
@@ -131,7 +192,7 @@ if (strpos($url, 'local://') === 0) {
 }
 
 // Handle HTTP/HTTPS URLs
-if (!preg_match('/^https?:\/\//', $url)) {
+if (!preg_match('/^https?:\/\//', $cleanedUrl)) {
     http_response_code(400);
     exit('Invalid URL format');
 }
@@ -145,7 +206,7 @@ try {
     $ch = curl_init();
     
     // Set cURL options
-    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_URL, $cleanedUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
@@ -177,7 +238,7 @@ try {
     
     // Check if we got a successful response
     if ($httpCode !== 200 || $imageContent === false) {
-        error_log("HTTP request failed with code: " . $httpCode);
+        error_log("HTTP request failed with code: " . $httpCode . " for URL: " . $cleanedUrl);
         http_response_code($httpCode ?: 500);
         exit('Failed to load image (HTTP ' . $httpCode . ')');
     }
@@ -187,7 +248,7 @@ try {
         header('Content-Type: ' . $contentType);
     } else {
         // Fallback content type based on URL extension
-        $extension = strtolower(pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
+        $extension = strtolower(pathinfo(parse_url($cleanedUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
         $contentTypes = [
             'png' => 'image/png',
             'jpg' => 'image/jpeg',
