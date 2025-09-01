@@ -3284,7 +3284,11 @@ if (!sessionState.defaultFontFamily) {
             // Load image if URL is available
             if (sampleImageUrl && sampleImageUrl.trim() !== '') {
                 // Clean the URL first (remove extra spaces, newlines, etc.)
-                let cleanedUrl = sampleImageUrl.trim().replace(/[\r\n\s]+/g, ' ');
+                let cleanedUrl = sampleImageUrl.trim().replace(/[\r\n\s]+/g, '_');
+                
+                // Convert Google Drive URLs to direct download URLs
+                cleanedUrl = convertGoogleDriveUrl(cleanedUrl);
+                console.log('After Google Drive conversion:', cleanedUrl);
                 
                 // Use proxy to handle CORS
                 const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(cleanedUrl);
@@ -3515,6 +3519,26 @@ if (!sessionState.defaultFontFamily) {
             box.imageUrl = imageUrl;
         }
 
+        // Function to convert Google Drive URLs to direct download URLs
+        function convertGoogleDriveUrl(url) {
+            if (!url) return url;
+            
+            // Check if it's a Google Drive sharing link
+            const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (driveMatch) {
+                const fileId = driveMatch[1];
+                // Convert to direct view URL
+                return `https://drive.google.com/uc?export=view&id=${fileId}`;
+            }
+            
+            // Check if it's already a direct Google Drive URL
+            if (url.includes('drive.google.com/uc?export=')) {
+                return url;
+            }
+            
+            return url;
+        }
+
         // Function to update image box with CSV data
         function updateImageBoxWithCSVData(box) {
             console.log('updateImageBoxWithCSVData called with:', box);
@@ -3538,9 +3562,13 @@ if (!sessionState.defaultFontFamily) {
             }
             
             // Clean the URL first (remove extra spaces, newlines, etc.)
-            let cleanedUrl = imageUrl.trim().replace(/[\r\n\s]+/g, ' ');
+            let cleanedUrl = imageUrl.trim().replace(/[\r\n\s]+/g, '_');
             console.log('Original CSV URL:', imageUrl);
             console.log('Cleaned CSV URL:', cleanedUrl);
+            
+            // Convert Google Drive URLs to direct download URLs
+            cleanedUrl = convertGoogleDriveUrl(cleanedUrl);
+            console.log('After Google Drive conversion:', cleanedUrl);
             
             // Use proxy to handle CORS
             const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(cleanedUrl);
@@ -6567,9 +6595,13 @@ if (!sessionState.defaultFontFamily) {
                 console.log('Loading image for single record:', imageUrl);
                 
                 // Clean the URL first (remove extra spaces, newlines, etc.)
-                let cleanedUrl = imageUrl.trim().replace(/[\r\n\s]+/g, ' ');
+                let cleanedUrl = imageUrl.trim().replace(/[\r\n\s]+/g, '_');
                 console.log('Original single record URL:', imageUrl);
                 console.log('Cleaned single record URL:', cleanedUrl);
+                
+                // Convert Google Drive URLs to direct download URLs
+                cleanedUrl = convertGoogleDriveUrl(cleanedUrl);
+                console.log('After Google Drive conversion:', cleanedUrl);
                 
                 // Use proxy to handle CORS
                 const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(cleanedUrl);
