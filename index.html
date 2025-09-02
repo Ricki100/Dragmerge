@@ -640,18 +640,8 @@
         .content-header .download-buttons #deleteBoxBtn {
             padding: 8px 16px;
             font-size: 12px;
-        }
-        
-        .content-header #deleteBoxBtn {
             width: 114px;
-            flex-shrink: 0;
         }
-
-                    .content-header .btn-danger {
-                padding: 8px 16px;
-                font-size: 12px;
-                margin-right: 15px;
-            }
 
                     .content-header .download-buttons h3 {
             font-size: 14px;
@@ -1301,8 +1291,8 @@
                                 🔗 Assign
                             </button>
                         </div>
-                    </div>
-                    
+                        </div>
+                        
                     <!-- CSV Column Selection -->
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 12px; font-weight: bold;">CSV Column:</label>
@@ -1391,9 +1381,6 @@
 
         <div class="main-content">
             <div class="content-header">
-                <button class="btn btn-danger" onclick="deleteSelectedBox()" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
-                    🗑️ Delete
-                </button>
                 <div class="download-buttons">
                     <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
                         📄 Download Current PDF
@@ -1401,6 +1388,10 @@
                     
                     <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled>
                         Download PDFs
+                    </button>
+                    
+                    <button class="btn btn-danger" onclick="deleteSelectedBox()" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
+                        🗑️ Delete
                     </button>
                 </div>
             </div>
@@ -3009,66 +3000,26 @@ if (!sessionState.defaultFontFamily) {
                 return;
             }
             
-            // Calculate records per page based on unique record groups
+            // Calculate records per page based on number of boxes
             const totalBoxes = sessionState.boxes.length;
+            // For synchronization, we want recordsPerPage to represent the number of unique records
+            // If we have multiple boxes per record (e.g., text + image), we need to calculate this
+            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text' || box.type === 'text').length;
+            const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image' || box.type === 'image').length;
             
-            // Count unique record groups instead of total boxes
-            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text' || box.type === 'text');
-            const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image' || box.type === 'image');
-            
-            // Get unique record groups from text boxes
-            const textRecordGroups = new Set();
-            textBoxes.forEach(box => {
-                if (box.recordGroup !== undefined) {
-                    textRecordGroups.add(box.recordGroup);
-                }
-            });
-            
-            // Get unique record groups from image boxes
-            const imageRecordGroups = new Set();
-            imageBoxes.forEach(box => {
-                if (box.recordGroup !== undefined) {
-                    imageRecordGroups.add(box.recordGroup);
-                }
-            });
-            
-            // If we have record groups assigned, use the maximum record group + 1
-            if (textRecordGroups.size > 0 || imageRecordGroups.size > 0) {
-                const maxRecordGroup = Math.max(
-                    textRecordGroups.size > 0 ? Math.max(...textRecordGroups) : -1,
-                    imageRecordGroups.size > 0 ? Math.max(...imageRecordGroups) : -1
-                );
-                recordsPerPage = maxRecordGroup + 1;
+            // If we have both text and image boxes, assume they should be paired
+            if (textBoxes > 0 && imageBoxes > 0) {
+                // Use the larger number as the base for records per page
+                recordsPerPage = Math.max(textBoxes, imageBoxes);
             } else {
-                // Fallback: if no record groups assigned, assume boxes are paired
-                // Count unique positions (assuming boxes are added in order)
-                const uniquePositions = new Set();
-                textBoxes.forEach((box, index) => {
-                    uniquePositions.add(Math.floor(index / 4)); // Assume 4 boxes per record
-                });
-                imageBoxes.forEach((box, index) => {
-                    uniquePositions.add(Math.floor(index / 4)); // Assume 4 boxes per record
-                });
-                
-                if (uniquePositions.size > 0) {
-                    recordsPerPage = Math.max(...uniquePositions) + 1;
-                } else {
-                    // Last resort: use the smaller of text or image boxes
-                    recordsPerPage = Math.min(textBoxes.length, imageBoxes.length) || 1;
-                }
+                // If only one type of box, use total boxes
+                recordsPerPage = totalBoxes > 0 ? totalBoxes : 1;
             }
             
             // Ensure recordsPerPage doesn't exceed the total number of CSV records
             if (sessionState.csvRows && sessionState.csvRows.length > 0) {
                 recordsPerPage = Math.min(recordsPerPage, sessionState.csvRows.length);
             }
-            
-            // Debug logging for record group calculation
-            console.log('Record Group Debug:', {
-                textRecordGroups: Array.from(textRecordGroups),
-                imageRecordGroups: Array.from(imageRecordGroups),
-                calculatedRecordsPerPage: recordsPerPage
-            });
             
             totalPages = Math.ceil(sessionState.csvRows.length / recordsPerPage);
             
@@ -3497,10 +3448,10 @@ if (!sessionState.defaultFontFamily) {
                 return;
             }
             
-            // Calculate which record this box represents based on its record group and current page
+            // Calculate which record this box represents based on its position and current page
             // Use the same logic as updateTextBoxWithCSVData for consistency
-            const recordGroup = selectedBox.recordGroup !== undefined ? selectedBox.recordGroup : Math.floor(boxIndex / 4); // Assume 4 boxes per record
-            const recordIndex = currentPage * recordsPerPage + recordGroup;
+            const pageIndex = boxIndex % recordsPerPage; // Get position within current page
+            const recordIndex = currentPage * recordsPerPage + pageIndex;
             
             // Calculate the actual record number (1-based for display)
             const actualRecordNumber = recordIndex + 1;
@@ -3555,7 +3506,7 @@ if (!sessionState.defaultFontFamily) {
                 recordInfo.onmouseenter = () => recordInfo.style.opacity = '1';
                 recordInfo.onmouseleave = () => recordInfo.style.opacity = '0.7';
                 
-                console.log('Record info shown for box:', selectedBox, 'Box index:', boxIndex, 'Record group:', recordGroup, 'Record:', actualRecordNumber, 'of', sessionState.csvRows.length);
+                console.log('Record info shown for box:', selectedBox, 'Box index:', boxIndex, 'Page index:', pageIndex, 'Record:', actualRecordNumber, 'of', sessionState.csvRows.length);
             } else {
                 console.log('Record index out of bounds:', recordIndex, 'CSV rows:', sessionState.csvRows.length);
             }
@@ -4199,7 +4150,7 @@ if (!sessionState.defaultFontFamily) {
             
             // Add resize handles for visual feedback
             addResizeHandles(imageBox);
-            
+
             updateEditorStatus('Image box created - drag it to position and edit properties');
             
             // Update download button state to enable downloads
@@ -4360,22 +4311,22 @@ if (!sessionState.defaultFontFamily) {
                         // Debug resize values
                         console.log('Resize - Delta:', event.deltaRect, 'New size:', width + 'x' + height, 'New pos:', left + ',' + top);
 
-                        // Apply changes with free positioning
-                        target.style.width = width + 'px';
-                        target.style.height = height + 'px';
-                        target.style.left = left + 'px';
-                        target.style.top = top + 'px';
-                        
-                        // Ensure images maintain aspect ratio after resize
-                        if (target.classList.contains('draggable-image-box')) {
-                            const img = target.querySelector('img');
-                            if (img) {
-                                img.style.objectFit = 'contain';
-                                img.style.objectPosition = 'center';
-                                img.style.aspectRatio = 'auto';
-                                img.style.imageRendering = 'auto';
-                            }
+                            // Apply changes with free positioning
+                            target.style.width = width + 'px';
+                            target.style.height = height + 'px';
+                            target.style.left = left + 'px';
+                            target.style.top = top + 'px';
+                    
+                    // Ensure images maintain aspect ratio after resize
+                    if (target.classList.contains('draggable-image-box')) {
+                        const img = target.querySelector('img');
+                        if (img) {
+                            img.style.objectFit = 'contain';
+                            img.style.objectPosition = 'center';
+                            img.style.aspectRatio = 'auto';
+                            img.style.imageRendering = 'auto';
                         }
+                    }
                     },
                     end: function(event) {
                         console.log('Resize ended on:', event.target);
@@ -4455,20 +4406,20 @@ if (!sessionState.defaultFontFamily) {
         }
 
         // Function to update image box with CSV data
-        function updateImageBoxWithCSVData(box, recordGroup) {
-            console.log('updateImageBoxWithCSVData called with:', box, 'recordGroup:', recordGroup);
+        function updateImageBoxWithCSVData(box, pageIndex) {
+            console.log('updateImageBoxWithCSVData called with:', box, 'pageIndex:', pageIndex);
             if (box.boxType !== 'image' || !box.csvColumn) {
                 console.log('Box is not image type or no CSV column selected');
                 return;
             }
             
-            // Use the recordGroup parameter to calculate which record this image box should show
-            const recordIndex = currentPage * recordsPerPage + recordGroup;
+            // Use the pageIndex parameter to calculate which record this image box should show
+            const recordIndex = currentPage * recordsPerPage + pageIndex;
             
-            console.log(`Image box update - Record group: ${recordGroup}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
+            console.log(`Image box update - Page index: ${pageIndex}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
             
             if (recordIndex >= sessionState.csvRows.length) {
-                console.log(`No more records available for image box in record group ${recordGroup}, showing placeholder`);
+                console.log(`No more records available for image box ${pageIndex}, showing placeholder`);
                 box.element.innerHTML = '<div style="color: #6c757d; text-align: center; padding: 10px; font-size: 12px;">No Image Available</div>';
                 return;
             }
@@ -4793,7 +4744,7 @@ if (!sessionState.defaultFontFamily) {
                         recordGroupDisplay.style.background = '#fff3cd';
                         recordGroupDisplay.style.borderColor = '#ffeaa7';
                         recordGroupDisplay.style.color = '#856404';
-                    } else {
+                } else {
                         recordGroupDisplay.textContent = 'Mixed Assignment';
                         recordGroupDisplay.style.background = '#f8d7da';
                         recordGroupDisplay.style.borderColor = '#f5c6cb';
@@ -7491,8 +7442,8 @@ if (!sessionState.defaultFontFamily) {
                     // Initialize page navigation
                     updatePageNavigation();
                     
-                                // Update create records button state
-            updateCreateRecordsButtonState();
+                    // Update create records button state
+                    updateCreateRecordsButtonState();
             
             // Update page navigation to recalculate recordsPerPage
             updatePageNavigation();
@@ -8001,24 +7952,26 @@ if (!sessionState.defaultFontFamily) {
             sessionState.boxes.forEach((box, boxIndex) => {
                 if (box.type === 'text' && box.csvColumn) {
                     // For text boxes, use the recordGroup if available, otherwise fall back to position-based
-                    const recordGroup = box.recordGroup !== undefined ? box.recordGroup : Math.floor(boxIndex / 4); // Assume 4 boxes per record
+                    const recordGroup = box.recordGroup || Math.floor(boxIndex / recordsPerPage);
+                    const pageIndex = boxIndex % recordsPerPage;
                     
                     if (!boxesByRecord[recordGroup]) {
                         boxesByRecord[recordGroup] = { textBoxes: [], imageBoxes: [] };
                     }
-                    boxesByRecord[recordGroup].textBoxes.push({ box, recordGroup });
+                    boxesByRecord[recordGroup].textBoxes.push({ box, pageIndex });
                     
-                    console.log(`Text box ${boxIndex} assigned to record group ${recordGroup}`);
+                    console.log(`Text box ${boxIndex} assigned to record group ${recordGroup}, page index ${pageIndex}`);
                 } else if (box.boxType === 'image' && box.csvColumn) {
                     // For image boxes, use the recordGroup if available, otherwise fall back to position-based
-                    const recordGroup = box.recordGroup !== undefined ? box.recordGroup : Math.floor(boxIndex / 4); // Assume 4 boxes per record
+                    const recordGroup = box.recordGroup || Math.floor(boxIndex / recordsPerPage);
+                    const pageIndex = boxIndex % recordsPerPage;
                     
                     if (!boxesByRecord[recordGroup]) {
                         boxesByRecord[recordGroup] = { textBoxes: [], imageBoxes: [] };
                     }
-                    boxesByRecord[recordGroup].imageBoxes.push({ box, recordGroup });
+                    boxesByRecord[recordGroup].imageBoxes.push({ box, pageIndex });
                     
-                    console.log(`Image box ${boxIndex} assigned to record group ${recordGroup}`);
+                    console.log(`Image box ${boxIndex} assigned to record group ${recordGroup}, page index ${pageIndex}`);
                 }
             });
             
@@ -8028,15 +7981,15 @@ if (!sessionState.defaultFontFamily) {
                 const recordIndex = currentPage * recordsPerPage + parseInt(recordGroup);
                 
                 // Update all text boxes in this record group
-                group.textBoxes.forEach(({ box, recordGroup: boxRecordGroup }) => {
-                    console.log(`Updating text box in record group ${recordGroup} with CSV data for record ${recordIndex + 1}`);
-                    updateTextBoxWithCSVData(box, parseInt(recordGroup));
+                group.textBoxes.forEach(({ box, pageIndex }) => {
+                    console.log(`Updating text box in record group ${recordGroup} (page index ${pageIndex}) with CSV data`);
+                    updateTextBoxWithCSVData(box, pageIndex);
                 });
                 
                 // Update all image boxes in this record group
-                group.imageBoxes.forEach(({ box, recordGroup: boxRecordGroup }) => {
-                    console.log(`Updating image box in record group ${recordGroup} with CSV data for record ${recordIndex + 1}`);
-                    updateImageBoxWithCSVData(box, parseInt(recordGroup));
+                group.imageBoxes.forEach(({ box, pageIndex }) => {
+                    console.log(`Updating image box in record group ${recordGroup} (page index ${pageIndex}) with CSV data`);
+                    updateImageBoxWithCSVData(box, pageIndex);
                 });
             });
         }
@@ -8053,17 +8006,17 @@ if (!sessionState.defaultFontFamily) {
             });
         }
 
-        function updateTextBoxWithCSVData(box, recordGroup) {
+        function updateTextBoxWithCSVData(box, pageIndex) {
             if (!box || !box.element || !sessionState.csvRows) return;
             
-            // Use the recordGroup parameter to calculate which record this text box should show
-            const recordIndex = currentPage * recordsPerPage + recordGroup;
+            // Use the pageIndex parameter to calculate which record this text box should show
+            const recordIndex = currentPage * recordsPerPage + pageIndex;
             
-            console.log(`Text box update - Record group: ${recordGroup}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
+            console.log(`Text box update - Page index: ${pageIndex}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
             
             if (recordIndex >= sessionState.csvRows.length) {
                 // No more records, show empty
-                console.log(`No more records available for text box in record group ${recordGroup}, showing empty`);
+                console.log(`No more records available for text box ${pageIndex}, showing empty`);
                 updateTextBoxContentSafely(box.element, '');
                 return;
             }
@@ -8071,7 +8024,7 @@ if (!sessionState.defaultFontFamily) {
             const row = sessionState.csvRows[recordIndex];
             const text = row[box.csvColumn] || '';
             
-            console.log(`Text box in record group ${recordGroup} - Record ${recordIndex}: "${text}"`);
+            console.log(`Text box ${pageIndex} - Record ${recordIndex}: "${text}"`);
             
             // Update the text content while preserving resize handles
             updateTextBoxContentSafely(box.element, text);
