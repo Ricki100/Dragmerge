@@ -641,6 +641,11 @@
             padding: 8px 16px;
             font-size: 12px;
         }
+        
+        .content-header #deleteBoxBtn {
+            width: 114px;
+            flex-shrink: 0;
+        }
 
                     .content-header .btn-danger {
                 padding: 8px 16px;
@@ -1276,6 +1281,28 @@
                         <div id="fontUploadStatus" class="font-status" style="font-size: 10px;"></div>
                         </div>
                         
+                    <!-- Record Group Display -->
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="font-size: 12px; font-weight: bold;">Record Group:</label>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <div id="recordGroupDisplay" style="
+                                font-size: 11px; 
+                                padding: 6px 8px; 
+                                background: #e9ecef; 
+                                border: 1px solid #ced4da; 
+                                border-radius: 4px; 
+                                color: #495057;
+                                min-height: 20px;
+                                flex: 1;
+                            ">
+                                Not assigned
+                            </div>
+                            <button type="button" id="assignRecordGroupBtn" class="btn btn-sm btn-outline-primary" style="font-size: 10px; padding: 4px 8px;" onclick="showRecordGroupDialogForSelectedBox()">
+                                🔗 Assign
+                            </button>
+                        </div>
+                    </div>
+                    
                     <!-- CSV Column Selection -->
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 12px; font-weight: bold;">CSV Column:</label>
@@ -1368,10 +1395,6 @@
                     🗑️ Delete
                 </button>
                 <div class="download-buttons">
-                        <button id="cleanPreviewBtn" class="btn btn-info" onclick="showAllTransformControls()" title="Show all transform controls">
-                            🔧 Show Controls
-                        </button>
-                        
                     <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
                         📄 Download Current PDF
                     </button>
@@ -2986,26 +3009,66 @@ if (!sessionState.defaultFontFamily) {
                 return;
             }
             
-            // Calculate records per page based on number of boxes
+            // Calculate records per page based on unique record groups
             const totalBoxes = sessionState.boxes.length;
-            // For synchronization, we want recordsPerPage to represent the number of unique records
-            // If we have multiple boxes per record (e.g., text + image), we need to calculate this
-            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text' || box.type === 'text').length;
-            const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image' || box.type === 'image').length;
             
-            // If we have both text and image boxes, assume they should be paired
-            if (textBoxes > 0 && imageBoxes > 0) {
-                // Use the larger number as the base for records per page
-                recordsPerPage = Math.max(textBoxes, imageBoxes);
+            // Count unique record groups instead of total boxes
+            const textBoxes = sessionState.boxes.filter(box => box.boxType === 'text' || box.type === 'text');
+            const imageBoxes = sessionState.boxes.filter(box => box.boxType === 'image' || box.type === 'image');
+            
+            // Get unique record groups from text boxes
+            const textRecordGroups = new Set();
+            textBoxes.forEach(box => {
+                if (box.recordGroup !== undefined) {
+                    textRecordGroups.add(box.recordGroup);
+                }
+            });
+            
+            // Get unique record groups from image boxes
+            const imageRecordGroups = new Set();
+            imageBoxes.forEach(box => {
+                if (box.recordGroup !== undefined) {
+                    imageRecordGroups.add(box.recordGroup);
+                }
+            });
+            
+            // If we have record groups assigned, use the maximum record group + 1
+            if (textRecordGroups.size > 0 || imageRecordGroups.size > 0) {
+                const maxRecordGroup = Math.max(
+                    textRecordGroups.size > 0 ? Math.max(...textRecordGroups) : -1,
+                    imageRecordGroups.size > 0 ? Math.max(...imageRecordGroups) : -1
+                );
+                recordsPerPage = maxRecordGroup + 1;
             } else {
-                // If only one type of box, use total boxes
-                recordsPerPage = totalBoxes > 0 ? totalBoxes : 1;
+                // Fallback: if no record groups assigned, assume boxes are paired
+                // Count unique positions (assuming boxes are added in order)
+                const uniquePositions = new Set();
+                textBoxes.forEach((box, index) => {
+                    uniquePositions.add(Math.floor(index / 4)); // Assume 4 boxes per record
+                });
+                imageBoxes.forEach((box, index) => {
+                    uniquePositions.add(Math.floor(index / 4)); // Assume 4 boxes per record
+                });
+                
+                if (uniquePositions.size > 0) {
+                    recordsPerPage = Math.max(...uniquePositions) + 1;
+                } else {
+                    // Last resort: use the smaller of text or image boxes
+                    recordsPerPage = Math.min(textBoxes.length, imageBoxes.length) || 1;
+                }
             }
             
             // Ensure recordsPerPage doesn't exceed the total number of CSV records
             if (sessionState.csvRows && sessionState.csvRows.length > 0) {
                 recordsPerPage = Math.min(recordsPerPage, sessionState.csvRows.length);
             }
+            
+            // Debug logging for record group calculation
+            console.log('Record Group Debug:', {
+                textRecordGroups: Array.from(textRecordGroups),
+                imageRecordGroups: Array.from(imageRecordGroups),
+                calculatedRecordsPerPage: recordsPerPage
+            });
             
             totalPages = Math.ceil(sessionState.csvRows.length / recordsPerPage);
             
@@ -3434,10 +3497,10 @@ if (!sessionState.defaultFontFamily) {
                 return;
             }
             
-            // Calculate which record this box represents based on its position and current page
+            // Calculate which record this box represents based on its record group and current page
             // Use the same logic as updateTextBoxWithCSVData for consistency
-            const pageIndex = boxIndex % recordsPerPage; // Get position within current page
-            const recordIndex = currentPage * recordsPerPage + pageIndex;
+            const recordGroup = selectedBox.recordGroup !== undefined ? selectedBox.recordGroup : Math.floor(boxIndex / 4); // Assume 4 boxes per record
+            const recordIndex = currentPage * recordsPerPage + recordGroup;
             
             // Calculate the actual record number (1-based for display)
             const actualRecordNumber = recordIndex + 1;
@@ -3492,7 +3555,7 @@ if (!sessionState.defaultFontFamily) {
                 recordInfo.onmouseenter = () => recordInfo.style.opacity = '1';
                 recordInfo.onmouseleave = () => recordInfo.style.opacity = '0.7';
                 
-                console.log('Record info shown for box:', selectedBox, 'Box index:', boxIndex, 'Page index:', pageIndex, 'Record:', actualRecordNumber, 'of', sessionState.csvRows.length);
+                console.log('Record info shown for box:', selectedBox, 'Box index:', boxIndex, 'Record group:', recordGroup, 'Record:', actualRecordNumber, 'of', sessionState.csvRows.length);
             } else {
                 console.log('Record index out of bounds:', recordIndex, 'CSV rows:', sessionState.csvRows.length);
             }
@@ -4392,20 +4455,20 @@ if (!sessionState.defaultFontFamily) {
         }
 
         // Function to update image box with CSV data
-        function updateImageBoxWithCSVData(box, pageIndex) {
-            console.log('updateImageBoxWithCSVData called with:', box, 'pageIndex:', pageIndex);
+        function updateImageBoxWithCSVData(box, recordGroup) {
+            console.log('updateImageBoxWithCSVData called with:', box, 'recordGroup:', recordGroup);
             if (box.boxType !== 'image' || !box.csvColumn) {
                 console.log('Box is not image type or no CSV column selected');
                 return;
             }
             
-            // Use the pageIndex parameter to calculate which record this image box should show
-            const recordIndex = currentPage * recordsPerPage + pageIndex;
+            // Use the recordGroup parameter to calculate which record this image box should show
+            const recordIndex = currentPage * recordsPerPage + recordGroup;
             
-            console.log(`Image box update - Page index: ${pageIndex}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
+            console.log(`Image box update - Record group: ${recordGroup}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
             
             if (recordIndex >= sessionState.csvRows.length) {
-                console.log(`No more records available for image box ${pageIndex}, showing placeholder`);
+                console.log(`No more records available for image box in record group ${recordGroup}, showing placeholder`);
                 box.element.innerHTML = '<div style="color: #6c757d; text-align: center; padding: 10px; font-size: 12px;">No Image Available</div>';
                 return;
             }
@@ -4709,34 +4772,45 @@ if (!sessionState.defaultFontFamily) {
         function updateBoxEditorValues(box) {
             if (!box) return;
 
-            // Update CSV column dropdown
-            const columnSelect = document.getElementById('boxColumnSelect');
-            if (columnSelect) {
-            columnSelect.innerHTML = '<option value="">Select CSV column...</option>';
-                
-                console.log('Updating CSV column dropdown. CSV rows:', sessionState.csvRows);
+            // Update CSV column dropdown with record group info
+            updateCSVColumnDropdown(box);
             
-            if (sessionState.csvRows && sessionState.csvRows.length > 0) {
-                const columns = Object.keys(sessionState.csvRows[0]);
-                    console.log('CSV columns found:', columns);
-                columns.forEach(column => {
-                    const option = document.createElement('option');
-                    option.value = column;
-                    option.textContent = column;
-                        
-                        // For multiple selection, show selected if all boxes have the same column
-                        if (selectedBoxes.length > 1) {
-                            const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
-                            const allSameColumn = textBoxes.every(b => b.csvColumn === column);
-                            option.selected = allSameColumn;
-                        } else {
-                    option.selected = column === box.csvColumn;
-                        }
-                        
-                    columnSelect.appendChild(option);
-                });
+            // Update record group display
+            const recordGroupDisplay = document.getElementById('recordGroupDisplay');
+            if (recordGroupDisplay) {
+                if (selectedBoxes.length > 1) {
+                    const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                    const allSameRecordGroup = textBoxes.every(b => b.recordGroup === textBoxes[0].recordGroup);
+                    const allAssigned = textBoxes.every(b => b.recordGroup !== undefined);
+                    
+                    if (allSameRecordGroup && allAssigned) {
+                        recordGroupDisplay.textContent = `Record Group ${textBoxes[0].recordGroup + 1}`;
+                        recordGroupDisplay.style.background = '#d4edda';
+                        recordGroupDisplay.style.borderColor = '#c3e6cb';
+                        recordGroupDisplay.style.color = '#155724';
+                    } else if (allAssigned) {
+                        recordGroupDisplay.textContent = 'Mixed Groups';
+                        recordGroupDisplay.style.background = '#fff3cd';
+                        recordGroupDisplay.style.borderColor = '#ffeaa7';
+                        recordGroupDisplay.style.color = '#856404';
+                    } else {
+                        recordGroupDisplay.textContent = 'Mixed Assignment';
+                        recordGroupDisplay.style.background = '#f8d7da';
+                        recordGroupDisplay.style.borderColor = '#f5c6cb';
+                        recordGroupDisplay.style.color = '#721c24';
+                    }
                 } else {
-                    console.log('No CSV data available for column dropdown');
+                    if (box.recordGroup !== undefined) {
+                        recordGroupDisplay.textContent = `Record Group ${box.recordGroup + 1}`;
+                        recordGroupDisplay.style.background = '#d4edda';
+                        recordGroupDisplay.style.borderColor = '#c3e6cb';
+                        recordGroupDisplay.style.color = '#155724';
+                    } else {
+                        recordGroupDisplay.textContent = 'Not assigned';
+                        recordGroupDisplay.style.background = '#e9ecef';
+                        recordGroupDisplay.style.borderColor = '#ced4da';
+                        recordGroupDisplay.style.color = '#495057';
+                    }
                 }
             }
 
@@ -5281,6 +5355,35 @@ if (!sessionState.defaultFontFamily) {
             
             contextMenu.appendChild(deleteOption);
             contextMenu.appendChild(duplicateOption);
+            
+            // Add record group assignment option for text boxes
+            if (boxElement.classList.contains('draggable-text-box')) {
+                const recordGroupOption = document.createElement('div');
+                recordGroupOption.style.cssText = `
+                    padding: 8px 12px;
+                    cursor: pointer;
+                    border-top: 1px solid #eee;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                `;
+                recordGroupOption.innerHTML = '🔗 Assign Record Group';
+                recordGroupOption.addEventListener('click', function() {
+                    const boxObject = sessionState.boxes.find(b => b.element === boxElement);
+                    if (boxObject) {
+                        showRecordGroupDialog(boxObject);
+                    }
+                    contextMenu.remove();
+                });
+                recordGroupOption.addEventListener('mouseenter', function() {
+                    this.style.background = '#f8f9fa';
+                });
+                recordGroupOption.addEventListener('mouseleave', function() {
+                    this.style.background = 'white';
+                });
+                
+                contextMenu.appendChild(recordGroupOption);
+            }
             document.body.appendChild(contextMenu);
             
             // Close context menu when clicking outside
@@ -5588,6 +5691,170 @@ if (!sessionState.defaultFontFamily) {
                 handle.style.visibility = 'visible';
             });
             console.log('All transform controls shown');
+        }
+        
+        // Function to assign text boxes to record groups for multiple fields per record
+        function assignTextBoxToRecordGroup(textBox, recordGroup) {
+            if (!textBox) return;
+            
+            // Set the record group for this text box
+            textBox.recordGroup = recordGroup;
+            
+            console.log(`Text box assigned to record group ${recordGroup}`);
+            
+            // Update the display to show which record group this box belongs to
+            if (textBox.element) {
+                const recordInfo = textBox.element.querySelector('.record-group-info');
+                if (recordInfo) {
+                    recordInfo.textContent = `Record ${recordGroup + 1}`;
+                } else {
+                    // Create record group indicator
+                    const indicator = document.createElement('div');
+                    indicator.className = 'record-group-info';
+                    indicator.style.cssText = `
+                        position: absolute;
+                        top: -20px;
+                        left: 0;
+                        background: rgba(0, 123, 255, 0.8);
+                        color: white;
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        font-size: 10px;
+                        font-weight: bold;
+                        z-index: 30;
+                        pointer-events: none;
+                    `;
+                    indicator.textContent = `Record ${recordGroup + 1}`;
+                    textBox.element.appendChild(indicator);
+                }
+            }
+            
+            // Update synchronization
+            updateAllTextBoxesWithCSVData();
+        }
+        
+        // Function to show record group assignment dialog
+        function showRecordGroupDialog(textBox) {
+            if (!textBox || !sessionState.csvRows) return;
+            
+            const recordCount = Math.ceil(sessionState.boxes.filter(b => b.type === 'text' || b.boxType === 'text').length / recordsPerPage);
+            
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                border: 2px solid #007bff;
+                border-radius: 8px;
+                padding: 20px;
+                z-index: 10000;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                min-width: 300px;
+            `;
+            
+            dialog.innerHTML = `
+                <h3 style="margin: 0 0 15px 0; color: #007bff;">Assign to Record Group</h3>
+                <p style="margin: 0 0 15px 0; color: #666;">
+                    This text box will display data from the selected record group.<br>
+                    Multiple text boxes can share the same record group for different fields.
+                </p>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Record Group:</label>
+                    <select id="recordGroupSelect" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        ${Array.from({length: recordCount}, (_, i) => 
+                            `<option value="${i}" ${textBox.recordGroup === i ? 'selected' : ''}>Record Group ${i + 1}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                <div style="text-align: right;">
+                    <button onclick="this.parentElement.parentElement.remove()" style="
+                        background: #6c757d; color: white; border: none; padding: 8px 16px; 
+                        border-radius: 4px; margin-right: 10px; cursor: pointer;
+                    ">Cancel</button>
+                    <button onclick="assignRecordGroupFromDialog(this)" style="
+                        background: #007bff; color: white; border: none; padding: 8px 16px; 
+                        border-radius: 4px; cursor: pointer;
+                    ">Assign</button>
+                </div>
+            `;
+            
+            // Store reference to the text box
+            dialog.dataset.textBoxId = sessionState.boxes.indexOf(textBox);
+            
+            document.body.appendChild(dialog);
+        }
+        
+        // Function to assign record group from dialog
+        function assignRecordGroupFromDialog(button) {
+            const dialog = button.parentElement.parentElement;
+            const textBoxId = parseInt(dialog.dataset.textBoxId);
+            const recordGroup = parseInt(document.getElementById('recordGroupSelect').value);
+            
+            const textBox = sessionState.boxes[textBoxId];
+            if (textBox) {
+                assignTextBoxToRecordGroup(textBox, recordGroup);
+            }
+            
+            dialog.remove();
+        }
+        
+        // Function to show record group dialog for the currently selected box
+        function showRecordGroupDialogForSelectedBox() {
+            if (sessionState.selectedBox) {
+                const boxObject = sessionState.boxes.find(b => b.element === sessionState.selectedBox);
+                if (boxObject && (boxObject.type === 'text' || boxObject.boxType === 'text')) {
+                    showRecordGroupDialog(boxObject);
+                } else {
+                    alert('Please select a text box to assign a record group.');
+                }
+            } else {
+                alert('Please select a box first.');
+            }
+        }
+        
+        // Function to update CSV column dropdown with record group info
+        function updateCSVColumnDropdown(box) {
+            const columnSelect = document.getElementById('boxColumnSelect');
+            if (!columnSelect || !box) return;
+            
+            // Clear existing options
+            columnSelect.innerHTML = '';
+            
+            // Add default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select CSV Column';
+            columnSelect.appendChild(defaultOption);
+            
+            // Add CSV columns with record group info
+            if (sessionState.csvRows && sessionState.csvRows.length > 0) {
+                const columns = Object.keys(sessionState.csvRows[0]);
+                columns.forEach(header => {
+                    const option = document.createElement('option');
+                    option.value = header;
+                    
+                    // Show record group info if this box has one assigned
+                    if (box.recordGroup !== undefined) {
+                        option.textContent = `${header} (Record Group ${box.recordGroup + 1})`;
+                    } else {
+                        option.textContent = header;
+                    }
+                    
+                    // For multiple selection, show selected if all boxes have the same column
+                    if (selectedBoxes.length > 1) {
+                        const textBoxes = selectedBoxes.filter(b => b.type === 'text' || b.boxType === 'text');
+                        const allSameColumn = textBoxes.every(b => b.csvColumn === header);
+                        option.selected = allSameColumn;
+                    } else {
+                        // Select if this is the current column
+                        option.selected = header === box.csvColumn;
+                    }
+                    
+                    columnSelect.appendChild(option);
+                });
+            }
         }
         
         // Function to hide transform controls for all boxes
@@ -7727,21 +7994,50 @@ if (!sessionState.defaultFontFamily) {
             
             console.log(`Page ${currentPage + 1}: Showing records ${startRecord + 1}-${endRecord}`);
             
-            // Process all text and image boxes, updating them based on their position
+            // Group boxes by their record assignment
+            const boxesByRecord = {};
+            
+            // First pass: organize boxes by their intended record
             sessionState.boxes.forEach((box, boxIndex) => {
                 if (box.type === 'text' && box.csvColumn) {
-                    // Calculate which record this text box should show based on its position
-                    const pageIndex = boxIndex % recordsPerPage; // Get position within current page
-                    console.log(`Updating text box ${boxIndex} (page index ${pageIndex}) with CSV data`);
-                    updateTextBoxWithCSVData(box, pageIndex);
+                    // For text boxes, use the recordGroup if available, otherwise fall back to position-based
+                    const recordGroup = box.recordGroup !== undefined ? box.recordGroup : Math.floor(boxIndex / 4); // Assume 4 boxes per record
+                    
+                    if (!boxesByRecord[recordGroup]) {
+                        boxesByRecord[recordGroup] = { textBoxes: [], imageBoxes: [] };
+                    }
+                    boxesByRecord[recordGroup].textBoxes.push({ box, recordGroup });
+                    
+                    console.log(`Text box ${boxIndex} assigned to record group ${recordGroup}`);
                 } else if (box.boxType === 'image' && box.csvColumn) {
-                    // Calculate which record this image box should show based on its position
-                    const pageIndex = boxIndex % recordsPerPage; // Get position within current page
-                    console.log(`Updating image box ${boxIndex} (page index ${pageIndex}) with CSV data`);
-                    updateImageBoxWithCSVData(box, pageIndex);
-                } else {
-                    console.log(`Box ${boxIndex} skipped - no CSV column or wrong type`);
+                    // For image boxes, use the recordGroup if available, otherwise fall back to position-based
+                    const recordGroup = box.recordGroup !== undefined ? box.recordGroup : Math.floor(boxIndex / 4); // Assume 4 boxes per record
+                    
+                    if (!boxesByRecord[recordGroup]) {
+                        boxesByRecord[recordGroup] = { textBoxes: [], imageBoxes: [] };
+                    }
+                    boxesByRecord[recordGroup].imageBoxes.push({ box, recordGroup });
+                    
+                    console.log(`Image box ${boxIndex} assigned to record group ${recordGroup}`);
                 }
+            });
+            
+            // Second pass: update boxes based on their record group
+            Object.keys(boxesByRecord).forEach(recordGroup => {
+                const group = boxesByRecord[recordGroup];
+                const recordIndex = currentPage * recordsPerPage + parseInt(recordGroup);
+                
+                // Update all text boxes in this record group
+                group.textBoxes.forEach(({ box, recordGroup: boxRecordGroup }) => {
+                    console.log(`Updating text box in record group ${recordGroup} with CSV data for record ${recordIndex + 1}`);
+                    updateTextBoxWithCSVData(box, parseInt(recordGroup));
+                });
+                
+                // Update all image boxes in this record group
+                group.imageBoxes.forEach(({ box, recordGroup: boxRecordGroup }) => {
+                    console.log(`Updating image box in record group ${recordGroup} with CSV data for record ${recordIndex + 1}`);
+                    updateImageBoxWithCSVData(box, parseInt(recordGroup));
+                });
             });
         }
 
@@ -7757,17 +8053,17 @@ if (!sessionState.defaultFontFamily) {
             });
         }
 
-        function updateTextBoxWithCSVData(box, pageIndex) {
+        function updateTextBoxWithCSVData(box, recordGroup) {
             if (!box || !box.element || !sessionState.csvRows) return;
             
-            // Use the pageIndex parameter to calculate which record this text box should show
-            const recordIndex = currentPage * recordsPerPage + pageIndex;
+            // Use the recordGroup parameter to calculate which record this text box should show
+            const recordIndex = currentPage * recordsPerPage + recordGroup;
             
-            console.log(`Text box update - Page index: ${pageIndex}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
+            console.log(`Text box update - Record group: ${recordGroup}, Record index: ${recordIndex}, CSV column: ${box.csvColumn}`);
             
             if (recordIndex >= sessionState.csvRows.length) {
                 // No more records, show empty
-                console.log(`No more records available for text box ${pageIndex}, showing empty`);
+                console.log(`No more records available for text box in record group ${recordGroup}, showing empty`);
                 updateTextBoxContentSafely(box.element, '');
                 return;
             }
@@ -7775,7 +8071,7 @@ if (!sessionState.defaultFontFamily) {
             const row = sessionState.csvRows[recordIndex];
             const text = row[box.csvColumn] || '';
             
-            console.log(`Text box ${pageIndex} - Record ${recordIndex}: "${text}"`);
+            console.log(`Text box in record group ${recordGroup} - Record ${recordIndex}: "${text}"`);
             
             // Update the text content while preserving resize handles
             updateTextBoxContentSafely(box.element, text);
