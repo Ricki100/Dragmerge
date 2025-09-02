@@ -2009,6 +2009,23 @@ if (!sessionState.defaultFontFamily) {
                     color: #666;
                     font-size: 14px;
                 `;
+                
+                // Add helpful hint for image boxes
+                if (boxType === 'image') {
+                    const hint = document.createElement('p');
+                    hint.textContent = '💡 For image boxes, select a field containing image URLs (e.g., Image, Photo, URL)';
+                    hint.style.cssText = `
+                        margin: 0 0 20px 0;
+                        color: #ffc107;
+                        font-size: 12px;
+                        font-weight: bold;
+                        background: rgba(255, 193, 7, 0.1);
+                        padding: 8px;
+                        border-radius: 4px;
+                        border-left: 3px solid #ffc107;
+                    `;
+                    modalContent.appendChild(hint);
+                }
 
                 // Create dropdown
                 const dropdown = document.createElement('select');
@@ -3938,6 +3955,10 @@ if (!sessionState.defaultFontFamily) {
                 return; // User cancelled
             }
             
+            console.log('Image boxes will be created for CSV field:', selectedField);
+            console.log('Available CSV columns:', csvColumns);
+            console.log('First few rows of CSV data:', sessionState.csvRows.slice(0, 3).map(row => ({ [selectedField]: row[selectedField] })));
+            
             // Add multiple image boxes for the same field across different records
             for (let i = 0; i < boxCount; i++) {
                 // Calculate optimal position for this image box
@@ -4047,7 +4068,7 @@ if (!sessionState.defaultFontFamily) {
                 boxType: 'image',
                 fieldKey: selectedField, // Use fieldKey instead of csvColumn
                 imageSource: 'csv',
-                imageUrl: sampleImageUrl,
+                imageUrl: '', // Will be filled by synchronization
                 x: boxX,
                 y: boxY,
                 width: 100,
@@ -4079,58 +4100,19 @@ if (!sessionState.defaultFontFamily) {
             // Update image box scaling to match current PDF viewer state
             updateImageBoxScaling();
             
-            // IMPORTANT: Synchronize this individual image box with CSV data
-            // This ensures each image box shows the correct data for its position
-            const localIndex = (sessionState.boxes.length - 1) % recordsPerPage;
-            const recordIndex = currentPage * recordsPerPage + localIndex;
-            if (recordIndex < sessionState.csvRows.length) {
-                const recordData = sessionState.csvRows[recordIndex];
-                const imageUrl = recordData ? recordData[selectedField] || '' : '';
-                if (imageUrl && imageUrl.trim() !== '') {
-                    // Load the image using proxy to handle CORS
-                    let cleanedUrl = imageUrl.trim().replace(/[\r\n\s]+/g, '_');
-                    cleanedUrl = convertGoogleDriveUrl(cleanedUrl);
-                    const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(cleanedUrl);
-                    
-                    // Create image element
-                    const img = document.createElement('img');
-                    img.crossOrigin = 'anonymous';
-                    img.src = proxiedUrl;
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                    img.style.objectFit = 'contain';
-                    img.style.objectPosition = 'center';
-                    
-                    // Add error handling
-                    img.onerror = function() {
-                        console.error('Failed to load image:', imageUrl);
-                        imageBox.textContent = 'Load Failed';
-                        imageBox.style.color = '#ffc107';
-                        imageBox.style.fontWeight = 'bold';
-                        imageBox.style.fontSize = '12px';
-                        imageBox.style.border = '2px dashed #ffc107';
-                        imageBox.style.background = 'rgba(255, 193, 7, 0.1)';
-                    };
-                    
-                    img.onload = function() {
-                        console.log('Image loaded successfully for record:', recordIndex + 1);
-                    };
-                    
-                    // Clear existing content and add image
-                    imageBox.innerHTML = '';
-                    imageBox.appendChild(img);
-                    boxData.imageUrl = imageUrl;
-                } else {
-                    imageBox.textContent = 'No Image';
-                    imageBox.style.border = '2px dashed #ccc';
-                    imageBox.style.background = 'transparent';
-                }
-                console.log(`Image box ${i + 1} synchronized with record ${recordIndex + 1}: ${imageUrl || 'No image'}`);
-            }
+            // Set initial placeholder text
+            imageBox.textContent = 'Loading...';
+            imageBox.style.border = '2px dashed #ccc';
+            imageBox.style.background = 'transparent';
+            
+            console.log(`Image box ${i + 1} created for field: ${selectedField}`);
         } // End of for loop
         
-        // After all image boxes are created, update them with CSV data to ensure synchronization
-        updateAllBoxesWithCSVData();
+        // After all image boxes are created, synchronize them with CSV data
+        // This ensures proper loading and display of images
+        setTimeout(() => {
+            updateAllBoxesWithCSVData();
+        }, 100);
         
         // After all image boxes are created, show transform controls and highlight
         if (boxCount > 0) {
@@ -4382,6 +4364,15 @@ if (!sessionState.defaultFontFamily) {
                 return;
             }
             
+            // Debug: Check if the field key exists in CSV columns
+            if (sessionState.csvColumns && !sessionState.csvColumns.includes(box.fieldKey)) {
+                console.warn(`⚠️ Field key "${box.fieldKey}" not found in CSV columns:`, sessionState.csvColumns);
+                box.element.innerHTML = '<div style="color: #ffc107; text-align: center; padding: 10px; font-size: 12px; font-weight: bold;">Field Not Found<br><span style="font-size: 10px; color: #6c757d;">"' + box.fieldKey + '" not in CSV</span></div>';
+                box.element.style.border = '2px dashed #ffc107';
+                box.element.style.background = 'rgba(255, 193, 7, 0.1)';
+                return;
+            }
+            
             console.log(`Image box update - Record index: ${recordIndex}, Field key: ${box.fieldKey}`);
             
             if (recordIndex >= sessionState.csvRows.length) {
@@ -4430,11 +4421,16 @@ if (!sessionState.defaultFontFamily) {
             img.onerror = function() {
                 console.error('Failed to load CSV image:', imageUrl);
                 console.error('Error details:', this.src);
-                box.element.innerHTML = '<div style="color: red; text-align: center; padding: 10px; font-size: 12px;">Failed to load CSV image<br>' + imageUrl + '</div>';
+                box.element.innerHTML = '<div style="color: #dc3545; text-align: center; padding: 10px; font-size: 12px; font-weight: bold;">Image Load Failed<br><span style="font-size: 10px; color: #6c757d;">' + (imageUrl.length > 30 ? imageUrl.substring(0, 30) + '...' : imageUrl) + '</span></div>';
+                box.element.style.border = '2px dashed #dc3545';
+                box.element.style.background = 'rgba(220, 53, 69, 0.1)';
             };
             
             img.onload = function() {
                 console.log('CSV image loaded successfully:', imageUrl);
+                // Clear any error styling
+                box.element.style.border = '2px solid #28a745';
+                box.element.style.background = 'transparent';
             };
             
             // Clear existing content and add image
@@ -7173,29 +7169,32 @@ if (!sessionState.defaultFontFamily) {
                         csvData.columns = Object.keys(results.data[0]);
                         sessionState.csvColumns = Object.keys(results.data[0]); // Add this line
                         
-                        // Debug: Check for malformed URLs in image columns
-                        const imageColumns = Object.keys(results.data[0]).filter(col => 
-                            col.toLowerCase().includes('image') || 
-                            col.toLowerCase().includes('img') || 
-                            col.toLowerCase().includes('photo') ||
-                            col.toLowerCase().includes('url')
-                        );
-                        
-                        if (imageColumns.length > 0) {
-                            console.log('Found potential image columns:', imageColumns);
-                            // Check first few rows for malformed URLs
-                            for (let i = 0; i < Math.min(3, results.data.length); i++) {
-                                imageColumns.forEach(col => {
-                                    const url = results.data[i][col];
-                                    if (url && url.includes('http')) {
-                                        console.log(`Row ${i}, Column ${col}:`, url);
-                                        if (url.includes('http') && url.split('http').length > 2) {
-                                            console.warn(`⚠️ MALFORMED URL DETECTED in row ${i}, column ${col}:`, url);
-                                        }
+                                            // Debug: Check for malformed URLs in image columns
+                    const imageColumns = Object.keys(results.data[0]).filter(col => 
+                        col.toLowerCase().includes('image') || 
+                        col.toLowerCase().includes('img') || 
+                        col.toLowerCase().includes('photo') ||
+                        col.toLowerCase().includes('url')
+                    );
+                    
+                    if (imageColumns.length > 0) {
+                        console.log('Found potential image columns:', imageColumns);
+                        // Check first few rows for malformed URLs
+                        for (let i = 0; i < Math.min(3, results.data.length); i++) {
+                            imageColumns.forEach(col => {
+                                const url = results.data[i][col];
+                                if (url && url.includes('http')) {
+                                    console.log(`Row ${i}, Column ${col}:`, url);
+                                    if (url.includes('http') && url.split('http').length > 2) {
+                                        console.warn(`⚠️ MALFORMED URL DETECTED in row ${i}, column ${col}:`, url);
                                     }
-                                });
-                            }
+                                }
+                            });
                         }
+                    } else {
+                        console.warn('⚠️ No image columns found in CSV. Available columns:', Object.keys(results.data[0]));
+                        console.warn('⚠️ For image boxes to work, you need a column containing image URLs');
+                    }
                     }
                     
                     currentRecord = 0;
