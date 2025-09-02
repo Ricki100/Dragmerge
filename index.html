@@ -36,6 +36,15 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             overflow: hidden;
         }
+        
+        /* Preview Mode Styles */
+        .main-container.preview-mode {
+            background: #f8f9fa;
+        }
+        
+        .preview-mode-indicator {
+            display: none;
+        }
 
         .sidebar {
             width: 280px;
@@ -1189,6 +1198,8 @@
         </div>
     </div>
 
+
+    
     <div class="main-container">
         <div class="sidebar">
             <div class="sidebar-content">
@@ -1368,6 +1379,12 @@
 
         <div class="main-content">
             <div class="content-header">
+                <div class="preview-controls" style="margin-bottom: 15px;">
+                    <button id="previewModeBtn" class="btn btn-outline-primary" onclick="togglePreviewMode()" style="font-weight: 500;" title="Toggle Preview Mode - See exactly what your PDF will look like when downloaded (Press P key)">
+                        Preview Mode
+                    </button>
+                </div>
+                
                 <div class="download-buttons">
                     <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
                         📄 Download Current PDF
@@ -2010,22 +2027,7 @@ if (!sessionState.defaultFontFamily) {
                     font-size: 14px;
                 `;
                 
-                // Add helpful hint for image boxes
-                if (boxType === 'image') {
-                    const hint = document.createElement('p');
-                    hint.textContent = '💡 For image boxes, select a field containing image URLs (e.g., Image, Photo, URL)';
-                    hint.style.cssText = `
-                        margin: 0 0 20px 0;
-                        color: #ffc107;
-                        font-size: 12px;
-                        font-weight: bold;
-                        background: rgba(255, 193, 7, 0.1);
-                        padding: 8px;
-                        border-radius: 4px;
-                        border-left: 3px solid #ffc107;
-                    `;
-                    modalContent.appendChild(hint);
-                }
+
 
                 // Create dropdown
                 const dropdown = document.createElement('select');
@@ -2761,6 +2763,12 @@ if (!sessionState.defaultFontFamily) {
                 textBox.addEventListener('click', function(e) {
                     e.stopPropagation();
                     console.log('Text box clicked:', textBox);
+                    
+                    // Don't allow selection in preview mode
+                    if (isPreviewMode) {
+                        console.log('Preview mode active - selection disabled');
+                        return;
+                    }
                     
                     // Check if Ctrl/Cmd key is pressed for multiple selection
                     if (e.ctrlKey || e.metaKey) {
@@ -3833,6 +3841,12 @@ if (!sessionState.defaultFontFamily) {
                     e.stopPropagation();
                     console.log('Text box clicked (addText):', textBox, 'boxData:', boxData);
                     
+                    // Don't allow selection in preview mode
+                    if (isPreviewMode) {
+                        console.log('Preview mode active - selection disabled');
+                        return;
+                    }
+                    
                     // Check if Ctrl/Cmd key is pressed for multiple selection
                     if (e.ctrlKey || e.metaKey) {
                         // Multiple selection mode
@@ -4001,57 +4015,63 @@ if (!sessionState.defaultFontFamily) {
                 imageBox.style.border = '2px dashed #ccc';
                 imageBox.style.background = 'transparent';
 
-                // Add click handler for selection
-                imageBox.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    console.log('Image box clicked:', imageBox);
-                    
-                    // Check if Ctrl/Cmd key is pressed for multiple selection
-                    if (e.ctrlKey || e.metaKey) {
-                        // Multiple selection mode
-                        const box = sessionState.boxes.find(b => b.element === imageBox);
-                        if (box) {
-                            if (selectedBoxes.find(b => b.element === imageBox)) {
-                                // Remove from multiple selection
-                                removeFromMultipleSelection(box);
-                            } else {
-                                // Add to multiple selection
-                                addToMultipleSelection(box);
-                            }
-                            updateMultiSelectionEditor();
-                        }
+                        // Add click handler for selection
+        imageBox.addEventListener('click', function(e) {
+            e.stopPropagation();
+            console.log('Image box clicked:', imageBox);
+            
+            // Don't allow selection in preview mode
+            if (isPreviewMode) {
+                console.log('Preview mode active - selection disabled');
+                return;
+            }
+            
+            // Check if Ctrl/Cmd key is pressed for multiple selection
+            if (e.ctrlKey || e.metaKey) {
+                // Multiple selection mode
+                const box = sessionState.boxes.find(b => b.element === imageBox);
+                if (box) {
+                    if (selectedBoxes.find(b => b.element === imageBox)) {
+                        // Remove from multiple selection
+                        removeFromMultipleSelection(box);
                     } else {
-                        // Single selection mode
-                        clearMultipleSelection();
-                        
-                        // Remove selected class from all boxes
-                        document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
-                            box.classList.remove('selected');
-                        });
-                        // Add selected class to this box
-                        imageBox.classList.add('selected');
-                        
-                        // Update session state
-                        sessionState.selectedBox = imageBox; // Store the DOM element
-                        currentBoxId = imageBox.boxId;
-                        
-                        // Update box editor
-                        updateBoxEditor();
-                        
-                        // Highlight the corresponding box
-                        const box = sessionState.boxes.find(b => b.element === imageBox);
-                        if (box) {
-                            console.log('Found box data for image click:', box);
-                            updateBoxEditorValues(box); // Use the box object for editor values
-                            highlightCorrespondingBox(box, true);
-                            
-                            // Show record info for the selected box
-                            showRecordInfo(box);
-                        } else {
-                            console.log('No box data found for image box:', imageBox);
-                        }
+                        // Add to multiple selection
+                        addToMultipleSelection(box);
                     }
+                    updateMultiSelectionEditor();
+                }
+            } else {
+                // Single selection mode
+                clearMultipleSelection();
+                
+                // Remove selected class from all boxes
+                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
+                    box.classList.remove('selected');
                 });
+                // Add selected class to this box
+                imageBox.classList.add('selected');
+                
+                // Update session state
+                sessionState.selectedBox = imageBox; // Store the DOM element
+                currentBoxId = imageBox.boxId;
+                
+                // Update box editor
+                updateBoxEditor();
+                
+                // Highlight the corresponding box
+                const box = sessionState.boxes.find(b => b.element === imageBox);
+                if (box) {
+                    console.log('Found box data for image click:', box);
+                    updateBoxEditorValues(box); // Use the box object for editor values
+                    highlightCorrespondingBox(box, true);
+                    
+                    // Show record info for the selected box
+                    showRecordInfo(box);
+                } else {
+                    console.log('No box data found for image box:', imageBox);
+                }
+            }
+        });
 
             // Add to overlay container (same as text boxes)
             const overlayContainer = document.getElementById('overlayContainer');
@@ -4153,6 +4173,12 @@ if (!sessionState.defaultFontFamily) {
             interact(element).draggable({
                 listeners: {
                     start: function(event) {
+                        // Don't allow dragging in preview mode
+                        if (isPreviewMode) {
+                            console.log('Preview mode active - dragging disabled');
+                            return;
+                        }
+                        
                         event.target.classList.add('dragging');
                         console.log('Drag started on:', event.target);
                         
@@ -4233,6 +4259,12 @@ if (!sessionState.defaultFontFamily) {
                 ],
                 listeners: {
                     start: function(event) {
+                        // Don't allow resizing in preview mode
+                        if (isPreviewMode) {
+                            console.log('Preview mode active - resizing disabled');
+                            return;
+                        }
+                        
                         console.log('Resize started on:', event.target);
                         
                         // Show all transform controls
@@ -5136,6 +5168,12 @@ if (!sessionState.defaultFontFamily) {
                     e.preventDefault();
                     showAllTransformControls();
                 }
+                
+                // P key to toggle preview mode
+                if (e.key === 'p' || e.key === 'P') {
+                    e.preventDefault();
+                    togglePreviewMode();
+                }
             });
 
             // Right-click context menu for boxes
@@ -5143,6 +5181,12 @@ if (!sessionState.defaultFontFamily) {
                 const target = e.target;
                 if (target.classList.contains('draggable-text-box') || target.classList.contains('draggable-image-box')) {
                     e.preventDefault();
+                    
+                    // Don't allow context menu in preview mode
+                    if (isPreviewMode) {
+                        console.log('Preview mode active - context menu disabled');
+                        return;
+                    }
                     
                     // Select the box if not already selected
                     if (!target.classList.contains('selected')) {
@@ -5547,6 +5591,79 @@ if (!sessionState.defaultFontFamily) {
                 handle.style.visibility = 'visible';
             });
             console.log('All transform controls shown');
+        }
+        
+        // Preview Mode functionality
+        let isPreviewMode = false;
+        
+        function togglePreviewMode() {
+            isPreviewMode = !isPreviewMode;
+            const previewBtn = document.getElementById('previewModeBtn');
+            const mainContainer = document.querySelector('.main-container');
+            
+            if (isPreviewMode) {
+                // Enter Preview Mode - Clean view
+                previewBtn.textContent = 'Edit Mode';
+                previewBtn.className = 'btn btn-outline-primary';
+                
+                // Add preview mode styling to main container
+                mainContainer.classList.add('preview-mode');
+                
+                // Hide all transform controls
+                hideAllTransformControls();
+                
+                // Clear all highlighting and borders
+                clearAllHighlighting();
+                
+                // Hide all box borders/outlines for clean preview
+                sessionState.boxes.forEach(box => {
+                    if (box.element) {
+                        // Remove all border styles and selection indicators
+                        box.element.style.border = 'none';
+                        box.element.style.outline = 'none';
+                        box.element.style.boxShadow = 'none';
+                        box.element.style.backgroundColor = '';
+                        
+                        // Remove selection classes
+                        box.element.classList.remove('selected', 'multi-selected');
+                        
+                        // Hide any drag identifiers
+                        const identifier = box.element.querySelector('.drag-identifier');
+                        if (identifier) {
+                            identifier.style.display = 'none';
+                        }
+                    }
+                });
+                
+                // Hide record info display in preview mode
+                const recordInfoDisplay = document.getElementById('recordInfoDisplay');
+                if (recordInfoDisplay) {
+                    recordInfoDisplay.style.display = 'none';
+                }
+                
+                console.log('Preview mode activated - Clean PDF view');
+                
+            } else {
+                // Exit Preview Mode - Return to editing
+                previewBtn.textContent = 'Preview Mode';
+                previewBtn.className = 'btn btn-outline-primary';
+                
+                // Remove preview mode styling
+                mainContainer.classList.remove('preview-mode');
+                
+                // Show all transform controls
+                showAllTransformControls();
+                
+                // Show record info if a box is selected
+                if (sessionState.selectedBox) {
+                    const recordInfoDisplay = document.getElementById('recordInfoDisplay');
+                    if (recordInfoDisplay) {
+                        recordInfoDisplay.style.display = 'block';
+                    }
+                }
+                
+                console.log('Edit mode restored - All controls visible');
+            }
         }
         
 
