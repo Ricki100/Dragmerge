@@ -1237,6 +1237,13 @@
                             </div>
                         </div>
                         
+                                <!-- Record Info Display -->
+        <div id="recordInfoDisplay" class="record-info-display" style="border-top: 1px solid #e9ecef; padding: 14px 16px; background: #ffffff; margin-bottom: 12px; display: none; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #f0f0f0;">
+            <div id="recordInfoText" style="font-size: 14px; color: #2c3e50; font-weight: 600; letter-spacing: 0.2px; text-align: center; width: 100%;">
+                No box selected
+            </div>
+        </div>
+                        
                         <!-- Page Navigation -->
                 <div id="pageNavigation" class="page-navigation" style="border-top: 1px solid #e9ecef; padding: 12px; background: #f8f9fa; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
@@ -1271,27 +1278,7 @@
                         <div id="fontUploadStatus" class="font-status" style="font-size: 10px;"></div>
                         </div>
                         
-                    <!-- Record Group Display -->
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label style="font-size: 12px; font-weight: bold;">Record Group:</label>
-                        <div style="display: flex; gap: 6px; align-items: center;">
-                            <div id="recordGroupDisplay" style="
-                                font-size: 11px; 
-                                padding: 6px 8px; 
-                                background: #e9ecef; 
-                                border: 1px solid #ced4da; 
-                                border-radius: 4px; 
-                                color: #495057;
-                                min-height: 20px;
-                                flex: 1;
-                            ">
-                                Not assigned
-                            </div>
-                            <button type="button" id="assignRecordGroupBtn" class="btn btn-sm btn-outline-primary" style="font-size: 10px; padding: 4px 8px;" onclick="showRecordGroupDialogForSelectedBox()">
-                                🔗 Assign
-                            </button>
-                        </div>
-                        </div>
+
                         
                     <!-- CSV Column Selection -->
                     <div class="form-group" style="margin-bottom: 10px;">
@@ -2696,7 +2683,7 @@ if (!sessionState.defaultFontFamily) {
                 if (i >= sessionState.csvRows.length) break; // Don't create more than available records
                 
                 const record = sessionState.csvRows[i];
-                const verticalOffset = i * 120; // Space between record groups
+                const verticalOffset = i * 120; // Space between boxes
                 
                 // Create text boxes
                 textBoxes.forEach((templateBox, txtIndex) => {
@@ -2859,7 +2846,7 @@ if (!sessionState.defaultFontFamily) {
                 if (i >= sessionState.csvRows.length) break; // Don't create more than available records
                 
                 const record = sessionState.csvRows[i];
-                const verticalOffset = i * 120; // Space between record groups
+                const verticalOffset = i * 120; // Space between boxes
                 
                 // Create image boxes
                 imageBoxes.forEach((templateBox, imgIndex) => {
@@ -3128,6 +3115,12 @@ if (!sessionState.defaultFontFamily) {
             
             // Initialize page navigation with default values (4 boxes per page)
             updatePageNavigation();
+            
+            // Ensure record info display is hidden initially
+            const recordInfoDisplay = document.getElementById('recordInfoDisplay');
+            if (recordInfoDisplay) {
+                recordInfoDisplay.style.display = 'none';
+            }
             
             // Show all transform controls by default
             setTimeout(() => {
@@ -3434,66 +3427,25 @@ if (!sessionState.defaultFontFamily) {
             if (recordIndex < sessionState.csvRows.length) {
                 const record = sessionState.csvRows[recordIndex];
                 
-                // Create or update record info popup
-                let recordInfo = document.querySelector('.record-info-popup');
-                if (!recordInfo) {
-                    recordInfo = document.createElement('div');
-                    recordInfo.className = 'record-info-popup';
-                    recordInfo.style.cssText = `
-                        position: fixed;
-                        top: 10px;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        background: rgba(51, 51, 51, 0.95);
-                        color: white;
-                        padding: 8px 16px;
-                        border-radius: 20px;
-                        font-size: 12px;
-                        z-index: 10000;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                        backdrop-filter: blur(10px);
-                        border: 1px solid rgba(255,255,255,0.1);
-                        white-space: nowrap;
-                        transition: all 0.3s ease;
-                    `;
-                    document.body.appendChild(recordInfo);
+                // Update the integrated record info display in the left panel
+                const recordInfoDisplay = document.getElementById('recordInfoDisplay');
+                const recordInfoText = document.getElementById('recordInfoText');
+                
+                if (recordInfoDisplay && recordInfoText) {
+                    // Show the record info display
+                    recordInfoDisplay.style.display = 'block';
+                    
+                    // Update the main text
+                    recordInfoText.textContent = `Record ${actualRecordNumber} of ${sessionState.csvRows.length}`;
+                    
+                    console.log('Record info shown for box:', selectedBox, 'Box index:', boxIndex, 'Page index:', pageIndex, 'Record:', actualRecordNumber, 'of', sessionState.csvRows.length);
                 }
-                
-                // Show compact record info
-                recordInfo.innerHTML = `
-                    <span style="color: #007bff; font-weight: 600;">📋 Record ${actualRecordNumber}</span>
-                    <span style="margin: 0 8px; color: #666;">•</span>
-                    <span style="color: #ccc;">${selectedBox.fieldKey || 'No field'}</span>
-                    <span style="margin: 0 8px; color: #666;">•</span>
-                    <span style="color: #ccc;">Page ${currentPage + 1}/${Math.ceil(sessionState.csvRows.length / recordsPerPage)}</span>
-                    <span style="margin-left: 12px; cursor: pointer; color: #999; font-size: 14px;" onclick="this.parentElement.style.display='none'">×</span>
-                `;
-                recordInfo.style.display = 'block';
-                
-                // Auto-hide after 5 seconds for non-intrusive experience
-                setTimeout(() => {
-                    if (recordInfo && recordInfo.style.display === 'block') {
-                        recordInfo.style.opacity = '0.7';
-                    }
-                }, 3000);
-                
-                // Add hover effect to show full opacity
-                recordInfo.onmouseenter = () => recordInfo.style.opacity = '1';
-                recordInfo.onmouseleave = () => recordInfo.style.opacity = '0.7';
-                
-                console.log('Record info shown for box:', selectedBox, 'Box index:', boxIndex, 'Page index:', pageIndex, 'Record:', actualRecordNumber, 'of', sessionState.csvRows.length);
             } else {
                 console.log('Record index out of bounds:', recordIndex, 'CSV rows:', sessionState.csvRows.length);
             }
         }
         
-        // Function to hide record info
-        function hideRecordInfo() {
-            const recordInfo = document.querySelector('.record-info-popup');
-            if (recordInfo) {
-                recordInfo.style.display = 'none';
-            }
-        }
+
         
         // Function to clear all highlighting
         function clearAllHighlighting() {
@@ -3525,6 +3477,17 @@ if (!sessionState.defaultFontFamily) {
                 box.element.classList.add('multi-selected');
                 box.element.style.border = '2px solid #ff6b35';
                 box.element.style.backgroundColor = 'rgba(255, 107, 53, 0.1)';
+                
+                // Show record info for multiple selection
+                if (selectedBoxes.length > 1) {
+                    const recordInfoDisplay = document.getElementById('recordInfoDisplay');
+                    const recordInfoText = document.getElementById('recordInfoText');
+                    
+                    if (recordInfoDisplay && recordInfoText) {
+                        recordInfoDisplay.style.display = 'block';
+                        recordInfoText.textContent = `Multiple Selection (${selectedBoxes.length} boxes)`;
+                    }
+                }
             }
         }
         
@@ -3535,6 +3498,14 @@ if (!sessionState.defaultFontFamily) {
                 box.element.classList.remove('multi-selected');
                 box.element.style.border = '';
                 box.element.style.backgroundColor = '';
+                
+                // Hide record info if no boxes remain selected
+                if (selectedBoxes.length === 0) {
+                    const recordInfoDisplay = document.getElementById('recordInfoDisplay');
+                    if (recordInfoDisplay) {
+                        recordInfoDisplay.style.display = 'none';
+                    }
+                }
             }
         }
         
@@ -3548,6 +3519,12 @@ if (!sessionState.defaultFontFamily) {
             });
             selectedBoxes = [];
             updateMultiSelectionEditor();
+            
+            // Hide record info when multiple selection is cleared
+            const recordInfoDisplay = document.getElementById('recordInfoDisplay');
+            if (recordInfoDisplay) {
+                recordInfoDisplay.style.display = 'none';
+            }
         }
         
         function clearAllHighlighting() {
@@ -3646,6 +3623,9 @@ if (!sessionState.defaultFontFamily) {
                 // Show all transform controls when clicking outside
                 showAllTransformControls();
                 console.log('Clicked outside boxes - showing all transform controls');
+                
+                // Hide record info when clicking outside boxes
+                // hideRecordInfo();
             }
         });
         
@@ -3995,62 +3975,62 @@ if (!sessionState.defaultFontFamily) {
                 imageBox.imageSource = 'csv';
                 imageBox.imageUrl = ''; // Start empty, will be filled by synchronization
 
-            // Set placeholder text initially
-            imageBox.textContent = 'Loading...';
-            imageBox.style.border = '2px dashed #ccc';
-            imageBox.style.background = 'transparent';
+                // Set placeholder text initially
+                imageBox.textContent = 'Loading...';
+                imageBox.style.border = '2px dashed #ccc';
+                imageBox.style.background = 'transparent';
 
-            // Add click handler for selection
-            imageBox.addEventListener('click', function(e) {
-                e.stopPropagation();
-                console.log('Image box clicked:', imageBox);
-                
-                // Check if Ctrl/Cmd key is pressed for multiple selection
-                if (e.ctrlKey || e.metaKey) {
-                    // Multiple selection mode
-                    const box = sessionState.boxes.find(b => b.element === imageBox);
-                    if (box) {
-                        if (selectedBoxes.find(b => b.element === imageBox)) {
-                            // Remove from multiple selection
-                            removeFromMultipleSelection(box);
-                        } else {
-                            // Add to multiple selection
-                            addToMultipleSelection(box);
+                // Add click handler for selection
+                imageBox.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    console.log('Image box clicked:', imageBox);
+                    
+                    // Check if Ctrl/Cmd key is pressed for multiple selection
+                    if (e.ctrlKey || e.metaKey) {
+                        // Multiple selection mode
+                        const box = sessionState.boxes.find(b => b.element === imageBox);
+                        if (box) {
+                            if (selectedBoxes.find(b => b.element === imageBox)) {
+                                // Remove from multiple selection
+                                removeFromMultipleSelection(box);
+                            } else {
+                                // Add to multiple selection
+                                addToMultipleSelection(box);
+                            }
+                            updateMultiSelectionEditor();
                         }
-                        updateMultiSelectionEditor();
-                    }
-                } else {
-                    // Single selection mode
-                    clearMultipleSelection();
-                    
-                // Remove selected class from all boxes
-                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
-                    box.classList.remove('selected');
-                });
-                // Add selected class to this box
-                imageBox.classList.add('selected');
-                
-                // Update session state
-                sessionState.selectedBox = imageBox; // Store the DOM element
-                currentBoxId = imageBox.boxId;
-                
-                // Update box editor
-                updateBoxEditor();
-                    
-                    // Highlight the corresponding box
-                    const box = sessionState.boxes.find(b => b.element === imageBox);
-                    if (box) {
-                        console.log('Found box data for image click:', box);
-                        updateBoxEditorValues(box); // Use the box object for editor values
-                        highlightCorrespondingBox(box, true);
-                        
-                        // Show record info for the selected box
-                        showRecordInfo(box);
                     } else {
-                        console.log('No box data found for image box:', imageBox);
+                        // Single selection mode
+                        clearMultipleSelection();
+                        
+                        // Remove selected class from all boxes
+                        document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
+                            box.classList.remove('selected');
+                        });
+                        // Add selected class to this box
+                        imageBox.classList.add('selected');
+                        
+                        // Update session state
+                        sessionState.selectedBox = imageBox; // Store the DOM element
+                        currentBoxId = imageBox.boxId;
+                        
+                        // Update box editor
+                        updateBoxEditor();
+                        
+                        // Highlight the corresponding box
+                        const box = sessionState.boxes.find(b => b.element === imageBox);
+                        if (box) {
+                            console.log('Found box data for image click:', box);
+                            updateBoxEditorValues(box); // Use the box object for editor values
+                            highlightCorrespondingBox(box, true);
+                            
+                            // Show record info for the selected box
+                            showRecordInfo(box);
+                        } else {
+                            console.log('No box data found for image box:', imageBox);
+                        }
                     }
-                }
-            });
+                });
 
             // Add to overlay container (same as text boxes)
             const overlayContainer = document.getElementById('overlayContainer');
@@ -4147,33 +4127,33 @@ if (!sessionState.defaultFontFamily) {
                 }
                 console.log(`Image box ${i + 1} synchronized with record ${recordIndex + 1}: ${imageUrl || 'No image'}`);
             }
-            }
-            
-            // After all image boxes are created, update them with CSV data to ensure synchronization
-            updateAllBoxesWithCSVData();
-            
-            // After all image boxes are created, show transform controls and highlight
-            if (boxCount > 0) {
-                const lastCreatedBox = sessionState.boxes[sessionState.boxes.length - 1];
-                if (lastCreatedBox && lastCreatedBox.type === 'image') {
-                    console.log('Image box created, showing transform controls and highlighting corresponding text box:', lastCreatedBox);
-                    
-                    // Show transform controls for the last created image box
+        } // End of for loop
+        
+        // After all image boxes are created, update them with CSV data to ensure synchronization
+        updateAllBoxesWithCSVData();
+        
+        // After all image boxes are created, show transform controls and highlight
+        if (boxCount > 0) {
+            const lastCreatedBox = sessionState.boxes[sessionState.boxes.length - 1];
+            if (lastCreatedBox && lastCreatedBox.type === 'image') {
+                console.log('Image box created, showing transform controls and highlighting corresponding text box:', lastCreatedBox);
+                
+                // Show transform controls for the last created image box
+                showTransformControls(lastCreatedBox.element);
+                
+                // Highlight the corresponding text box for the last created image box
+                highlightCorrespondingBox(lastCreatedBox, true);
+                
+                // Auto-clear highlighting after 3 seconds but keep transform controls
+                setTimeout(() => {
+                    console.log('Auto-clearing highlighting for image box:', lastCreatedBox);
+                    highlightCorrespondingBox(lastCreatedBox, false);
+                    // Keep transform controls visible
                     showTransformControls(lastCreatedBox.element);
-                    
-                    // Highlight the corresponding text box for the last created image box
-                    highlightCorrespondingBox(lastCreatedBox, true);
-                    
-                    // Auto-clear highlighting after 3 seconds but keep transform controls
-                    setTimeout(() => {
-                        console.log('Auto-clearing highlighting for image box:', lastCreatedBox);
-                        highlightCorrespondingBox(lastCreatedBox, false);
-                        // Keep transform controls visible
-                        showTransformControls(lastCreatedBox.element);
-                    }, 3000);
-                }
+                }, 3000);
             }
         }
+    }
 
 
 
@@ -4700,6 +4680,12 @@ if (!sessionState.defaultFontFamily) {
                 if (deleteBoxBtn) {
                     deleteBoxBtn.disabled = true;
                 }
+                
+                // Hide record info when no box is selected
+                const recordInfoDisplay = document.getElementById('recordInfoDisplay');
+                if (recordInfoDisplay) {
+                    recordInfoDisplay.style.display = 'none';
+                }
             }
             
             // Update the create records button state
@@ -5095,7 +5081,7 @@ if (!sessionState.defaultFontFamily) {
             sessionState.selectedBox = null;
             
             // Hide record info when no box is selected
-            hideRecordInfo();
+            // hideRecordInfo();
             
             // Hide box editor
             updateBoxEditor();
@@ -5143,7 +5129,7 @@ if (!sessionState.defaultFontFamily) {
                         sessionState.selectedBox = null;
                         
                         // Hide record info when no box is selected
-                        hideRecordInfo();
+                        // hideRecordInfo();
                         
                         updateBoxEditor();
                     }
@@ -5257,34 +5243,7 @@ if (!sessionState.defaultFontFamily) {
             contextMenu.appendChild(deleteOption);
             contextMenu.appendChild(duplicateOption);
             
-            // Add record group assignment option for text boxes
-            if (boxElement.classList.contains('draggable-text-box')) {
-                const recordGroupOption = document.createElement('div');
-                recordGroupOption.style.cssText = `
-                    padding: 8px 12px;
-                    cursor: pointer;
-                    border-top: 1px solid #eee;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                `;
-                recordGroupOption.innerHTML = '🔗 Assign Record Group';
-                recordGroupOption.addEventListener('click', function() {
-                    const boxObject = sessionState.boxes.find(b => b.element === boxElement);
-                    if (boxObject) {
-                        showRecordGroupDialog(boxObject);
-                    }
-                    contextMenu.remove();
-                });
-                recordGroupOption.addEventListener('mouseenter', function() {
-                    this.style.background = '#f8f9fa';
-                });
-                recordGroupOption.addEventListener('mouseleave', function() {
-                    this.style.background = 'white';
-                });
-                
-                contextMenu.appendChild(recordGroupOption);
-            }
+
             document.body.appendChild(contextMenu);
             
             // Close context menu when clicking outside
@@ -5819,7 +5778,7 @@ if (!sessionState.defaultFontFamily) {
                     sessionState.selectedBox = null;
                     
                     // Hide record info when no box is selected
-                    hideRecordInfo();
+                    // hideRecordInfo();
                     
                     updateBoxEditor();
                 }
