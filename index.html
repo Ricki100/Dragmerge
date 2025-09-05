@@ -4481,7 +4481,7 @@ if (!sessionState.defaultFontFamily) {
             console.log('loadStaticImage called with:', box, imageUrl);
             if (!imageUrl) return;
             
-            // Use proxy to handle CORS
+            // Try proxy first, then fallback to direct URL
             const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(imageUrl);
             console.log('Proxied URL:', proxiedUrl);
             
@@ -4489,6 +4489,13 @@ if (!sessionState.defaultFontFamily) {
             const img = document.createElement('img');
             img.crossOrigin = 'anonymous'; // Add CORS attribute
             img.src = proxiedUrl;
+            
+            // Add fallback for when proxy fails
+            img.onerror = function() {
+                console.log('Proxy failed, trying direct URL:', imageUrl);
+                this.crossOrigin = 'anonymous';
+                this.src = imageUrl;
+            };
             img.style.width = '100%';
             img.style.height = '100%';
             img.style.objectFit = 'contain';
@@ -4599,34 +4606,40 @@ if (!sessionState.defaultFontFamily) {
             cleanedUrl = convertGoogleDriveUrl(cleanedUrl);
             console.log('After Google Drive conversion:', cleanedUrl);
             
-            // Use proxy to handle CORS
+            // Try multiple approaches for loading images
             const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(cleanedUrl);
             console.log('Proxied URL for CSV image:', proxiedUrl);
             
             // Create image element
             const img = document.createElement('img');
             img.crossOrigin = 'anonymous'; // Add CORS attribute
+            
+            // Try proxy first, then fallback to direct URL
             img.src = proxiedUrl;
+            
+            // Add fallback for when proxy fails
+            img.onerror = function() {
+                console.log('Proxy failed, trying direct URL:', cleanedUrl);
+                this.crossOrigin = 'anonymous';
+                this.src = cleanedUrl;
+            };
             img.style.width = '100%';
             img.style.height = '100%';
             img.style.objectFit = 'contain';
             img.style.objectPosition = 'center';
             
-            // Add error handling
-            img.onerror = function() {
-                console.error('Failed to load CSV image:', imageUrl);
-                console.error('Error details:', this.src);
-                
-                // Check if it's a server environment issue
-                const isServerError = this.src.includes('proxy_image.php');
-                const errorMessage = isServerError ? 
-                    'Server Error - Check proxy configuration' : 
-                    'Image Load Failed';
-                
-                box.element.innerHTML = '<div style="color: #dc3545; text-align: center; padding: 10px; font-size: 12px; font-weight: bold;">' + errorMessage + '<br><span style="font-size: 10px; color: #6c757d;">' + (imageUrl.length > 30 ? imageUrl.substring(0, 30) + '...' : imageUrl) + '</span></div>';
-                box.element.style.border = '2px dashed #dc3545';
-                box.element.style.background = 'rgba(220, 53, 69, 0.1)';
-            };
+            // Add final error handling (after fallback attempt)
+            img.addEventListener('error', function() {
+                // Only show error if this is the final attempt (direct URL failed)
+                if (!this.src.includes('proxy_image.php')) {
+                    console.error('Failed to load CSV image (both proxy and direct failed):', imageUrl);
+                    console.error('Error details:', this.src);
+                    
+                    box.element.innerHTML = '<div style="color: #dc3545; text-align: center; padding: 10px; font-size: 12px; font-weight: bold;">Image Load Failed<br><span style="font-size: 10px; color: #6c757d;">' + (imageUrl.length > 30 ? imageUrl.substring(0, 30) + '...' : imageUrl) + '</span></div>';
+                    box.element.style.border = '2px dashed #dc3545';
+                    box.element.style.background = 'rgba(220, 53, 69, 0.1)';
+                }
+            });
             
             img.onload = function() {
                 console.log('CSV image loaded successfully:', imageUrl);
@@ -8259,7 +8272,7 @@ if (!sessionState.defaultFontFamily) {
                 cleanedUrl = convertGoogleDriveUrl(cleanedUrl);
                 console.log('After Google Drive conversion:', cleanedUrl);
                 
-                // Use proxy to handle CORS
+                // Try proxy first, then fallback to direct URL
                 const proxiedUrl = 'proxy_image.php?url=' + encodeURIComponent(cleanedUrl);
                 console.log('Proxied URL for single record image:', proxiedUrl);
                 
@@ -8267,6 +8280,13 @@ if (!sessionState.defaultFontFamily) {
                 const img = document.createElement('img');
                 img.crossOrigin = 'anonymous';
                 img.src = proxiedUrl;
+                
+                // Add fallback for when proxy fails
+                img.onerror = function() {
+                    console.log('Proxy failed for single record image, trying direct URL:', cleanedUrl);
+                    this.crossOrigin = 'anonymous';
+                    this.src = cleanedUrl;
+                };
                 img.style.width = '100%';
                 img.style.height = '100%';
                 img.style.objectFit = 'contain';
