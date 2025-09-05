@@ -2931,7 +2931,7 @@ if (!sessionState.defaultFontFamily) {
                         const boxData = sessionState.boxes.find(b => b.element === textBox);
                         if (boxData) {
                             console.log('Found box data for click:', boxData);
-                            highlightCorrespondingBox(boxData, true);
+                            // Highlighting functionality removed
                             // Show record info for the selected box
                             showRecordInfo(boxData);
                         } else {
@@ -3075,7 +3075,7 @@ if (!sessionState.defaultFontFamily) {
                             const boxData = sessionState.boxes.find(b => b.element === imageBox);
                             if (boxData) {
                                 console.log('Found box data for image click:', boxData);
-                                highlightCorrespondingBox(boxData, true);
+                                // Highlighting functionality removed
                             } else {
                                 console.log('No box data found for image box:', imageBox);
                             }
@@ -3514,7 +3514,7 @@ if (!sessionState.defaultFontFamily) {
                 identifier.style.display = 'block';
                 
                 // Highlight the corresponding box of the other type with clean visual feedback
-                highlightCorrespondingBox(box, true);
+                // Highlighting functionality removed
                 
             } else {
                 // Hide identifier
@@ -3523,84 +3523,11 @@ if (!sessionState.defaultFontFamily) {
                     identifier.style.display = 'none';
                 }
                 
-                // Remove highlighting from corresponding box
-                highlightCorrespondingBox(box, false);
+                // Highlighting functionality removed - using records display box instead
             }
         }
         
-        // Function to highlight the corresponding box of the other type
-        function highlightCorrespondingBox(draggedBox, shouldHighlight) {
-            if (!draggedBox) {
-                console.log('highlightCorrespondingBox: No draggedBox provided');
-                return;
-            }
-            
-            console.log('highlightCorrespondingBox called with:', draggedBox, 'shouldHighlight:', shouldHighlight);
-            
-            const draggedBoxType = draggedBox.boxType || draggedBox.type;
-            console.log('Dragged box type:', draggedBoxType);
-            
-            // Get all text and image boxes
-            const textBoxes = sessionState.boxes.filter(b => (b.boxType === 'text') || (b.type === 'text'));
-            const imageBoxes = sessionState.boxes.filter(b => (b.boxType === 'image') || (b.type === 'image'));
-            
-            console.log('Text boxes:', textBoxes.length, 'Image boxes:', imageBoxes.length);
-            
-            // Find the corresponding box of the other type
-            let correspondingBox = null;
-            
-            if (draggedBoxType === 'text') {
-                // Dragging text box, find corresponding image box
-                const textBoxIndex = textBoxes.indexOf(draggedBox);
-                console.log('Text box index:', textBoxIndex);
-                if (textBoxIndex >= 0 && textBoxIndex < imageBoxes.length) {
-                    correspondingBox = imageBoxes[textBoxIndex];
-                    console.log('Found corresponding image box:', correspondingBox);
-                }
-            } else if (draggedBoxType === 'image') {
-                // Dragging image box, find corresponding text box
-                const imageBoxIndex = imageBoxes.indexOf(draggedBox);
-                console.log('Image box index:', imageBoxIndex);
-                if (imageBoxIndex >= 0 && imageBoxIndex < textBoxes.length) {
-                    correspondingBox = textBoxes[imageBoxIndex];
-                    console.log('Found corresponding text box:', correspondingBox);
-                }
-            }
-            
-            if (correspondingBox && correspondingBox.element) {
-                if (shouldHighlight) {
-                    // Add clean visual feedback - change border color and add subtle highlight
-                    const highlightColor = correspondingBox.boxType === 'text' ? '#007bff' : '#28a745';
-                    correspondingBox.element.style.border = `3px solid ${highlightColor}`;
-                    correspondingBox.element.style.backgroundColor = `${highlightColor}20`; // More visible background
-                    correspondingBox.element.style.boxShadow = `0 0 10px ${highlightColor}40`; // Add glow effect
-                    
-                    // DO NOT show transform controls during highlighting - keep them hidden
-                    // showTransformControls(correspondingBox.element);
-                    
-                    // Show record info in the popup
-                    showRecordInfo(draggedBox, correspondingBox);
-                    
-                    console.log('Highlighting applied to:', correspondingBox);
-                    
-                } else {
-                    // Remove highlighting and hide border completely
-                    correspondingBox.element.style.border = 'none';
-                    correspondingBox.element.style.backgroundColor = '';
-                    correspondingBox.element.style.boxShadow = '';
-                    
-                    // Ensure transform controls remain visible
-                    showTransformControls(correspondingBox.element);
-                    
-                    // Don't hide record info - keep it visible for selected box
-                    // hideRecordInfo();
-                    
-                    console.log('Highlighting removed from:', correspondingBox);
-                }
-            } else {
-                console.log('No corresponding box found or no element');
-            }
-        }
+        // Highlighting functionality removed - using records display box instead
         
         // Function to show which record the boxes represent
         function showRecordInfo(selectedBox, correspondingBox = null) {
@@ -4089,7 +4016,7 @@ if (!sessionState.defaultFontFamily) {
                         
                         // Highlight the corresponding box
                         console.log('Highlighting corresponding box for:', boxData);
-                        highlightCorrespondingBox(boxData, true);
+                        // Highlighting functionality removed
                         
                         // Show record info for the selected box
                         showRecordInfo(boxData);
@@ -4136,20 +4063,13 @@ if (!sessionState.defaultFontFamily) {
                     // After creating all text boxes, update them with CSV data to ensure synchronization
             updateAllBoxesWithCSVData();
         
-        // After all text boxes are created, highlight the corresponding image boxes
-        // Find the last created text box and highlight its corresponding image box
+        // After all text boxes are created, show transform controls
         if (boxCount > 0) {
             const lastCreatedBox = sessionState.boxes[sessionState.boxes.length - 1];
             if (lastCreatedBox && lastCreatedBox.type === 'text') {
-                console.log('Text box created, highlighting corresponding image box:', lastCreatedBox);
-                // Highlight the corresponding image box for the last created text box
-                highlightCorrespondingBox(lastCreatedBox, true);
-                
-                // Auto-clear highlighting after 3 seconds
-                setTimeout(() => {
-                    console.log('Auto-clearing highlighting for text box:', lastCreatedBox);
-                    highlightCorrespondingBox(lastCreatedBox, false);
-                }, 3000);
+                console.log('Text box created:', lastCreatedBox);
+                // Show transform controls for the last created text box
+                showTransformControls(lastCreatedBox.element);
             }
             
             // Show status message with zoom info
@@ -4289,12 +4209,11 @@ if (!sessionState.defaultFontFamily) {
                 // Update box editor
                 updateBoxEditor();
                 
-                // Highlight the corresponding box
+                // Find the box data
                 const box = sessionState.boxes.find(b => b.element === imageBox);
                 if (box) {
                     console.log('Found box data for image click:', box);
                     updateBoxEditorValues(box); // Use the box object for editor values
-                    highlightCorrespondingBox(box, true);
                     
                     // Show record info for the selected box
                     showRecordInfo(box);
@@ -4370,21 +4289,10 @@ if (!sessionState.defaultFontFamily) {
         if (boxCount > 0) {
             const lastCreatedBox = sessionState.boxes[sessionState.boxes.length - 1];
             if (lastCreatedBox && lastCreatedBox.type === 'image') {
-                console.log('Image box created, showing transform controls and highlighting corresponding text box:', lastCreatedBox);
+                console.log('Image box created:', lastCreatedBox);
                 
                 // Show transform controls for the last created image box
                 showTransformControls(lastCreatedBox.element);
-                
-                // Highlight the corresponding text box for the last created image box
-                highlightCorrespondingBox(lastCreatedBox, true);
-                
-                // Auto-clear highlighting after 3 seconds but keep transform controls
-                setTimeout(() => {
-                    console.log('Auto-clearing highlighting for image box:', lastCreatedBox);
-                    highlightCorrespondingBox(lastCreatedBox, false);
-                    // Keep transform controls visible
-                    showTransformControls(lastCreatedBox.element);
-                }, 3000);
             }
             
             // Show all transform controls after creating image boxes
@@ -4434,7 +4342,7 @@ if (!sessionState.defaultFontFamily) {
                         if (box) {
                             console.log('Found box object:', box);
                             showBoxIdentifier(box, true);
-                            highlightCorrespondingBox(box, true);
+                            // Highlighting functionality removed
                         } else {
                             console.log('No box object found for element:', event.target);
                         }
@@ -4471,7 +4379,7 @@ if (!sessionState.defaultFontFamily) {
                         if (box) {
                             console.log('Hiding identifier for box:', box);
                             showBoxIdentifier(box, false);
-                            highlightCorrespondingBox(box, false);
+                            // Highlighting functionality removed
                         }
                         
                         // Show all transform controls after drag operation
@@ -5092,15 +5000,8 @@ if (!sessionState.defaultFontFamily) {
                     }
                 updateEditorStatus(`Box bound to field key: ${this.value || 'None'}`);
                         
-                        // Highlight the corresponding box when field is changed
-                        console.log('Field changed for box:', box, 'highlighting corresponding box');
-                        highlightCorrespondingBox(box, true);
-                        
-                        // Auto-clear highlighting after 3 seconds
-                        setTimeout(() => {
-                            console.log('Auto-clearing highlighting after field change for box:', box);
-                            highlightCorrespondingBox(box, false);
-                        }, 3000);
+                        // Field changed - highlighting functionality removed
+                        console.log('Field changed for box:', box);
                         
                         // Update page navigation to ensure synchronization
                         updatePageNavigation();
