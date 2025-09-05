@@ -1,8 +1,8 @@
 <?php
 // Live server optimized proxy for image loading
-// Disable error reporting for production
-error_reporting(0);
-ini_set('display_errors', 0);
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 // Handle preflight OPTIONS request for CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -43,7 +43,7 @@ foreach ($imageExtensions as $ext) {
 }
 
 // Allow URLs without extensions for Google Drive and other services
-$allowedDomains = ['drive.google.com', 'docs.google.com', 'dropbox.com', 'imgur.com', 'flickr.com', 'via.placeholder.com'];
+$allowedDomains = ['drive.google.com', 'docs.google.com', 'dropbox.com', 'imgur.com', 'flickr.com', 'via.placeholder.com', 'images.unsplash.com', 'unsplash.com', 'picsum.photos', 'loremflickr.com'];
 $isAllowedDomain = false;
 foreach ($allowedDomains as $domain) {
     if (stripos($url, $domain) !== false) {
@@ -72,13 +72,16 @@ try {
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     
     // Enhanced user agent and headers
-    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Accept: image/*,*/*;q=0.8',
+        'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
         'Accept-Language: en-US,en;q=0.9',
-        'Accept-Encoding: gzip, deflate',
+        'Accept-Encoding: gzip, deflate, br',
         'Cache-Control: no-cache',
-        'Pragma: no-cache'
+        'Pragma: no-cache',
+        'Sec-Fetch-Dest: image',
+        'Sec-Fetch-Mode: no-cors',
+        'Sec-Fetch-Site: cross-site'
     ]);
     
     // Special handling for Google Drive URLs
@@ -97,6 +100,22 @@ try {
         ]);
     }
     
+    // Special handling for Unsplash URLs
+    if (strpos($url, 'unsplash.com') !== false) {
+        // Add referer header for Unsplash
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Accept-Language: en-US,en;q=0.9',
+            'Accept-Encoding: gzip, deflate, br',
+            'Cache-Control: no-cache',
+            'Pragma: no-cache',
+            'Referer: https://unsplash.com/',
+            'Sec-Fetch-Dest: image',
+            'Sec-Fetch-Mode: no-cors',
+            'Sec-Fetch-Site: cross-site'
+        ]);
+    }
+    
     // Execute the request
     $imageContent = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -107,16 +126,19 @@ try {
     
     // Check for cURL errors
     if ($error) {
+        error_log("cURL error for URL $url: " . $error);
         throw new Exception('cURL error: ' . $error);
     }
     
     // Check HTTP response code
     if ($httpCode !== 200) {
+        error_log("HTTP error for URL $url: Code $httpCode");
         throw new Exception('HTTP request failed with code: ' . $httpCode);
     }
     
     // Validate that we got image content
     if ($imageContent === false || empty($imageContent)) {
+        error_log("No content received for URL $url");
         throw new Exception('No image content received');
     }
     
