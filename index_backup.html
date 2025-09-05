@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -13,20 +13,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" id="jszip-cdn"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    
+    <!-- External CSS Files -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/boxes.css">
+    <link rel="stylesheet" href="styles/editor.css">
+    <link rel="stylesheet" href="styles/uploads.css">
+    <link rel="stylesheet" href="styles/drawers.css">
+    
+    <!-- CSS moved to external files -->
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            height: 100vh;
-            overflow: hidden;
-            padding: 20px;
-        }
 
         .main-container {
             display: flex;
@@ -1152,11 +1149,6 @@
             line-height: 1.2;
         }
 
-        .draggable-text-box.selected {
-            border: 2px solid #007bff;
-            background: rgba(0,123,255,0.08);
-        }
-
         .draggable-text-box.selected .resize-handle {
             background: #007bff !important;
         }
@@ -1496,7 +1488,7 @@
                     </button>
                     
                     <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled>
-                        📦 Download All PDFs (ZIP)
+                        Download PDFs
                     </button>
                     
                     <button class="btn btn-danger" onclick="deleteSelectedBox()" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
@@ -2060,16 +2052,19 @@ if (!sessionState.defaultFontFamily) {
             });
             
             if (downloadBtn) {
-                // Enable "Download PDFs" button when all requirements are met
-                // Allow bulk PDF generation with multiple boxes for zip download
-                const shouldDisable = !(hasTemplate && hasCSV && hasBoxes);
+                // Disable "Download PDFs" button if more than one box is present
+                // This prevents bulk PDF generation with multiple boxes
+                // Single page downloads (screenshot, current page) remain active
+                const shouldDisable = !(hasTemplate && hasCSV && hasBoxes) || boxCount > 1;
                 downloadBtn.disabled = shouldDisable;
                 
-                // Update button text to indicate status
-                if (!(hasTemplate && hasCSV && hasBoxes)) {
+                // Update button text to indicate why it's disabled
+                if (boxCount > 1) {
+                    downloadBtn.title = 'Multiple boxes detected. Use single page download instead.';
+                } else if (!(hasTemplate && hasCSV && hasBoxes)) {
                     downloadBtn.title = 'Requires template PDF, CSV data, and at least one box.';
                 } else {
-                    downloadBtn.title = `Download all ${sessionState.csvRows.length} PDFs in a zip file`;
+                    downloadBtn.title = 'Download PDFs for all CSV records';
                 }
             }
             
@@ -2876,11 +2871,8 @@ if (!sessionState.defaultFontFamily) {
                 const overlayContainer = document.getElementById('overlayContainer');
                 overlayContainer.appendChild(textBox);
                 
-                // Enable drag and resize using the same system as image boxes
-                enableDragResize(textBox);
-                
-                // Add resize handles for visual feedback (same as image boxes)
-                addResizeHandles(textBox);
+                // Make it draggable
+                makeDraggable(textBox);
                 
                 // Add click handler
                 textBox.addEventListener('click', function(e) {
@@ -4008,11 +4000,8 @@ if (!sessionState.defaultFontFamily) {
                 const overlayContainer = document.getElementById('overlayContainer');
                 overlayContainer.appendChild(textBox);
                 
-                // Enable drag and resize using the same system as image boxes
-                enableDragResize(textBox);
-                
-                // Add resize handles for visual feedback (same as image boxes)
-                addResizeHandles(textBox);
+                // Make it draggable
+                makeDraggable(textBox);
                 
                 // Show transform controls for the newly created text box
                 showTransformControls(textBox);
@@ -4490,9 +4479,8 @@ if (!sessionState.defaultFontFamily) {
                 // Remove any constraints that might cause "flying out" behavior
                 modifiers: [
                     // Only keep minimal size constraints, no position restrictions
-                    // Ensure minimum size works even for very small font sizes
                     interact.modifiers.restrictSize({
-                        min: { width: 25, height: 20 }
+                        min: { width: 20, height: 15 }
                         // Removed max constraints to allow free resizing
                     })
                 ],
@@ -5795,15 +5783,15 @@ if (!sessionState.defaultFontFamily) {
                 handleElement.dataset.handle = handle.position;
                 handleElement.style.cssText = `
                     position: absolute;
-                    width: 12px;
-                    height: 12px;
-                    background: rgba(255, 107, 53, 0.8);
-                    border: 2px solid rgba(255, 255, 255, 0.9);
-                    border-radius: 3px;
+                    width: 10px;
+                    height: 10px;
+                    background: rgba(255, 107, 53, 0.6);
+                    border: 1px solid rgba(255, 255, 255, 0.8);
+                    border-radius: 2px;
                     cursor: ${handle.cursor};
                     pointer-events: auto;
                     z-index: 25;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
                     transition: all 0.2s ease;
                     opacity: 1;
                     visibility: visible;
@@ -6823,10 +6811,10 @@ if (!sessionState.defaultFontFamily) {
             }
         }
 
-        // Download PDFs function - Hybrid High Quality (All Records in ZIP)
+        // Download PDFs function - Hybrid High Quality (Single Record Mode Only)
         async function downloadPdfs() {
             try {
-                console.log(`=== HYBRID HIGH QUALITY PDF GENERATION (ALL RECORDS IN ZIP) ===`);
+                console.log(`=== HYBRID HIGH QUALITY PDF GENERATION (SINGLE RECORD MODE) ===`);
                 
                 // Step 1: Validate inputs
                 console.log('Step 1: Validating inputs...');
@@ -6852,7 +6840,7 @@ if (!sessionState.defaultFontFamily) {
 
                 const downloadBtn = document.getElementById('downloadPdfsBtn');
                 downloadBtn.disabled = true;
-                downloadBtn.textContent = `Generating All PDFs...`;
+                downloadBtn.textContent = `Generating Single Record PDFs...`;
 
                 // Step 2: Load JSZip
                 console.log('Step 2: Loading JSZip...');
@@ -7230,7 +7218,7 @@ if (!sessionState.defaultFontFamily) {
                 // Restore button state
                 const downloadBtn = document.getElementById('downloadPdfsBtn');
                 downloadBtn.disabled = false;
-                downloadBtn.textContent = '📦 Download All PDFs (ZIP)';
+                downloadBtn.textContent = 'Download PDFs';
             }
         }
 
