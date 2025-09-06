@@ -43,7 +43,13 @@ foreach ($imageExtensions as $ext) {
 }
 
 // Allow URLs without extensions for Google Drive and other services
-$allowedDomains = ['drive.google.com', 'docs.google.com', 'dropbox.com', 'imgur.com', 'flickr.com', 'via.placeholder.com', 'images.unsplash.com', 'unsplash.com', 'picsum.photos', 'loremflickr.com'];
+$allowedDomains = [
+    'drive.google.com', 'docs.google.com', 'dropbox.com', 'imgur.com', 'flickr.com', 
+    'via.placeholder.com', 'images.unsplash.com', 'unsplash.com', 'picsum.photos', 
+    'loremflickr.com', 'cdn.pixabay.com', 'images.pexels.com', 'pexels.com',
+    'source.unsplash.com', 'picsum.photos', 'via.placeholder.com', 'placehold.co',
+    'dummyimage.com', 'loremflickr.com', 'picsum.photos', 'source.unsplash.com'
+];
 $isAllowedDomain = false;
 foreach ($allowedDomains as $domain) {
     if (stripos($url, $domain) !== false) {
@@ -71,7 +77,7 @@ try {
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     
-    // Enhanced user agent and headers
+    // Enhanced user agent and headers for better compatibility
     curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
@@ -81,7 +87,9 @@ try {
         'Pragma: no-cache',
         'Sec-Fetch-Dest: image',
         'Sec-Fetch-Mode: no-cors',
-        'Sec-Fetch-Site: cross-site'
+        'Sec-Fetch-Site: cross-site',
+        'Connection: keep-alive',
+        'Upgrade-Insecure-Requests: 1'
     ]);
     
     // Special handling for Google Drive URLs
@@ -110,6 +118,36 @@ try {
             'Cache-Control: no-cache',
             'Pragma: no-cache',
             'Referer: https://unsplash.com/',
+            'Sec-Fetch-Dest: image',
+            'Sec-Fetch-Mode: no-cors',
+            'Sec-Fetch-Site: cross-site'
+        ]);
+    }
+    
+    // Special handling for Pexels URLs
+    if (strpos($url, 'pexels.com') !== false) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Accept-Language: en-US,en;q=0.9',
+            'Accept-Encoding: gzip, deflate, br',
+            'Cache-Control: no-cache',
+            'Pragma: no-cache',
+            'Referer: https://www.pexels.com/',
+            'Sec-Fetch-Dest: image',
+            'Sec-Fetch-Mode: no-cors',
+            'Sec-Fetch-Site: cross-site'
+        ]);
+    }
+    
+    // Special handling for Pixabay URLs
+    if (strpos($url, 'pixabay.com') !== false) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Accept-Language: en-US,en;q=0.9',
+            'Accept-Encoding: gzip, deflate, br',
+            'Cache-Control: no-cache',
+            'Pragma: no-cache',
+            'Referer: https://pixabay.com/',
             'Sec-Fetch-Dest: image',
             'Sec-Fetch-Mode: no-cors',
             'Sec-Fetch-Site: cross-site'
