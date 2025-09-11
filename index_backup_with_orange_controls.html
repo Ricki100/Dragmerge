@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Editor</title>
+    <title>PDF Viewer</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -592,15 +592,6 @@
             cursor: not-allowed;
         }
 
-        /* Download buttons styling - more compact */
-        .download-buttons .btn {
-            width: auto;
-            padding: 6px 12px;
-            font-size: 11px;
-            white-space: nowrap;
-            min-width: 120px;
-        }
-
         .status-items {
             display: flex;
             flex-direction: column;
@@ -725,7 +716,7 @@
         
         .pdf-area-outline {
             position: absolute;
-            border: none;
+            border: 2px dashed #ff6b6b;
             background: transparent;
             pointer-events: none;
             z-index: 1000;
@@ -833,37 +824,11 @@
             padding: 8px 12px;
             cursor: pointer;
             font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            transition: background-color 0.3s;
         }
 
         .pdf-control-btn:hover {
             background: rgba(0, 0, 0, 0.9);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .lock-icon {
-            font-size: 16px;
-            transition: transform 0.3s ease;
-        }
-
-        .lock-text {
-            font-size: 12px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-        }
-
-        .pdf-control-btn:hover .lock-icon {
-            transform: scale(1.1);
-        }
-
-        .pdf-control-btn:hover .lock-text {
-            color: #ffd700;
         }
 
         .pdf-control-btn:disabled {
@@ -871,6 +836,15 @@
             cursor: not-allowed;
         }
 
+        .zoom-display {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            min-width: 60px;
+            text-align: center;
+        }
 
         .no-pdf {
             text-align: center;
@@ -890,6 +864,7 @@
             top: 0;
             left: 0;
             z-index: 1;
+            border: 2px solid red; /* Temporary debug border */
         }
 
         .loading {
@@ -1261,8 +1236,8 @@
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label style="font-size: 12px; font-weight: bold;">Apply To:</label>
                         <div style="display: flex; gap: 4px;">
-                            <button type="button" id="applyToAllBtn" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="setApplyMode('all')">All Boxes</button>
-                            <button type="button" id="applyToSelectedBtn" class="btn btn-sm btn-primary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="setApplyMode('selected')">Selected Only</button>
+                            <button type="button" id="applyToAllBtn" class="btn btn-sm btn-primary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="setApplyMode('all')">All Boxes</button>
+                            <button type="button" id="applyToSelectedBtn" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="setApplyMode('selected')">Selected Only</button>
                                 </div>
                                 </div>
                                 
@@ -1283,7 +1258,7 @@
                                 </div>
                         <div class="form-group" style="margin: 0;">
                             <label style="font-size: 11px;">Size:</label>
-                            <input type="number" id="formatAllFontSize" class="form-control" value="16" min="1" max="72" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
+                            <input type="number" id="formatAllFontSize" class="form-control" value="16" min="8" max="72" style="font-size: 11px; padding: 4px 6px;" onchange="applyLiveFormatting()">
                                     </div>
                                 </div>
                                 
@@ -1315,6 +1290,9 @@
 
                     <!-- Action Buttons -->
                     <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                        <button class="btn btn-danger" onclick="deleteSelectedBox()" style="flex: 1; font-size: 11px; padding: 6px 8px;" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
+                            🗑️ Delete
+                        </button>
                                 </div>
                             </div>
                             
@@ -1322,6 +1300,20 @@
 
 
 
+                <!-- Download Section -->
+                <div class="download-section" style="border-top: 1px solid #e9ecef; padding: 15px; background: #f8f9fa; margin-bottom: 15px;">
+                    <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()" style="width: 100%; margin-bottom: 10px;">
+                        📄 Download Current PDF
+                    </button>
+                    
+                    <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled style="width: 100%; margin-bottom: 10px;">
+                        Download PDFs
+                    </button>
+                    
+                    <div id="downloadLink" style="display: none;">
+                        <a id="downloadAnchor" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block; width: 100%;">Download Original PDF</a>
+                    </div>
+                </div>
                             
 
 
@@ -1331,19 +1323,7 @@
 
         <div class="main-content">
             <div class="content-header">
-                <div class="download-buttons" style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 15px;">
-                    <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
-                        📄 Download Current PDF
-                    </button>
-                    
-                    <button id="downloadPdfsBtn" class="btn btn-success" onclick="downloadPdfs()" disabled>
-                        📦 Download All PDFs (ZIP)
-                    </button>
-                    
-                    <button class="btn btn-danger" onclick="deleteSelectedBox()" id="deleteBoxBtn" disabled title="Delete selected box (or press Delete key)">
-                        🗑️ Delete
-                    </button>
-                </div>
+                <h3>PDF Viewer</h3>
             </div>
 
             <div class="viewer-container">
@@ -1359,10 +1339,11 @@
 
                 <div id="pdfViewer" class="pdf-viewer" style="display: none;">
                     <div class="pdf-controls">
-                        <button class="pdf-control-btn" onclick="togglePDFLock()" title="Lock PDF" id="pdfLockBtn">
-                            <span class="lock-icon">🔒</span>
-                            <span class="lock-text">Lock PDF</span>
-                        </button>
+                        <button class="pdf-control-btn" onclick="resetView()" title="Reset View">⌂</button>
+                        <button class="pdf-control-btn" onclick="zoomIn()" title="Zoom In">+</button>
+                        <button class="pdf-control-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                        <button class="pdf-control-btn" onclick="togglePDFLock()" title="Toggle PDF Lock" id="pdfLockBtn">🔒</button>
+                        <div class="zoom-display" id="zoomDisplay">100%</div>
                     </div>
                     
                                     <div class="pdf-content" id="pdfContent">
@@ -1522,21 +1503,17 @@ if (!sessionState.defaultFontFamily) {
 
         // File input handler
         document.getElementById('pdfFile').addEventListener('change', function(e) {
-            console.log('PDF file input changed');
             const file = e.target.files[0];
             if (file) {
-                console.log('File selected:', file.name, file.type, file.size);
                 currentFile = file;
                 document.getElementById('fileLabel').textContent = file.name;
                 
-                // Reset server PDF URL
+                // Hide download link
+                document.getElementById('downloadLink').style.display = 'none';
                 serverPdfUrl = null;
 
                 // Automatically load and preview the PDF
-                console.log('Calling loadPdf function');
                 loadPdf(file);
-            } else {
-                console.log('No file selected');
             }
         });
 
@@ -1547,15 +1524,12 @@ if (!sessionState.defaultFontFamily) {
                 console.log('Loading PDF file:', file.name);
                 
                 // Show loading state
-                console.log('Showing loading state');
                 document.getElementById('noPdf').style.display = 'none';
                 document.getElementById('pdfViewer').style.display = 'none';
                 document.getElementById('loadingPdf').style.display = 'block';
 
                 // Read file as ArrayBuffer
-                console.log('Reading file as ArrayBuffer');
                 const arrayBuffer = await file.arrayBuffer();
-                console.log('ArrayBuffer size:', arrayBuffer.byteLength);
 
                 // Create a separate copy for PDF-lib BEFORE loading with PDF.js
                 const templateBytes = new Uint8Array(arrayBuffer).slice();
@@ -1779,7 +1753,8 @@ if (!sessionState.defaultFontFamily) {
                 currentFile = files[0];
                 document.getElementById('fileLabel').textContent = files[0].name;
                 
-                // Reset server PDF URL
+                // Hide download link
+                document.getElementById('downloadLink').style.display = 'none';
                 serverPdfUrl = null;
 
                 // Automatically load and preview the PDF
@@ -2097,8 +2072,8 @@ if (!sessionState.defaultFontFamily) {
             alert(`Applied formatting to ${textBoxes.length} text box(es)!`);
         }
 
-        // Global variable for apply mode (default: selected only)
-        let applyMode = 'selected';
+        // Global variable for apply mode (default: all boxes)
+        let applyMode = 'all';
 
         // Function to set apply mode (all boxes vs selected only)
         function setApplyMode(mode) {
@@ -2122,8 +2097,6 @@ if (!sessionState.defaultFontFamily) {
         // Function to apply live formatting instantly
         function applyLiveFormatting() {
             console.log('applyLiveFormatting called');
-            console.log('Current applyMode:', applyMode);
-            console.log('Selected box:', sessionState.selectedBox);
             
             // Get formatting values from the form
             const fontFamily = document.getElementById('formatAllFontFamily').value;
@@ -2146,14 +2119,10 @@ if (!sessionState.defaultFontFamily) {
             let boxesToFormat = [];
             if (applyMode === 'all') {
                 boxesToFormat = sessionState.boxes.filter(box => box.boxType === 'text');
-                console.log('Formatting ALL text boxes:', boxesToFormat.length);
             } else {
                 // Format only selected box
                 if (sessionState.selectedBox && sessionState.selectedBox.boxType === 'text') {
                     boxesToFormat = [sessionState.selectedBox];
-                    console.log('Formatting SELECTED text box only:', sessionState.selectedBox);
-                } else {
-                    console.log('No selected text box to format');
                 }
             }
 
@@ -2332,7 +2301,6 @@ if (!sessionState.defaultFontFamily) {
                     id: ++boxCounter,
                         boxId: boxCounter, // Add boxId for consistency with delete function
                         y: templateBox.y + verticalOffset, // Stack vertically with spacing
-                        boxIndex: i, // Track which record this box represents
                     element: null
                 };
                 
@@ -2524,7 +2492,6 @@ if (!sessionState.defaultFontFamily) {
                         fieldKey: templateBox.csvColumn, // Use csvColumn as fieldKey
                         imageSource: 'csv',
                         imageUrl: '',
-                        boxIndex: i, // Track which record this box represents
                         x: parseInt(imageBox.style.left),
                         y: parseInt(imageBox.style.top),
                         width: 100,
@@ -2578,19 +2545,9 @@ if (!sessionState.defaultFontFamily) {
                 return;
             }
             
-            // Calculate records per page based on the box count selection
-            // This should be the number of boxes the user wants to show per page
-            const boxCountSelect = document.getElementById('boxCountSelect');
-            const selectedBoxCount = boxCountSelect ? parseInt(boxCountSelect.value) || 4 : 4;
-            
-            // Set records per page to the selected box count
-            recordsPerPage = selectedBoxCount;
-            
-            // Ensure recordsPerPage doesn't exceed the total number of CSV records
-            if (sessionState.csvRows && sessionState.csvRows.length > 0) {
-                recordsPerPage = Math.min(recordsPerPage, sessionState.csvRows.length);
-            }
-            
+            // Calculate records per page based on number of boxes
+            const totalBoxes = sessionState.boxes.length;
+            recordsPerPage = totalBoxes > 0 ? totalBoxes : 1; // At least 1 record per page
             totalPages = Math.ceil(sessionState.csvRows.length / recordsPerPage);
             
             // Update page info
@@ -2631,35 +2588,19 @@ if (!sessionState.defaultFontFamily) {
 
         // Function to show which record the boxes represent
         function showRecordInfo(selectedBox, correspondingBox = null) {
-            console.log('showRecordInfo called with:', selectedBox);
-            console.log('CSV rows available:', sessionState.csvRows ? sessionState.csvRows.length : 0);
-            
-            if (!selectedBox || !sessionState.csvRows) {
-                console.log('No selected box or CSV data available');
-                return;
-            }
+            if (!selectedBox || !sessionState.csvRows) return;
             
             // Find the box's index in the main boxes array
-            const boxArrayIndex = sessionState.boxes.indexOf(selectedBox);
-            console.log('Box array index found:', boxArrayIndex);
-            if (boxArrayIndex === -1) {
+            const boxIndex = sessionState.boxes.indexOf(selectedBox);
+            if (boxIndex === -1) {
                 console.log('Box not found in sessionState.boxes');
                 return;
             }
             
-            // Get the record index directly from the box's boxIndex property
-            // This is more reliable than calculating from array position
-            let recordIndex;
-            if (selectedBox.boxIndex !== undefined) {
-                // Use the boxIndex property if available
-                recordIndex = selectedBox.boxIndex;
-                console.log('Using box.boxIndex:', recordIndex);
-            } else {
-                // Fallback to array-based calculation
-                const pageIndex = boxArrayIndex % recordsPerPage;
-                recordIndex = currentPage * recordsPerPage + pageIndex;
-                console.log('Using array-based calculation - pageIndex:', pageIndex, 'recordIndex:', recordIndex);
-            }
+            // Calculate which record this box represents based on its position and current page
+            // Use the same logic as updateTextBoxWithCSVData for consistency
+            const pageIndex = boxIndex % recordsPerPage; // Get position within current page
+            const recordIndex = currentPage * recordsPerPage + pageIndex;
             
             // Calculate the actual record number (1-based for display)
             const actualRecordNumber = recordIndex + 1;
@@ -2678,7 +2619,7 @@ if (!sessionState.defaultFontFamily) {
                     // Update the main text
                     recordInfoText.textContent = `Record ${actualRecordNumber} of ${sessionState.csvRows.length}`;
                     
-                    console.log('Record info shown for box:', selectedBox, 'Box array index:', boxArrayIndex, 'Record index:', recordIndex, 'Record:', actualRecordNumber, 'of', sessionState.csvRows.length);
+                    console.log('Record info shown for box:', selectedBox, 'Box index:', boxIndex, 'Page index:', pageIndex, 'Record:', actualRecordNumber, 'of', sessionState.csvRows.length);
                 }
             } else {
                 console.log('Record index out of bounds:', recordIndex, 'CSV rows:', sessionState.csvRows.length);
@@ -2737,21 +2678,6 @@ if (!sessionState.defaultFontFamily) {
             const recordInfoDisplay = document.getElementById('recordInfoDisplay');
             if (recordInfoDisplay) {
                 recordInfoDisplay.style.display = 'none';
-            }
-            
-            // Initialize apply mode to "Selected Only" by default
-            setApplyMode('selected');
-            
-            // Add event listener for box count changes
-            const boxCountSelect = document.getElementById('boxCountSelect');
-            if (boxCountSelect) {
-                boxCountSelect.addEventListener('change', function() {
-                    console.log('Box count changed to:', this.value);
-                    // Reset to first page when box count changes
-                    currentPage = 0;
-                    updatePageNavigation();
-                    updateAllBoxesWithCSVData();
-                });
             }
         });
 
@@ -2943,7 +2869,6 @@ if (!sessionState.defaultFontFamily) {
                 boxType: 'text',
                 fieldKey: selectedField,
                 staticText: sampleText,
-                boxIndex: recordIndex, // Track which record this box represents
                 bold: false,
                 italic: false,
                 underline: false,
@@ -2960,7 +2885,6 @@ if (!sessionState.defaultFontFamily) {
             // Add click handler for selection
             textBox.addEventListener('click', function(e) {
                 e.stopPropagation();
-                console.log('Text box clicked, selecting box:', boxData);
                 
                 // Remove selection from all boxes
                 document.querySelectorAll('.draggable-text-box, .draggable-image-box').forEach(box => {
@@ -2972,7 +2896,6 @@ if (!sessionState.defaultFontFamily) {
                 textBox.style.border = 'none';
                 textBox.classList.add('selected');
                 sessionState.selectedBox = boxData;
-                console.log('Selected box set to:', sessionState.selectedBox);
                 updateBoxEditor();
                 updateBoxEditorValues(boxData);
                 
@@ -3118,7 +3041,6 @@ if (!sessionState.defaultFontFamily) {
                 fieldKey: selectedField,
                 imageSource: 'csv',
                 imageUrl: sampleImageUrl,
-                boxIndex: recordIndex, // Track which record this box represents
                 x: boxX,
                 y: boxY,
                 width: 100,
@@ -3544,26 +3466,15 @@ if (!sessionState.defaultFontFamily) {
         // Enhanced Box Management Functions
         function updateBoxEditor() {
             const deleteBoxBtn = document.getElementById('deleteBoxBtn');
-            console.log('updateBoxEditor called, selectedBox:', sessionState.selectedBox);
-            console.log('deleteBoxBtn found:', !!deleteBoxBtn);
-            
             if (sessionState.selectedBox) {
                 // Enable delete button when a box is selected
                 if (deleteBoxBtn) {
                     deleteBoxBtn.disabled = false;
-                    console.log('Delete button enabled');
                 }
             } else {
                 // Disable delete button when no box is selected
                 if (deleteBoxBtn) {
                     deleteBoxBtn.disabled = true;
-                    console.log('Delete button disabled');
-                }
-                
-                // Hide record info when no box is selected
-                const recordInfoDisplay = document.getElementById('recordInfoDisplay');
-                if (recordInfoDisplay) {
-                    recordInfoDisplay.style.display = 'none';
                 }
             }
             
@@ -3699,61 +3610,15 @@ if (!sessionState.defaultFontFamily) {
         function deleteSelectedBox() {
             if (!sessionState.selectedBox) return;
 
-            // Save undo state before deleting (placeholder)
-            // saveUndoState('Delete Box');
-
-            const selectedItem = sessionState.selectedBox;
+            const boxId = sessionState.selectedBox.boxId;
             
-            console.log('=== DELETE DEBUG ===');
-            console.log('Selected item:', selectedItem);
-            console.log('Selected item type:', typeof selectedItem);
-            console.log('Selected item properties:', Object.keys(selectedItem));
-            console.log('sessionState.boxes:', sessionState.boxes);
-            console.log('Boxes length:', sessionState.boxes.length);
-            
-            // Determine if selectedItem is a box object or DOM element
-            let boxObject = null;
-            let domElement = null;
-            
-            if (selectedItem.element && selectedItem.boxId) {
-                // It's a box object with an element property
-                boxObject = selectedItem;
-                domElement = selectedItem.element;
-                console.log('Found box object with element property');
-            } else if (selectedItem.classList && (selectedItem.classList.contains('draggable-text-box') || selectedItem.classList.contains('draggable-image-box'))) {
-                // It's a DOM element, find the corresponding box object
-                domElement = selectedItem;
-                boxObject = sessionState.boxes.find(box => box.element === selectedItem);
-                console.log('Found DOM element, looking for box object:', boxObject);
-            } else {
-                // It's a box object stored directly
-                boxObject = selectedItem;
-                domElement = selectedItem.element || null;
-                console.log('Found box object stored directly');
+            // Remove element from DOM
+            if (sessionState.selectedBox.remove) {
+                sessionState.selectedBox.remove();
             }
             
-            if (boxObject) {
-                console.log('Box object found, removing...');
-                
-                // Remove from DOM if we have a DOM element
-                if (domElement && domElement.remove) {
-                    domElement.remove();
-                    console.log('DOM element removed');
-                } else {
-                    console.log('No DOM element to remove or remove method not available');
-                }
-                
-                // Remove from session state using ID (like MERGE-ONLINE)
-                if (boxObject.boxId) {
-                    sessionState.boxes = sessionState.boxes.filter(box => box.boxId !== boxObject.boxId);
-                } else if (boxObject.id) {
-                    sessionState.boxes = sessionState.boxes.filter(box => box.id !== boxObject.id);
-                } else {
-                    // Remove by direct reference if no ID
-                    sessionState.boxes = sessionState.boxes.filter(box => box !== boxObject);
-                }
-                console.log('Box removed from sessionState.boxes');
-            }
+            // Remove from session state
+            sessionState.boxes = sessionState.boxes.filter(box => box.boxId !== boxId);
             
             // Clear selection and remove selected class from all boxes
             document.querySelectorAll('.draggable-text-box.selected, .draggable-image-box.selected').forEach(box => {
@@ -4032,7 +3897,7 @@ if (!sessionState.defaultFontFamily) {
                     
                     // Handle right edge resize
                     if (resizeHandle.includes('e')) {
-                        newWidth = Math.max(20, initialWidth + deltaX);
+                        newWidth = Math.max(80, initialWidth + deltaX);
                         // Constrain to viewer width
                         const maxWidth = viewerRect.width - newLeft;
                         newWidth = Math.min(newWidth, maxWidth);
@@ -4040,7 +3905,7 @@ if (!sessionState.defaultFontFamily) {
                     
                     // Handle left edge resize
                     if (resizeHandle.includes('w')) {
-                        const proposedWidth = Math.max(20, initialWidth - deltaX);
+                        const proposedWidth = Math.max(80, initialWidth - deltaX);
                         const proposedLeft = newLeft + (initialWidth - proposedWidth);
                         
                         // Constrain to viewer boundaries
@@ -4052,7 +3917,7 @@ if (!sessionState.defaultFontFamily) {
                     
                     // Handle bottom edge resize
                     if (resizeHandle.includes('s')) {
-                        newHeight = Math.max(10, initialHeight + deltaY);
+                        newHeight = Math.max(25, initialHeight + deltaY);
                         // Constrain to viewer height
                         const maxHeight = viewerRect.height - newTop;
                         newHeight = Math.min(newHeight, maxHeight);
@@ -4060,7 +3925,7 @@ if (!sessionState.defaultFontFamily) {
                     
                     // Handle top edge resize
                     if (resizeHandle.includes('n')) {
-                        const proposedHeight = Math.max(10, initialHeight - deltaY);
+                        const proposedHeight = Math.max(25, initialHeight - deltaY);
                         const proposedTop = newTop + (initialHeight - proposedHeight);
                         
                         // Constrain to viewer boundaries
@@ -4305,8 +4170,7 @@ if (!sessionState.defaultFontFamily) {
                 const height = element.offsetHeight;
                 
                 // Only adjust padding to maintain text centering, don't resize font
-                // Allow very small padding for very small text boxes
-                const padding = Math.max(1, Math.min(width, height) / 10);
+                const padding = Math.max(5, Math.min(width, height) / 10);
                 element.style.padding = padding + 'px';
             }
         }
@@ -4429,6 +4293,11 @@ if (!sessionState.defaultFontFamily) {
             
             pdfContent.style.transform = `translate(${currentTransform.x}px, ${currentTransform.y}px) scale(${currentTransform.scale})`;
             
+            // Update zoom display
+            const zoomDisplay = document.getElementById('zoomDisplay');
+            if (zoomDisplay) {
+                zoomDisplay.textContent = Math.round(currentTransform.scale * 100) + '%';
+            }
             
             // Update editor canvas if it exists
             if (editorCanvas) {
@@ -4609,19 +4478,29 @@ if (!sessionState.defaultFontFamily) {
             // Update lock button
             const lockBtn = document.getElementById('pdfLockBtn');
             if (lockBtn) {
-                const lockIcon = lockBtn.querySelector('.lock-icon');
-                const lockText = lockBtn.querySelector('.lock-text');
-                
-                if (lockIcon) {
-                    lockIcon.textContent = pdfLocked ? '🔒' : '🔓';
-                }
-                if (lockText) {
-                    lockText.textContent = pdfLocked ? 'Unlock PDF' : 'Lock PDF';
-                }
+                lockBtn.textContent = pdfLocked ? '🔒' : '🔓';
                 lockBtn.title = pdfLocked ? 'Unlock PDF' : 'Lock PDF';
             }
         }
 
+        function resetView() {
+            currentTransform = { x: 0, y: 0, scale: 1 };
+            updatePDFTransform();
+        }
+
+        function zoomIn() {
+            const newScale = Math.min(5, currentTransform.scale * 1.2);
+            currentTransform.scale = newScale;
+            updatePDFTransform();
+            updateOutlineOnZoom();
+        }
+
+        function zoomOut() {
+            const newScale = Math.max(0.1, currentTransform.scale / 1.2);
+            currentTransform.scale = newScale;
+            updatePDFTransform();
+            updateOutlineOnZoom();
+        }
 
         function updateEditorStatus(message) {
             // Create status element if it doesn't exist
@@ -5708,11 +5587,13 @@ if (!sessionState.defaultFontFamily) {
 
             // Reset UI
             const fileLabel = document.getElementById('fileLabel');
+            const downloadLink = document.getElementById('downloadLink');
             const noPdf = document.getElementById('noPdf');
             const loadingPdf = document.getElementById('loadingPdf');
             const viewer = document.getElementById('viewer');
             
             if (fileLabel) fileLabel.textContent = 'Click to select PDF file';
+            if (downloadLink) downloadLink.style.display = 'none';
             if (noPdf) {
                 noPdf.style.display = 'block';
                 noPdf.innerHTML = `
@@ -5844,45 +5725,34 @@ if (!sessionState.defaultFontFamily) {
                     // Set as default font for new text boxes
                     sessionState.defaultFontFamily = fontName;
                     
+                    // Update existing text boxes that use the old default
+                    sessionState.boxes.forEach(box => {
+                        if (box.boxType === 'text' && (!box.fontFamily || box.fontFamily === 'Arial')) {
+                            box.fontFamily = fontName;
+                            if (box.element) {
+                                box.element.style.fontFamily = `'${fontName}', Arial, sans-serif`;
+                            }
+                        }
+                    });
+                    
                     // Update the format all dropdown to show the new font
                     const formatAllFontFamily = document.getElementById('formatAllFontFamily');
                     if (formatAllFontFamily) {
                         formatAllFontFamily.value = fontName;
                     }
                     
-                    // Apply font based on current mode
-                    if (applyMode === 'all') {
-                        // Update ALL existing text boxes that use the old default
-                        sessionState.boxes.forEach(box => {
-                            if (box.boxType === 'text' && (!box.fontFamily || box.fontFamily === 'Arial')) {
-                                box.fontFamily = fontName;
-                                if (box.element) {
-                                    box.element.style.fontFamily = `'${fontName}', Arial, sans-serif`;
-                                }
-                            }
-                        });
-                        console.log('Font uploaded and applied to ALL text boxes');
-                    } else {
-                        // Only update the selected text box
-                        if (sessionState.selectedBox && sessionState.selectedBox.boxType === 'text') {
-                            sessionState.selectedBox.fontFamily = fontName;
-                            updateTextBoxFont(sessionState.selectedBox);
-                            // Update the dropdown to show the new font
-                            const boxFontFamily = document.getElementById('boxFontFamily');
-                            if (boxFontFamily) {
-                                boxFontFamily.value = fontName;
-                            }
-                            console.log('Font uploaded and applied to SELECTED text box only');
-                        } else {
-                            console.log('Font uploaded but no text box selected in "Selected Only" mode');
+                    // Update current text box if selected
+                    if (sessionState.selectedBox && sessionState.selectedBox.boxType === 'text') {
+                        sessionState.selectedBox.fontFamily = fontName;
+                        updateTextBoxFont(sessionState.selectedBox);
+                        // Update the dropdown to show the new font
+                        const boxFontFamily = document.getElementById('boxFontFamily');
+                        if (boxFontFamily) {
+                            boxFontFamily.value = fontName;
                         }
                     }
                     
-                    if (applyMode === 'all') {
-                        status.textContent = `Font "${fontName}" loaded successfully and applied to all text boxes!`;
-                    } else {
-                        status.textContent = `Font "${fontName}" loaded successfully and applied to selected text box!`;
-                    }
+                    status.textContent = `Font "${fontName}" loaded successfully and applied to text boxes!`;
                     status.className = 'font-status success';
                     
                 } catch (error) {
@@ -5999,14 +5869,6 @@ if (!sessionState.defaultFontFamily) {
         function updateTextBoxFont(box) {
             if (!box || box.type !== 'text') return;
             
-            console.log('updateTextBoxFont called for box:', box, 'with font:', box.fontFamily);
-            
-            // Check if we're in "Selected Only" mode and this is not the selected box
-            if (applyMode === 'selected' && sessionState.selectedBox && box !== sessionState.selectedBox) {
-                console.log('Skipping font update for non-selected box in "Selected Only" mode');
-                return;
-            }
-            
             const element = box.element;
             if (element) {
                 element.style.fontFamily = `'${box.fontFamily}', Arial, sans-serif`;
@@ -6038,7 +5900,6 @@ if (!sessionState.defaultFontFamily) {
         }
 
         async function updateAllBoxesWithCSVData() {
-            console.log('updateAllBoxesWithCSVData called - this will update ALL boxes');
             console.log('Updating all boxes with CSV data. Current page:', currentPage, 'Records per page:', recordsPerPage);
             console.log('Total boxes:', sessionState.boxes.length);
             console.log('CSV data available:', sessionState.csvRows ? sessionState.csvRows.length : 0, 'rows');
@@ -6290,8 +6151,8 @@ if (!sessionState.defaultFontFamily) {
             
             // Calculate new box dimensions with some padding
             const padding = 10;
-            const newWidth = Math.max(20, textWidth + padding * 2);
-            const newHeight = Math.max(10, textHeight + padding * 2);
+            const newWidth = Math.max(80, textWidth + padding * 2);
+            const newHeight = Math.max(25, textHeight + padding * 2);
             
             // Update the box dimensions
             element.style.width = newWidth + 'px';
