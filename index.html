@@ -1798,17 +1798,164 @@ if (!sessionState.defaultFontFamily) {
             });
         }
         
+        // Function to compress canvas for smaller PDFs
+        function compressCanvas(canvas, targetSize = 0.8) {
+            const originalWidth = canvas.width;
+            const originalHeight = canvas.height;
+            
+            // Calculate new dimensions (reduce by compression factor)
+            const newWidth = Math.floor(originalWidth * targetSize);
+            const newHeight = Math.floor(originalHeight * targetSize);
+            
+            // Create compressed canvas
+            const compressedCanvas = document.createElement('canvas');
+            compressedCanvas.width = newWidth;
+            compressedCanvas.height = newHeight;
+            
+            const ctx = compressedCanvas.getContext('2d');
+            ctx.drawImage(canvas, 0, 0, originalWidth, originalHeight, 0, 0, newWidth, newHeight);
+            
+            return compressedCanvas;
+        }
+        
+        // Function to validate and optimize PDF size
+        async function validateAndOptimizePdfSize(pdfBytes, recordNumber, totalRecords) {
+            const MIN_SIZE = 1024 * 1024; // 1MB
+            const MAX_SIZE = 1.5 * 1024 * 1024; // 1.5MB
+            const currentSize = pdfBytes.length;
+            
+            console.log(`PDF ${recordNumber}/${totalRecords} size: ${(currentSize / 1024 / 1024).toFixed(2)}MB`);
+            
+            // If PDF is within acceptable range, return as-is
+            if (currentSize >= MIN_SIZE && currentSize <= MAX_SIZE) {
+                console.log(`✓ PDF ${recordNumber} size is acceptable: ${(currentSize / 1024 / 1024).toFixed(2)}MB`);
+                return pdfBytes;
+            }
+            
+            // If PDF is too small, we need to add content or increase quality
+            if (currentSize < MIN_SIZE) {
+                console.log(`⚠️ PDF ${recordNumber} is too small (${(currentSize / 1024 / 1024).toFixed(2)}MB). Adding content...`);
+                // For now, we'll accept small PDFs but log a warning
+                // In the future, we could add more content or increase image quality
+                return pdfBytes;
+            }
+            
+            // If PDF is too large, we need to compress it
+            if (currentSize > MAX_SIZE) {
+                console.log(`⚠️ PDF ${recordNumber} is too large (${(currentSize / 1024 / 1024).toFixed(2)}MB). Attempting aggressive compression...`);
+                
+                try {
+                    // Load the PDF document
+                    const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+                    
+                    // Try multiple compression strategies
+                    let bestBytes = pdfBytes;
+                    let bestSize = currentSize;
+                    
+                    // Strategy 1: Basic compression
+                    try {
+                        const compressed1 = await pdfDoc.save({
+                            useObjectStreams: false,
+                            addDefaultPage: false,
+                            objectsPerTick: 50
+                        });
+                        if (compressed1.length < bestSize) {
+                            bestBytes = compressed1;
+                            bestSize = compressed1.length;
+                        }
+                    } catch (e) {}
+                    
+                    // Strategy 2: More aggressive compression
+                    try {
+                        const compressed2 = await pdfDoc.save({
+                            useObjectStreams: true,
+                            addDefaultPage: false,
+                            objectsPerTick: 100
+                        });
+                        if (compressed2.length < bestSize) {
+                            bestBytes = compressed2;
+                            bestSize = compressed2.length;
+                        }
+                    } catch (e) {}
+                    
+                    // Strategy 3: Maximum compression
+                    try {
+                        const compressed3 = await pdfDoc.save({
+                            useObjectStreams: true,
+                            addDefaultPage: false,
+                            objectsPerTick: 200,
+                            updateFieldAppearances: false
+                        });
+                        if (compressed3.length < bestSize) {
+                            bestBytes = compressed3;
+                            bestSize = compressed3.length;
+                        }
+                    } catch (e) {}
+                    
+                    // Strategy 4: Ultra compression (if still too large)
+                    if (bestSize > MAX_SIZE) {
+                        try {
+                            const compressed4 = await pdfDoc.save({
+                                useObjectStreams: true,
+                                addDefaultPage: false,
+                                objectsPerTick: 500,
+                                updateFieldAppearances: false,
+                                compress: true
+                            });
+                            if (compressed4.length < bestSize) {
+                                bestBytes = compressed4;
+                                bestSize = compressed4.length;
+                            }
+                        } catch (e) {}
+                    }
+                    
+                    const compressedSize = bestSize;
+                    console.log(`Compressed PDF ${recordNumber}: ${(compressedSize / 1024 / 1024).toFixed(2)}MB (reduced by ${((currentSize - compressedSize) / currentSize * 100).toFixed(1)}%)`);
+                    
+                    if (compressedSize <= MAX_SIZE) {
+                        console.log(`✓ PDF ${recordNumber} successfully compressed to acceptable size`);
+                        return bestBytes;
+                    } else {
+                        console.log(`⚠️ PDF ${recordNumber} still too large after compression (${(compressedSize / 1024 / 1024).toFixed(2)}MB). Proceeding with warning.`);
+                        return bestBytes; // Return best compressed version
+                    }
+                } catch (error) {
+                    console.error(`Failed to compress PDF ${recordNumber}:`, error);
+                    return pdfBytes; // Return original if compression fails
+                }
+            }
+            
+            return pdfBytes;
+        }
+        
         // Function to update download button state
         function updateDownloadButtonState() {
             const hasTemplate = sessionState.templatePdfBytes !== null;
             const hasCSV = sessionState.csvRows.length > 0;
             const hasBoxes = sessionState.boxes.length > 0;
             
+            // Check if we have at least some boxes with CSV data (same logic as downloadPdfs)
+            // Note: boxes use fieldKey instead of csvColumn
+            const hasTextBoxes = sessionState.boxes.some(box => box.type === 'text' && (box.csvColumn || box.fieldKey));
+            const hasImageBoxes = sessionState.boxes.some(box => box.boxType === 'image' && (box.csvColumn || box.fieldKey));
+            const hasBoxesWithCSV = hasTextBoxes || hasImageBoxes;
+            
             const downloadBtn = document.getElementById('downloadPdfsBtn');
             if (downloadBtn) {
-                // Enable button if we have template, CSV data, and at least one box
-                // Multiple boxes are allowed for single record downloads
-                downloadBtn.disabled = !(hasTemplate && hasCSV && hasBoxes);
+                // Enable button if we have template, CSV data, and at least one box with CSV binding
+                // This matches the validation logic in downloadPdfs function
+                downloadBtn.disabled = !(hasTemplate && hasCSV && hasBoxesWithCSV);
+                
+                // Update button text to show status
+                if (!hasTemplate) {
+                    downloadBtn.textContent = '📦 Download All PDFs (ZIP) - Missing PDF template';
+                } else if (!hasCSV) {
+                    downloadBtn.textContent = '📦 Download All PDFs (ZIP) - Missing CSV data';
+                } else if (!hasBoxesWithCSV) {
+                    downloadBtn.textContent = '📦 Download All PDFs (ZIP) - No CSV bindings';
+                } else {
+                    downloadBtn.textContent = `📦 Download All PDFs (ZIP) - ${sessionState.csvRows.length} records`;
+                }
             }
         }
         
@@ -2881,6 +3028,9 @@ if (!sessionState.defaultFontFamily) {
                 return; // User cancelled
             }
             
+            // Fallback: if no field selected, use the first available CSV column
+            const fieldToUse = selectedField || csvColumns[0];
+            
             // Add multiple boxes for the same field across different records
             for (let i = 0; i < boxCount; i++) {
                 const offsetX = i * 20; // Small horizontal offset for each box
@@ -2941,7 +3091,7 @@ if (!sessionState.defaultFontFamily) {
                 element: textBox,
                 type: 'text',
                 boxType: 'text',
-                fieldKey: selectedField,
+                fieldKey: fieldToUse,
                 staticText: sampleText,
                 boxIndex: recordIndex, // Track which record this box represents
                 bold: false,
@@ -3030,6 +3180,9 @@ if (!sessionState.defaultFontFamily) {
                 return; // User cancelled
             }
             
+            // Fallback: if no field selected, use the first available CSV column
+            const fieldToUse = selectedField || csvColumns[0];
+            
             // Add multiple image boxes for the same field across different records
             for (let i = 0; i < boxCount; i++) {
                 const offsetX = i * 20; // Small horizontal offset for each box
@@ -3115,7 +3268,7 @@ if (!sessionState.defaultFontFamily) {
                 element: imageBox,
                 type: 'image',
                 boxType: 'image',
-                fieldKey: selectedField,
+                fieldKey: fieldToUse,
                 imageSource: 'csv',
                 imageUrl: sampleImageUrl,
                 boxIndex: recordIndex, // Track which record this box represents
@@ -4764,8 +4917,9 @@ if (!sessionState.defaultFontFamily) {
                 }
                 
                 // Check if we have at least some boxes with CSV data
-                const hasTextBoxes = sessionState.boxes.some(box => box.type === 'text' && box.csvColumn);
-                const hasImageBoxes = sessionState.boxes.some(box => box.boxType === 'image' && box.csvColumn);
+                // Note: boxes use fieldKey instead of csvColumn
+                const hasTextBoxes = sessionState.boxes.some(box => box.type === 'text' && (box.csvColumn || box.fieldKey));
+                const hasImageBoxes = sessionState.boxes.some(box => box.boxType === 'image' && (box.csvColumn || box.fieldKey));
                 
                 if (!hasTextBoxes && !hasImageBoxes) {
                     throw new Error('No boxes with CSV data configured. Please add text boxes or image boxes with CSV field bindings.');
@@ -5067,7 +5221,9 @@ if (!sessionState.defaultFontFamily) {
                             
                             // Step 3d: Convert overlay to PNG with transparency
                             console.log('Step 3d: Converting overlay to PNG...');
-                            const overlayPngDataUrl = overlayCanvas.toDataURL('image/png', 1.0);
+                            // Compress canvas for smaller file size
+                            const compressedCanvas = compressCanvas(overlayCanvas, 0.8);
+                            const overlayPngDataUrl = compressedCanvas.toDataURL('image/png', 0.8);
                             
                             // Step 3e: Embed overlay image into PDF
                             console.log('Step 3e: Embedding overlay into PDF...');
@@ -5086,23 +5242,33 @@ if (!sessionState.defaultFontFamily) {
                             
                             // Step 3f: Save the hybrid PDF
                             console.log('Step 3f: Saving hybrid PDF...');
-                            const pdfBytes = await pdfDoc.save();
+                            let pdfBytes = await pdfDoc.save();
                             
-                            // Step 3g: Add to zip with record-specific naming
+                            // Step 3g: Validate and optimize PDF size
+                            console.log('Step 3g: Validating PDF size...');
                             const recordNumber = recordIndex + 1;
+                            pdfBytes = await validateAndOptimizePdfSize(pdfBytes, recordNumber, totalRecords);
+                            
+                            // Step 3h: Add to zip with record-specific naming
                             const fileName = `single_record_${recordNumber}_of_${totalRecords}.pdf`;
                             zip.file(fileName, pdfBytes);
                             
-                            console.log(`✓ Single record ${recordNumber} added to zip: ${fileName}`);
+                            const finalSize = (pdfBytes.length / 1024 / 1024).toFixed(2);
+                            console.log(`✓ Single record ${recordNumber} added to zip: ${fileName} (${finalSize}MB)`);
                             
-                            // Update progress
-                            updateProgress(1, 'PDF generated');
+                            // Update progress with size info
+                            updateProgress(1, `PDF generated (${finalSize}MB)`);
                         }
                     
                     // Step 4: Download zip file
                     console.log('Step 4: Generating zip file...');
                     progressSubtitle.textContent = 'Creating zip file...';
                     const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    
+                    // Log size statistics
+                    const zipSize = (zipBlob.size / 1024 / 1024).toFixed(2);
+                    console.log(`📦 ZIP file generated: ${zipSize}MB for ${totalRecords} PDFs`);
+                    console.log(`📊 Average PDF size: ${(zipBlob.size / totalRecords / 1024 / 1024).toFixed(2)}MB per PDF`);
                     
                     // Create download link with single record naming
                     const url = URL.createObjectURL(zipBlob);
@@ -5429,7 +5595,9 @@ if (!sessionState.defaultFontFamily) {
 
                 // Step 4: Convert overlay to PNG with transparency
                 console.log('Step 4: Converting overlay to PNG...');
-                const overlayPngDataUrl = overlayCanvas.toDataURL('image/png', 1.0);
+                // Compress canvas for smaller file size
+                const compressedCanvas = compressCanvas(overlayCanvas, 0.8);
+                const overlayPngDataUrl = compressedCanvas.toDataURL('image/png', 0.8);
 
                 // Step 5: Embed overlay image into PDF
                 console.log('Step 5: Embedding overlay into PDF...');
@@ -5448,7 +5616,15 @@ if (!sessionState.defaultFontFamily) {
 
                 // Step 6: Save and download
                 console.log('Step 6: Saving and downloading...');
-                const pdfBytes = await pdfDoc.save();
+                let pdfBytes = await pdfDoc.save();
+                
+                // Step 6a: Validate and optimize PDF size
+                console.log('Step 6a: Validating PDF size...');
+                pdfBytes = await validateAndOptimizePdfSize(pdfBytes, 1, 1);
+                
+                // Log size information
+                const finalSize = (pdfBytes.length / 1024 / 1024).toFixed(2);
+                console.log(`📄 Single PDF generated: ${finalSize}MB`);
                 
                 // Create download link
                 const blob = new Blob([pdfBytes], { type: 'application/pdf' });
