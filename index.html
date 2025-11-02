@@ -1971,14 +1971,21 @@
             overflow: visible !important;
         }
 
-        .draggable-text-box.text-strikethrough::after {
+        /* Wrap text content in span for strikethrough positioning */
+        .draggable-text-box.text-strikethrough > .strikethrough-text-wrapper {
+            position: relative;
+            display: inline-block;
+            /* Width will be determined by text content, not box width */
+        }
+
+        .draggable-text-box.text-strikethrough > .strikethrough-text-wrapper::after {
             content: '';
             position: absolute;
-            left: 5px;
-            right: 5px;
+            left: 0;
+            right: 0;
             top: 50%;
             transform: translateY(-50%);
-            height: 2px;
+            height: 0.1em; /* Scales with font size using em unit */
             background-color: currentColor;
             pointer-events: none;
             z-index: 9999;
@@ -3444,9 +3451,11 @@ if (!sessionState.defaultFontFamily) {
                     if (isStrikethrough) {
                         element.classList.add('text-strikethrough');
                         element.style.overflow = 'visible';
+                        updateStrikethroughWrapper(element, true);
                     } else {
                         element.classList.remove('text-strikethrough');
                         element.style.overflow = '';
+                        updateStrikethroughWrapper(element, false);
                     }
                     
                     // Update box data in session state
@@ -3488,6 +3497,36 @@ if (!sessionState.defaultFontFamily) {
         }
 
         // Function to apply live formatting instantly
+        // Helper function to wrap/unwrap text for strikethrough
+        function updateStrikethroughWrapper(element, shouldHaveStrikethrough) {
+            const wrapper = element.querySelector('.strikethrough-text-wrapper');
+            
+            if (shouldHaveStrikethrough) {
+                // Need to add strikethrough wrapper
+                if (!wrapper) {
+                    // Get all text nodes and existing content
+                    const textContent = element.textContent || element.innerText;
+                    // Clear element
+                    element.textContent = '';
+                    // Create wrapper span
+                    const span = document.createElement('span');
+                    span.className = 'strikethrough-text-wrapper';
+                    span.textContent = textContent;
+                    element.appendChild(span);
+                }
+            } else {
+                // Need to remove strikethrough wrapper
+                if (wrapper) {
+                    // Get the text content from the wrapper
+                    const textContent = wrapper.textContent || wrapper.innerText;
+                    // Remove the wrapper
+                    wrapper.parentNode.removeChild(wrapper);
+                    // Restore text content directly
+                    element.textContent = textContent;
+                }
+            }
+        }
+
         function applyLiveFormatting() {
             console.log('applyLiveFormatting called');
             console.log('Current applyMode:', applyMode);
@@ -3553,9 +3592,11 @@ if (!sessionState.defaultFontFamily) {
                     if (isStrikethrough) {
                         element.classList.add('text-strikethrough');
                         element.style.overflow = 'visible';
+                        updateStrikethroughWrapper(element, true);
                     } else {
                         element.classList.remove('text-strikethrough');
                         element.style.overflow = '';
+                        updateStrikethroughWrapper(element, false);
                     }
                     
                     // Update box data in session state
@@ -7603,8 +7644,12 @@ if (!sessionState.defaultFontFamily) {
                 // Handle strikethrough
                 if (box.strikethrough) {
                     element.classList.add('text-strikethrough');
+                    element.style.overflow = 'visible';
+                    updateStrikethroughWrapper(element, true);
                 } else {
                     element.classList.remove('text-strikethrough');
+                    element.style.overflow = '';
+                    updateStrikethroughWrapper(element, false);
                 }
                 
                 // Set text alignment and flex properties for consistent positioning
