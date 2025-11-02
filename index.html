@@ -1984,24 +1984,23 @@
             background: #4caf50;
         }
 
-        /* Thick Slanted Strikethrough Styling */
-        .thick-slanted-strikethrough {
+        /* Strikethrough Styling */
+        .text-strikethrough {
             position: relative;
             text-decoration: none !important;
         }
 
-        .thick-slanted-strikethrough::after {
+        .text-strikethrough::after {
             content: '';
             position: absolute;
             left: 0;
             right: 0;
-            top: calc(50% - 0.05em); /* Center vertically, accounting for line height */
-            height: 0.1em; /* Thick line - adjust as needed */
+            top: 50%;
+            height: 2px;
             background-color: currentColor;
-            transform: rotate(-12deg); /* Slanted angle */
-            transform-origin: center center;
+            transform: translateY(-50%);
             pointer-events: none;
-            z-index: 999;
+            z-index: 10;
         }
 
     </style>
@@ -3460,11 +3459,11 @@ if (!sessionState.defaultFontFamily) {
                     // Handle underline (standard CSS)
                     element.style.textDecoration = isUnderline ? 'underline' : 'none';
                     
-                    // Handle strikethrough with custom thick slanted effect
+                    // Handle strikethrough
                     if (isStrikethrough) {
-                        element.classList.add('thick-slanted-strikethrough');
+                        element.classList.add('text-strikethrough');
                     } else {
-                        element.classList.remove('thick-slanted-strikethrough');
+                        element.classList.remove('text-strikethrough');
                     }
                     
                     // Update box data in session state
@@ -3567,11 +3566,11 @@ if (!sessionState.defaultFontFamily) {
                     // Handle underline (standard CSS)
                     element.style.textDecoration = isUnderline ? 'underline' : 'none';
                     
-                    // Handle strikethrough with custom thick slanted effect
+                    // Handle strikethrough
                     if (isStrikethrough) {
-                        element.classList.add('thick-slanted-strikethrough');
+                        element.classList.add('text-strikethrough');
                     } else {
-                        element.classList.remove('thick-slanted-strikethrough');
+                        element.classList.remove('text-strikethrough');
                     }
                     
                     // Update box data in session state
@@ -7616,11 +7615,11 @@ if (!sessionState.defaultFontFamily) {
                 // Handle underline (standard CSS)
                 element.style.textDecoration = box.underline ? 'underline' : 'none';
                 
-                // Handle strikethrough with custom thick slanted effect
+                // Handle strikethrough
                 if (box.strikethrough) {
-                    element.classList.add('thick-slanted-strikethrough');
+                    element.classList.add('text-strikethrough');
                 } else {
-                    element.classList.remove('thick-slanted-strikethrough');
+                    element.classList.remove('text-strikethrough');
                 }
                 
                 // Set text alignment and flex properties for consistent positioning
