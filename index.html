@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Editor</title>
+    <title>DataMerge - Professional PDF Data Merging Tool | CSV to PDF Generator</title>
+    <meta name="description" content="DataMerge is the ultimate PDF data merging tool. Convert CSV data to professional PDFs with drag-and-drop interface. Perfect for certificates, invoices, and bulk document generation.">
+    <meta name="keywords" content="PDF merge, CSV to PDF, data merge, bulk PDF generation, document automation, PDF generator, CSV converter, merge data, PDF template, certificate generator, invoice generator, mail merge, document processing">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -13,6 +15,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" id="jszip-cdn"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -26,6 +29,505 @@
             height: 100vh;
             overflow: hidden;
             padding: 20px;
+        }
+
+        /* Landing Page Styles */
+        .landing-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 10000;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .landing-page.show {
+            display: block;
+        }
+
+        .landing-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .landing-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10001;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .landing-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .landing-logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .landing-nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .landing-nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .landing-nav-links a:hover {
+            color: #667eea;
+        }
+
+        .landing-cta-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .landing-cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .landing-hero {
+            padding: 120px 0 80px;
+            text-align: center;
+            color: white;
+        }
+
+        .landing-hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .landing-hero .subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .landing-hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 3rem;
+        }
+
+        .landing-btn-primary {
+            background: white;
+            color: #667eea;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            border: none;
+        }
+
+        .landing-btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .landing-btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .landing-btn-secondary:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        .landing-features {
+            background: white;
+            padding: 80px 0;
+        }
+
+        .landing-section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            color: #333;
+        }
+
+        .landing-features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .landing-feature-card {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .landing-feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .landing-feature-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .landing-feature-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .landing-feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .landing-how-it-works {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 80px 0;
+        }
+
+        .landing-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .landing-step {
+            text-align: center;
+            position: relative;
+        }
+
+        .landing-step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 auto 1rem;
+        }
+
+        .landing-step h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .landing-step p {
+            color: #666;
+        }
+
+        .landing-benefits {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 0;
+        }
+
+        .landing-benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .landing-benefit-item {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .landing-benefit-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        .landing-benefit-item h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .landing-benefit-item p {
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .landing-footer {
+            background: #333;
+            color: white;
+            padding: 40px 0 20px;
+            text-align: center;
+        }
+
+        .landing-footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .landing-footer-section h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .landing-footer-section ul {
+            list-style: none;
+        }
+
+        .landing-footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .landing-footer-section ul li a {
+            color: #ccc;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .landing-footer-section ul li a:hover {
+            color: #667eea;
+        }
+
+        .landing-footer-bottom {
+            border-top: 1px solid #555;
+            padding-top: 1rem;
+            color: #999;
+        }
+
+        /* Privacy Policy Modal */
+        .privacy-modal {
+            display: none;
+            position: fixed;
+            z-index: 10002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .privacy-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .privacy-modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .privacy-modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .privacy-modal-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .privacy-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .privacy-close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .privacy-modal-body {
+            padding: 30px;
+            line-height: 1.6;
+        }
+
+        .privacy-modal-body h3 {
+            color: #667eea;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 25px 0 10px 0;
+        }
+
+        .privacy-modal-body h3:first-child {
+            margin-top: 0;
+        }
+
+        .privacy-modal-body p {
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .privacy-modal-body strong {
+            color: #333;
+        }
+
+        /* Scrollbar styling for modal */
+        .privacy-modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .privacy-modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .privacy-modal-content::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .privacy-modal-content::-webkit-scrollbar-thumb:hover {
+            background: #5a6fd8;
+        }
+
+        @media (max-width: 768px) {
+            .landing-nav-links {
+                display: none;
+            }
+            
+            .landing-hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .landing-hero .subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .landing-hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .landing-btn-primary, .landing-btn-secondary {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .landing-features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .landing-steps {
+                grid-template-columns: 1fr;
+            }
+            
+            .privacy-modal-content {
+                width: 95%;
+                margin: 2% auto;
+                max-height: 90vh;
+            }
+            
+            .privacy-modal-header {
+                padding: 15px 20px;
+            }
+            
+            .privacy-modal-header h2 {
+                font-size: 1.5rem;
+            }
+            
+            .privacy-modal-body {
+                padding: 20px;
+            }
+            
+            .privacy-modal-body h3 {
+                font-size: 1.2rem;
+            }
         }
 
         .main-container {
@@ -1139,10 +1641,256 @@
             background: #28a745;
         }
 
+        /* Thick Slanted Strikethrough Styling */
+        .thick-slanted-strikethrough {
+            position: relative;
+            text-decoration: none !important;
+        }
+
+        .thick-slanted-strikethrough::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(50% - 0.05em); /* Center vertically, accounting for line height */
+            height: 0.1em; /* Thick line - adjust as needed */
+            background-color: currentColor;
+            transform: rotate(-12deg); /* Slanted angle */
+            transform-origin: center center;
+            pointer-events: none;
+            z-index: 999;
+        }
 
     </style>
 </head>
 <body>
+    <!-- Landing Page -->
+    <div class="landing-page" id="landingPage">
+        <header class="landing-header">
+            <nav class="landing-nav landing-container">
+                <a href="#" class="landing-logo">DataMerge</a>
+                <ul class="landing-nav-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#benefits">Benefits</a></li>
+                </ul>
+                <button class="landing-cta-button" onclick="showApp()">Get Started Free</button>
+            </nav>
+        </header>
+
+        <section class="landing-hero">
+            <div class="landing-container">
+                <h1>DataMerge</h1>
+                <p class="subtitle">The Ultimate PDF Data Merging Tool - Convert CSV Data to Professional PDFs with Drag-and-Drop Simplicity</p>
+                <div class="landing-hero-buttons">
+                    <button class="landing-btn-primary" onclick="showApp()">
+                        <i class="fas fa-play"></i> Try DataMerge Now
+                    </button>
+                    <button class="landing-btn-secondary" onclick="scrollToSection('how-it-works')">
+                        <i class="fas fa-info-circle"></i> Learn More
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-features" id="features">
+            <div class="landing-container">
+                <h2 class="landing-section-title">Powerful Features for Professional Document Generation</h2>
+                <div class="landing-features-grid">
+                    <div class="landing-feature-card">
+                        <div class="landing-feature-icon">
+                            <i class="fas fa-drag"></i>
+                        </div>
+                        <h3>Drag & Drop Interface</h3>
+                        <p>Intuitive drag-and-drop interface makes it easy to position text and image elements on your PDF templates. No technical skills required.</p>
+                    </div>
+                    <div class="landing-feature-card">
+                        <div class="landing-feature-icon">
+                            <i class="fas fa-file-csv"></i>
+                        </div>
+                        <h3>CSV Data Integration</h3>
+                        <p>Seamlessly import CSV data and automatically populate your PDF templates. Perfect for bulk document generation and mail merge operations.</p>
+                    </div>
+                    <div class="landing-feature-card">
+                        <div class="landing-feature-icon">
+                            <i class="fas fa-images"></i>
+                        </div>
+                        <h3>Image Support</h3>
+                        <p>Add and position images dynamically from your CSV data. Perfect for certificates, ID cards, and personalized documents.</p>
+                    </div>
+                    <div class="landing-feature-card">
+                        <div class="landing-feature-icon">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <h3>Bulk Download</h3>
+                        <p>Generate hundreds of PDFs at once and download them as a convenient ZIP file. Optimized for speed and efficiency.</p>
+                    </div>
+                    <div class="landing-feature-card">
+                        <div class="landing-feature-icon">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                        <h3>Custom Styling</h3>
+                        <p>Customize fonts, colors, and positioning to match your brand. Create professional-looking documents that impress your clients.</p>
+                    </div>
+                    <div class="landing-feature-card">
+                        <div class="landing-feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>Secure & Private</h3>
+                        <p>Your data stays secure. All processing happens in your browser - no data is sent to our servers. Complete privacy guaranteed.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-how-it-works" id="how-it-works">
+            <div class="landing-container">
+                <h2 class="landing-section-title">How DataMerge Works</h2>
+                <div class="landing-steps">
+                    <div class="landing-step">
+                        <div class="landing-step-number">1</div>
+                        <h3>Upload Your Template</h3>
+                        <p>Upload your PDF template or start with a blank page. Our tool supports any PDF format.</p>
+                    </div>
+                    <div class="landing-step">
+                        <div class="landing-step-number">2</div>
+                        <h3>Add Your Data</h3>
+                        <p>Upload your CSV file with all the data you want to merge. Our tool automatically detects columns.</p>
+                    </div>
+                    <div class="landing-step">
+                        <div class="landing-step-number">3</div>
+                        <h3>Design Your Layout</h3>
+                        <p>Drag and drop text boxes and image placeholders onto your template. Position them exactly where you want.</p>
+                    </div>
+                    <div class="landing-step">
+                        <div class="landing-step-number">4</div>
+                        <h3>Generate & Download</h3>
+                        <p>Click generate and download all your personalized PDFs in a single ZIP file. It's that simple!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-benefits" id="benefits">
+            <div class="landing-container">
+                <h2 class="landing-section-title">Why Choose DataMerge?</h2>
+                <div class="landing-benefits-grid">
+                    <div class="landing-benefit-item">
+                        <div class="landing-benefit-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3>Save Time</h3>
+                        <p>Generate hundreds of personalized documents in minutes instead of hours. Automate your document workflow.</p>
+                    </div>
+                    <div class="landing-benefit-item">
+                        <div class="landing-benefit-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <h3>Reduce Costs</h3>
+                        <p>Eliminate the need for expensive document automation software. DataMerge is completely free to use.</p>
+                    </div>
+                    <div class="landing-benefit-item">
+                        <div class="landing-benefit-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3>Perfect for Teams</h3>
+                        <p>Ideal for HR departments, marketing teams, and businesses that need to generate personalized documents at scale.</p>
+                    </div>
+                    <div class="landing-benefit-item">
+                        <div class="landing-benefit-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h3>Works Everywhere</h3>
+                        <p>Runs in any modern web browser. No software installation required. Access from any device, anywhere.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Privacy Policy Modal -->
+        <div class="privacy-modal" id="privacyModal">
+            <div class="privacy-modal-content">
+                <div class="privacy-modal-header">
+                    <h2>Privacy Policy</h2>
+                    <button class="privacy-close" onclick="closePrivacyModal()">&times;</button>
+                </div>
+                <div class="privacy-modal-body">
+                    <p><strong>Last Updated:</strong> December 2024</p>
+                    
+                    <h3>1. Information We Collect</h3>
+                    <p>DataMerge is designed with privacy in mind. We do not collect, store, or transmit any of your personal data or files. All processing happens locally in your browser.</p>
+                    
+                    <h3>2. How We Use Your Information</h3>
+                    <p>Since we don't collect any personal information, there is no data to use, share, or sell. Your files and data remain completely private and secure on your device.</p>
+                    
+                    <h3>3. Data Processing</h3>
+                    <p>All PDF generation, CSV processing, and document merging occurs entirely within your web browser. No data is sent to our servers or any third-party services.</p>
+                    
+                    <h3>4. Cookies and Tracking</h3>
+                    <p>We may use essential cookies to improve your experience, but we do not use tracking cookies or collect analytics data about your usage.</p>
+                    
+                    <h3>5. Third-Party Services</h3>
+                    <p>DataMerge uses only essential third-party libraries (PDF.js, PDF-lib) that operate locally in your browser. No data is transmitted to these services.</p>
+                    
+                    <h3>6. Data Security</h3>
+                    <p>Your data is secure because it never leaves your device. All processing is done locally, ensuring complete privacy and security.</p>
+                    
+                    <h3>7. Children's Privacy</h3>
+                    <p>DataMerge is safe for users of all ages. Since we don't collect any personal information, there are no privacy concerns for children.</p>
+                    
+                    <h3>8. Changes to This Policy</h3>
+                    <p>We may update this privacy policy from time to time. Any changes will be posted on this page with an updated revision date.</p>
+                    
+                    <h3>9. Contact Us</h3>
+                    <p>If you have any questions about this privacy policy, please contact us through our website.</p>
+                    
+                    <h3>10. Compliance</h3>
+                    <p>DataMerge complies with GDPR, CCPA, and other privacy regulations by design - we simply don't collect any personal data to begin with.</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="landing-footer">
+            <div class="landing-container">
+                <div class="landing-footer-content">
+                    <div class="landing-footer-section">
+                        <h3>DataMerge</h3>
+                        <p>The ultimate PDF data merging tool for professionals. Convert CSV data to beautiful PDFs with ease.</p>
+                    </div>
+                    <div class="landing-footer-section">
+                        <h3>Features</h3>
+                        <ul>
+                            <li><a href="#features">PDF Data Merging</a></li>
+                            <li><a href="#features">CSV to PDF</a></li>
+                            <li><a href="#features">Bulk Generation</a></li>
+                            <li><a href="#features">Drag & Drop</a></li>
+                        </ul>
+                    </div>
+                    <div class="landing-footer-section">
+                        <h3>Use Cases</h3>
+                        <ul>
+                            <li><a href="#">Certificate Generation</a></li>
+                            <li><a href="#">Invoice Creation</a></li>
+                            <li><a href="#">ID Card Printing</a></li>
+                            <li><a href="#">Mail Merge</a></li>
+                        </ul>
+                    </div>
+                    <div class="landing-footer-section">
+                        <h3>Legal</h3>
+                        <ul>
+                            <li><a href="#" onclick="openPrivacyModal()">Privacy Policy</a></li>
+                            <li><a href="#">Terms of Service</a></li>
+                            <li><a href="#">Contact Us</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="landing-footer-bottom">
+                    <p>&copy; 2024 DataMerge. All rights reserved. | Professional PDF Data Merging Tool</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
     <!-- Image Loading Progress Overlay -->
     <div class="image-loading-overlay" id="imageLoadingOverlay">
         <div class="image-loading-content">
@@ -1163,7 +1911,12 @@
     <div class="main-container">
         <div class="sidebar">
             <div class="sidebar-content">
-
+                <!-- Back to Landing Button -->
+                <div class="section" style="margin-bottom: 20px;">
+                    <button onclick="showLanding()" style="width: 100%; padding: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: transform 0.2s ease;">
+                        <i class="fas fa-home"></i> Back to Landing Page
+                    </button>
+                </div>
 
                 <!-- File Uploads -->
                 <div class="section">
@@ -1191,19 +1944,19 @@
                     
                     <!-- Box Count Selection -->
                     <div class="form-group" style="margin-top: 10px;">
-                        <label>Number of Boxes:</label>
+                        <label>Number of Records:</label>
                         <select id="boxCountSelect" class="form-control">
-                            <option value="1">1 Box</option>
-                            <option value="2">2 Boxes</option>
-                            <option value="3">3 Boxes</option>
-                            <option value="4">4 Boxes</option>
-                            <option value="5">5 Boxes</option>
-                            <option value="6">6 Boxes</option>
-                            <option value="8">8 Boxes</option>
-                            <option value="10">10 Boxes</option>
-                            <option value="12">12 Boxes</option>
-                            <option value="15">15 Boxes</option>
-                            <option value="20">20 Boxes</option>
+                            <option value="1">1 Record</option>
+                            <option value="2">2 Records</option>
+                            <option value="3">3 Records</option>
+                            <option value="4">4 Records</option>
+                            <option value="5">5 Records</option>
+                            <option value="6">6 Records</option>
+                            <option value="8">8 Records</option>
+                            <option value="10">10 Records</option>
+                            <option value="12">12 Records</option>
+                            <option value="15">15 Records</option>
+                            <option value="20">20 Records</option>
                             </select>
                             </div>
                         </div>
@@ -1310,6 +2063,7 @@
                                             <button type="button" id="formatAllBold" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;">B</button>
                 <button type="button" id="formatAllItalic" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;">I</button>
                 <button type="button" id="formatAllUnderline" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;">U</button>
+                <button type="button" id="formatAllStrikethrough" class="btn btn-sm btn-outline-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px;">S</button>
                                     </div>
                                 </div>
 
@@ -1331,6 +2085,12 @@
 
         <div class="main-content">
             <div class="content-header">
+                <div class="preview-controls" style="margin-bottom: 15px;">
+                    <button id="previewModeBtn" class="btn btn-outline-primary" onclick="togglePreviewMode()" style="font-weight: 500;" title="Toggle Preview Mode - See exactly what your PDF will look like when downloaded (Press P key)">
+                        Preview Mode
+                    </button>
+                </div>
+                
                 <div class="download-buttons" style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 15px;">
                     <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
                         📄 Download Current PDF
@@ -1421,6 +2181,56 @@
     </div>
 
     <script>
+        // Landing Page Functions
+        function showApp() {
+            document.getElementById('landingPage').classList.remove('show');
+            document.getElementById('mainApp').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function showLanding() {
+            document.getElementById('landingPage').classList.add('show');
+            document.getElementById('mainApp').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function openPrivacyModal() {
+            document.getElementById('privacyModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePrivacyModal() {
+            document.getElementById('privacyModal').classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('privacyModal');
+            if (event.target === modal) {
+                closePrivacyModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closePrivacyModal();
+            }
+        });
+
+        // Show landing page by default
+        document.addEventListener('DOMContentLoaded', function() {
+            showLanding();
+        });
+
         // Initialize PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -1560,8 +2370,26 @@ if (!sessionState.defaultFontFamily) {
                 // Create a separate copy for PDF-lib BEFORE loading with PDF.js
                 const templateBytes = new Uint8Array(arrayBuffer).slice();
 
-                // Load PDF document
-                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                // Load PDF document with enhanced options for better quality
+                const pdf = await pdfjsLib.getDocument({
+                    data: arrayBuffer,
+                    // Enhanced options for better PDF compatibility and quality
+                    disableAutoFetch: false,
+                    disableStream: false,
+                    disableRange: false,
+                    // Better handling of different PDF versions
+                    maxImageSize: 1024 * 1024 * 10, // 10MB max image size
+                    isEvalSupported: false,
+                    // Improved font handling
+                    useSystemFonts: true,
+                    // Better color space handling
+                    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                    cMapPacked: true,
+                    // Enhanced error handling
+                    stopAtErrors: false,
+                    // Better memory management
+                    verbosity: 0
+                }).promise;
                 
                 // Store PDF info
                 currentPdf = pdf;
@@ -1622,8 +2450,26 @@ if (!sessionState.defaultFontFamily) {
                 
                 const arrayBuffer = await response.arrayBuffer();
 
-                // Load PDF document
-                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                // Load PDF document with enhanced options for better quality
+                const pdf = await pdfjsLib.getDocument({
+                    data: arrayBuffer,
+                    // Enhanced options for better PDF compatibility and quality
+                    disableAutoFetch: false,
+                    disableStream: false,
+                    disableRange: false,
+                    // Better handling of different PDF versions
+                    maxImageSize: 1024 * 1024 * 10, // 10MB max image size
+                    isEvalSupported: false,
+                    // Improved font handling
+                    useSystemFonts: true,
+                    // Better color space handling
+                    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                    cMapPacked: true,
+                    // Enhanced error handling
+                    stopAtErrors: false,
+                    // Better memory management
+                    verbosity: 0
+                }).promise;
                 
                 // Store PDF info
                 currentPdf = pdf;
@@ -1665,14 +2511,21 @@ if (!sessionState.defaultFontFamily) {
                 const canvas = document.getElementById('viewer');
                 const context = canvas.getContext('2d');
 
-                // Render PDF at original quality without scaling down
-                const viewport = page.getViewport({scale: 1.0});
+                // Get PDF viewport at scale 1.0 to get original dimensions
+                const baseViewport = page.getViewport({scale: 1.0});
+                
+                // Calculate high-DPI scale factor for crisp rendering
+                const devicePixelRatio = window.devicePixelRatio || 1;
+                const renderScale = Math.max(2.0, devicePixelRatio * 1.5); // Use higher scale for better quality
+                
+                // Create viewport at high resolution
+                const viewport = page.getViewport({scale: renderScale});
                 
                 // Enable high-quality rendering
                 context.imageSmoothingEnabled = true;
                 context.imageSmoothingQuality = 'high';
 
-                // Set canvas dimensions to original PDF size
+                // Set canvas dimensions to high-resolution size (actual PDF size)
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
                 
@@ -1681,20 +2534,26 @@ if (!sessionState.defaultFontFamily) {
                 const containerWidth = viewerContainer.clientWidth;
                 const containerHeight = viewerContainer.clientHeight;
                 
-                const scaleX = containerWidth / viewport.width;
-                const scaleY = containerHeight / viewport.height;
+                const scaleX = containerWidth / baseViewport.width;
+                const scaleY = containerHeight / baseViewport.height;
                 const displayScale = Math.min(scaleX, scaleY, 1.0); // Don't scale up, only down
                 
-                canvas.style.width = (viewport.width * displayScale) + 'px';
-                canvas.style.height = (viewport.height * displayScale) + 'px';
+                canvas.style.width = (baseViewport.width * displayScale) + 'px';
+                canvas.style.height = (baseViewport.height * displayScale) + 'px';
 
                 // Make sure canvas is visible
                 canvas.style.display = 'block';
 
-                // Render page at original quality
+                // Render page at high quality with enhanced context
                 const renderContext = {
                     canvasContext: context,
-                    viewport: viewport
+                    viewport: viewport,
+                    // Enhanced rendering options
+                    intent: 'display',
+                    renderInteractiveForms: false,
+                    // Better text rendering
+                    textLayer: null,
+                    annotationLayer: null
                 };
 
                 await page.render(renderContext).promise;
@@ -1719,7 +2578,7 @@ if (!sessionState.defaultFontFamily) {
                     updateEditorPageSize();
                 }
 
-                console.log('PDF rendered at original quality:', viewport.width, 'x', viewport.height);
+                console.log('PDF rendered at high quality:', viewport.width, 'x', viewport.height, 'scale:', renderScale);
 
             } catch (error) {
                 console.error('Error rendering page:', error);
@@ -1934,6 +2793,10 @@ if (!sessionState.defaultFontFamily) {
             const hasCSV = sessionState.csvRows.length > 0;
             const hasBoxes = sessionState.boxes.length > 0;
             
+            // Get the number of records selected from dropdown
+            const boxCountSelect = document.getElementById('boxCountSelect');
+            const selectedRecordCount = boxCountSelect ? parseInt(boxCountSelect.value) || 1 : 1;
+            
             // Check if we have at least some boxes with CSV data (same logic as downloadPdfs)
             // Note: boxes use fieldKey instead of csvColumn
             const hasTextBoxes = sessionState.boxes.some(box => box.type === 'text' && (box.csvColumn || box.fieldKey));
@@ -1942,9 +2805,9 @@ if (!sessionState.defaultFontFamily) {
             
             const downloadBtn = document.getElementById('downloadPdfsBtn');
             if (downloadBtn) {
-                // Enable button if we have template, CSV data, and at least one box with CSV binding
-                // This matches the validation logic in downloadPdfs function
-                downloadBtn.disabled = !(hasTemplate && hasCSV && hasBoxesWithCSV);
+                // Enable button only if we have template, CSV data, at least one box with CSV binding, AND only 1 record selected
+                // Disable when more than 1 record to prevent system resource drain
+                downloadBtn.disabled = !(hasTemplate && hasCSV && hasBoxesWithCSV) || selectedRecordCount > 1;
                 
                 // Update button text to show status
                 if (!hasTemplate) {
@@ -2208,10 +3071,12 @@ if (!sessionState.defaultFontFamily) {
             const boldBtn = document.getElementById('formatAllBold');
             const italicBtn = document.getElementById('formatAllItalic');
             const underlineBtn = document.getElementById('formatAllUnderline');
+            const strikethroughBtn = document.getElementById('formatAllStrikethrough');
             
             const isBold = boldBtn.classList.contains('active');
             const isItalic = italicBtn.classList.contains('active');
             const isUnderline = underlineBtn.classList.contains('active');
+            const isStrikethrough = strikethroughBtn && strikethroughBtn.classList.contains('active');
 
             // Apply formatting to all text boxes
             textBoxes.forEach(box => {
@@ -2227,7 +3092,16 @@ if (!sessionState.defaultFontFamily) {
                     // Apply text styles
                     element.style.fontWeight = isBold ? 'bold' : 'normal';
                     element.style.fontStyle = isItalic ? 'italic' : 'normal';
+                    
+                    // Handle underline (standard CSS)
                     element.style.textDecoration = isUnderline ? 'underline' : 'none';
+                    
+                    // Handle strikethrough with custom thick slanted effect
+                    if (isStrikethrough) {
+                        element.classList.add('thick-slanted-strikethrough');
+                    } else {
+                        element.classList.remove('thick-slanted-strikethrough');
+                    }
                     
                     // Update box data in session state
                     box.fontFamily = fontFamily;
@@ -2237,6 +3111,7 @@ if (!sessionState.defaultFontFamily) {
                     box.bold = isBold;
                     box.italic = isItalic;
                     box.underline = isUnderline;
+                    box.strikethrough = isStrikethrough;
                 }
             });
 
@@ -2282,12 +3157,14 @@ if (!sessionState.defaultFontFamily) {
             const boldBtn = document.getElementById('formatAllBold');
             const italicBtn = document.getElementById('formatAllItalic');
             const underlineBtn = document.getElementById('formatAllUnderline');
+            const strikethroughBtn = document.getElementById('formatAllStrikethrough');
             
             const isBold = boldBtn.classList.contains('active');
             const isItalic = italicBtn.classList.contains('active');
             const isUnderline = underlineBtn.classList.contains('active');
+            const isStrikethrough = strikethroughBtn && strikethroughBtn.classList.contains('active');
             
-            console.log('Style states:', { isBold, isItalic, isUnderline });
+            console.log('Style states:', { isBold, isItalic, isUnderline, isStrikethrough });
 
             // Determine which boxes to format based on apply mode
             let boxesToFormat = [];
@@ -2322,7 +3199,16 @@ if (!sessionState.defaultFontFamily) {
                     // Apply text styles
                     element.style.fontWeight = isBold ? 'bold' : 'normal';
                     element.style.fontStyle = isItalic ? 'italic' : 'normal';
+                    
+                    // Handle underline (standard CSS)
                     element.style.textDecoration = isUnderline ? 'underline' : 'none';
+                    
+                    // Handle strikethrough with custom thick slanted effect
+                    if (isStrikethrough) {
+                        element.classList.add('thick-slanted-strikethrough');
+                    } else {
+                        element.classList.remove('thick-slanted-strikethrough');
+                    }
                     
                     // Update box data in session state
                     box.fontFamily = fontFamily;
@@ -2332,6 +3218,7 @@ if (!sessionState.defaultFontFamily) {
                     box.bold = isBold;
                     box.italic = isItalic;
                     box.underline = isUnderline;
+                    box.strikethrough = isStrikethrough;
                 }
             });
         }
@@ -2397,6 +3284,24 @@ if (!sessionState.defaultFontFamily) {
             const underlineBtn = document.getElementById('formatAllUnderline');
             if (underlineBtn) {
                 underlineBtn.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    if (this.classList.contains('active')) {
+                        this.style.background = '#007bff';
+                        this.style.color = 'white';
+                        this.style.borderColor = '#007bff';
+                    } else {
+                        this.style.background = '';
+                        this.style.color = '';
+                        this.style.borderColor = '';
+                    }
+                    applyLiveFormatting(); // Apply formatting immediately
+                });
+            }
+
+            // Strikethrough button
+            const strikethroughBtn = document.getElementById('formatAllStrikethrough');
+            if (strikethroughBtn) {
+                strikethroughBtn.addEventListener('click', function() {
                     this.classList.toggle('active');
                     if (this.classList.contains('active')) {
                         this.style.background = '#007bff';
@@ -2898,6 +3803,8 @@ if (!sessionState.defaultFontFamily) {
                     currentPage = 0;
                     updatePageNavigation();
                     updateAllBoxesWithCSVData();
+                    // Update download button state when record count changes
+                    updateDownloadButtonState();
                 });
             }
         });
@@ -3097,6 +4004,7 @@ if (!sessionState.defaultFontFamily) {
                 bold: false,
                 italic: false,
                 underline: false,
+                strikethrough: false,
                 fontSize: 16,
                 fontFamily: sessionState.defaultFontFamily || 'Arial',
                 color: '#000000',
@@ -6190,7 +7098,16 @@ if (!sessionState.defaultFontFamily) {
                 element.style.color = box.color || '#000000';
                 element.style.fontWeight = box.bold ? 'bold' : 'normal';
                 element.style.fontStyle = box.italic ? 'italic' : 'normal';
+                
+                // Handle underline (standard CSS)
                 element.style.textDecoration = box.underline ? 'underline' : 'none';
+                
+                // Handle strikethrough with custom thick slanted effect
+                if (box.strikethrough) {
+                    element.classList.add('thick-slanted-strikethrough');
+                } else {
+                    element.classList.remove('thick-slanted-strikethrough');
+                }
                 
                 // Set text alignment and flex properties for consistent positioning
                 element.style.textAlign = box.textAlign || 'center';
@@ -6483,6 +7400,144 @@ if (!sessionState.defaultFontFamily) {
             if (widthInput) widthInput.value = newWidth;
             if (heightInput) heightInput.value = newHeight;
         }
+
+        // Preview Mode functionality
+        let isPreviewMode = false;
+
+        function togglePreviewMode() {
+            isPreviewMode = !isPreviewMode;
+            const previewBtn = document.getElementById('previewModeBtn');
+            const mainContainer = document.querySelector('.main-container');
+            
+            if (isPreviewMode) {
+                // Enter Preview Mode - Clean view
+                previewBtn.textContent = 'Edit Mode';
+                previewBtn.className = 'btn btn-outline-primary';
+                
+                // Add preview mode styling to main container
+                if (mainContainer) {
+                    mainContainer.classList.add('preview-mode');
+                }
+                
+                // Hide all transform controls
+                hideAllTransformControls();
+                
+                // Clear all highlighting and borders
+                clearAllHighlighting();
+                
+                // Hide all box borders/outlines for clean preview
+                if (sessionState && sessionState.boxes) {
+                    sessionState.boxes.forEach(box => {
+                        if (box.element) {
+                            // Remove all border styles and selection indicators
+                            box.element.style.border = 'none';
+                            box.element.style.outline = 'none';
+                            box.element.style.boxShadow = 'none';
+                            box.element.style.backgroundColor = '';
+                            
+                            // Remove selection classes
+                            box.element.classList.remove('selected', 'multi-selected');
+                            
+                            // Hide any drag identifiers
+                            const identifier = box.element.querySelector('.drag-identifier');
+                            if (identifier) {
+                                identifier.style.display = 'none';
+                            }
+                        }
+                    });
+                }
+                
+                // Hide record info display in preview mode
+                const recordInfoDisplay = document.getElementById('recordInfoDisplay');
+                if (recordInfoDisplay) {
+                    recordInfoDisplay.style.display = 'none';
+                }
+                
+                console.log('Preview mode activated - Clean PDF view');
+                
+            } else {
+                // Exit Preview Mode - Return to editing
+                previewBtn.textContent = 'Preview Mode';
+                previewBtn.className = 'btn btn-outline-primary';
+                
+                // Remove preview mode styling
+                if (mainContainer) {
+                    mainContainer.classList.remove('preview-mode');
+                }
+                
+                // Show all transform controls
+                showAllTransformControls();
+                
+                // Show record info if a box is selected
+                if (sessionState && sessionState.selectedBox) {
+                    const recordInfoDisplay = document.getElementById('recordInfoDisplay');
+                    if (recordInfoDisplay) {
+                        recordInfoDisplay.style.display = 'block';
+                    }
+                }
+                
+                console.log('Edit mode restored - All controls visible');
+            }
+        }
+
+        // Function to show all transform controls
+        function showAllTransformControls() {
+            const allHandles = document.querySelectorAll('.transform-control, .resize-handle');
+            allHandles.forEach(handle => {
+                // Reset any interfering transforms
+                handle.style.transform = handle.style.transform.replace(/scale\([^)]*\)/g, '');
+                
+                // Force visibility with multiple approaches
+                handle.style.opacity = '1';
+                handle.style.visibility = 'visible';
+                handle.style.display = 'block';
+                handle.style.zIndex = '9999';
+                
+                // Use !important to override any conflicting styles
+                handle.style.setProperty('opacity', '1', 'important');
+                handle.style.setProperty('visibility', 'visible', 'important');
+                handle.style.setProperty('display', 'block', 'important');
+                handle.style.setProperty('z-index', '9999', 'important');
+                
+                // Ensure the handle is positioned correctly
+                handle.style.pointerEvents = 'auto';
+            });
+            console.log('All transform controls shown - found', allHandles.length, 'handles');
+        }
+
+        // Function to hide all transform controls
+        function hideAllTransformControls() {
+            const allHandles = document.querySelectorAll('.transform-control, .resize-handle');
+            allHandles.forEach(handle => {
+                handle.style.opacity = '0';
+                handle.style.visibility = 'hidden';
+                handle.style.display = 'none';
+            });
+            console.log('All transform controls hidden');
+        }
+
+        // Function to clear all highlighting and borders
+        function clearAllHighlighting() {
+            const allBoxes = document.querySelectorAll('.draggable-text-box, .draggable-image-box');
+            allBoxes.forEach(box => {
+                box.style.border = 'none';
+                box.style.outline = 'none';
+                box.style.boxShadow = 'none';
+                box.style.backgroundColor = '';
+                box.classList.remove('selected', 'multi-selected');
+            });
+        }
+
+        // Keyboard shortcut for preview mode (P key)
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'p' || event.key === 'P') {
+                // Only trigger if not typing in an input field
+                if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) {
+                    event.preventDefault();
+                    togglePreviewMode();
+                }
+            }
+        });
     </script>
 </body>
 </html>

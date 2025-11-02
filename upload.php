@@ -5,7 +5,7 @@ header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 
 // Create uploads directory if it doesn't exist
-$uploadDir = '../uploads/';
+$uploadDir = 'uploads/';
 if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0755, true);
 }
@@ -18,6 +18,9 @@ try {
     if (!isset($_FILES['file'])) {
         throw new Exception('No file uploaded');
     }
+    
+    // Debug: Log upload attempt
+    error_log('PDF upload attempt: ' . print_r($_FILES, true));
 
     $file = $_FILES['file'];
     
@@ -47,7 +50,7 @@ try {
     // Return success response
     $response = [
         'ok' => 1,
-        'url' => '/uploads/' . $filename,
+        'url' => 'uploads/' . $filename,
         'name' => $file['name']
     ];
 
