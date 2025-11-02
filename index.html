@@ -1641,6 +1641,274 @@
             background: #28a745;
         }
 
+        /* Rulers and Guides */
+        .ruler-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 500;
+            pointer-events: none;
+        }
+
+        .ruler-horizontal,
+        .ruler-vertical {
+            background: #e8e8e8;
+            border: 1px solid #ccc;
+            position: relative;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .ruler-horizontal {
+            width: 100%;
+            height: 20px;
+            border-bottom: 1px solid #999;
+            cursor: crosshair;
+            pointer-events: auto;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 500;
+        }
+
+        .ruler-vertical {
+            width: 20px;
+            height: 100%;
+            border-right: 1px solid #999;
+            cursor: crosshair;
+            pointer-events: auto;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 501;
+        }
+
+        .ruler-horizontal::before,
+        .ruler-vertical::before {
+            content: '';
+            position: absolute;
+            background: #333;
+        }
+
+        .ruler-horizontal::before {
+            width: 100%;
+            height: 1px;
+            bottom: 0;
+        }
+
+        .ruler-vertical::before {
+            width: 1px;
+            height: 100%;
+            right: 0;
+        }
+
+        /* Ruler tick marks */
+        .ruler-tick {
+            position: absolute;
+            background: #666;
+        }
+
+        .ruler-tick.major {
+            width: 1px;
+            height: 8px;
+            bottom: 0;
+        }
+
+        .ruler-vertical .ruler-tick.major {
+            width: 8px;
+            height: 1px;
+            right: 0;
+        }
+
+        .ruler-tick.minor {
+            width: 1px;
+            height: 4px;
+            bottom: 0;
+        }
+
+        .ruler-vertical .ruler-tick.minor {
+            width: 4px;
+            height: 1px;
+            right: 0;
+        }
+
+        .ruler-label {
+            position: absolute;
+            font-size: 9px;
+            color: #333;
+            font-family: monospace;
+            user-select: none;
+        }
+
+        .ruler-horizontal .ruler-label {
+            left: 2px;
+            top: 1px;
+        }
+
+        .ruler-vertical .ruler-label {
+            top: 2px;
+            right: 2px;
+            transform: rotate(-90deg);
+            transform-origin: center;
+        }
+
+        /* Guide lines */
+        .guide-line {
+            position: absolute;
+            background: #007bff;
+            z-index: 400;
+            pointer-events: auto;
+            cursor: move;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .guide-line:hover {
+            opacity: 1;
+        }
+
+        .guide-line.horizontal {
+            width: 100%;
+            height: 1px;
+            cursor: ns-resize;
+        }
+
+        .guide-line.vertical {
+            width: 1px;
+            height: 100%;
+            cursor: ew-resize;
+        }
+
+        .guide-line .guide-handle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #007bff;
+            border: 1px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .guide-line:hover .guide-handle {
+            opacity: 1;
+        }
+
+        .guide-line.horizontal .guide-handle {
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .guide-line.vertical .guide-handle {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Ruler toggle button */
+        .ruler-toggle-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 501;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .ruler-toggle-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .ruler-toggle-btn.active {
+            background: rgba(0, 123, 255, 0.9);
+        }
+
+        /* Adjust viewer container for rulers */
+        .viewer-container.has-rulers {
+            padding-top: 20px;
+            padding-left: 20px;
+        }
+
+        /* Figma-like Spacing Measurements */
+        .spacing-label {
+            position: absolute;
+            background: rgba(0, 123, 255, 0.9);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            pointer-events: none;
+            z-index: 10000;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            line-height: 1.4;
+        }
+
+        .spacing-line {
+            position: absolute;
+            background: #007bff;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .spacing-line.horizontal {
+            height: 1px;
+            width: 100%;
+        }
+
+        .spacing-line.vertical {
+            width: 1px;
+            height: 100%;
+        }
+
+        /* Spacing label with arrow */
+        .spacing-label::before {
+            content: '';
+            position: absolute;
+            border: 4px solid transparent;
+        }
+
+        .spacing-label.horizontal::before {
+            border-left-color: rgba(0, 123, 255, 0.9);
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .spacing-label.horizontal.right::before {
+            border-left-color: transparent;
+            border-right-color: rgba(0, 123, 255, 0.9);
+            left: auto;
+            right: -8px;
+        }
+
+        .spacing-label.vertical::before {
+            border-top-color: rgba(0, 123, 255, 0.9);
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .spacing-label.vertical.bottom::before {
+            border-top-color: transparent;
+            border-bottom-color: rgba(0, 123, 255, 0.9);
+            top: auto;
+            bottom: -8px;
+        }
+
         /* Thick Slanted Strikethrough Styling */
         .thick-slanted-strikethrough {
             position: relative;
@@ -2123,6 +2391,28 @@
                             <span class="lock-icon">🔒</span>
                             <span class="lock-text">Lock PDF</span>
                         </button>
+                    </div>
+                    
+                    <!-- Ruler Toggle Button -->
+                    <button class="ruler-toggle-btn" onclick="toggleRulers()" title="Toggle Rulers (R)" id="rulerToggleBtn">
+                        <span>📏</span>
+                        <span>Rulers</span>
+                    </button>
+                    
+                    <!-- Rulers Container -->
+                    <div class="ruler-container" id="rulerContainer" style="display: none;">
+                        <div class="ruler-horizontal" id="rulerHorizontal"></div>
+                        <div class="ruler-vertical" id="rulerVertical"></div>
+                    </div>
+                    
+                    <!-- Guides Container -->
+                    <div id="guidesContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 400;">
+                        <!-- Guides will be dynamically added here -->
+                    </div>
+                    
+                    <!-- Spacing Measurements Container -->
+                    <div id="spacingContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998;">
+                        <!-- Spacing measurements will be dynamically added here -->
                     </div>
                     
                                     <div class="pdf-content" id="pdfContent">
@@ -7422,6 +7712,21 @@ if (!sessionState.defaultFontFamily) {
                 // Hide all transform controls
                 hideAllTransformControls();
                 
+                // Hide rulers and guides
+                if (rulersVisible) {
+                    const rulerContainer = document.getElementById('rulerContainer');
+                    const guidesContainer = document.getElementById('guidesContainer');
+                    if (rulerContainer) {
+                        rulerContainer.style.display = 'none';
+                    }
+                    if (guidesContainer) {
+                        guidesContainer.style.display = 'none';
+                    }
+                }
+                
+                // Clear spacing measurements
+                clearSpacingMeasurements();
+                
                 // Clear all highlighting and borders
                 clearAllHighlighting();
                 
@@ -7467,6 +7772,18 @@ if (!sessionState.defaultFontFamily) {
                 
                 // Show all transform controls
                 showAllTransformControls();
+                
+                // Restore rulers and guides if they were visible before
+                if (rulersVisible) {
+                    const rulerContainer = document.getElementById('rulerContainer');
+                    const guidesContainer = document.getElementById('guidesContainer');
+                    if (rulerContainer) {
+                        rulerContainer.style.display = 'block';
+                    }
+                    if (guidesContainer) {
+                        guidesContainer.style.display = 'block';
+                    }
+                }
                 
                 // Show record info if a box is selected
                 if (sessionState && sessionState.selectedBox) {
@@ -7538,6 +7855,563 @@ if (!sessionState.defaultFontFamily) {
                 }
             }
         });
+
+        // Rulers and Guides System
+        let rulersVisible = false;
+        let guides = [];
+        let guideIdCounter = 0;
+        let isDraggingGuide = false;
+        let currentDraggedGuide = null;
+
+        function toggleRulers() {
+            rulersVisible = !rulersVisible;
+            const rulerContainer = document.getElementById('rulerContainer');
+            const toggleBtn = document.getElementById('rulerToggleBtn');
+            const viewerContainer = document.querySelector('.viewer-container');
+            
+            if (rulersVisible) {
+                rulerContainer.style.display = 'block';
+                toggleBtn.classList.add('active');
+                viewerContainer.classList.add('has-rulers');
+                drawRulers();
+                updateGuidesPosition();
+            } else {
+                rulerContainer.style.display = 'none';
+                toggleBtn.classList.remove('active');
+                viewerContainer.classList.remove('has-rulers');
+            }
+        }
+
+        function drawRulers() {
+            const horizontalRuler = document.getElementById('rulerHorizontal');
+            const verticalRuler = document.getElementById('rulerVertical');
+            const viewer = document.querySelector('.viewer-container');
+            
+            if (!viewer || !horizontalRuler || !verticalRuler) return;
+            
+            const width = viewer.clientWidth;
+            const height = viewer.clientHeight;
+            
+            // Clear existing ticks
+            horizontalRuler.innerHTML = '';
+            verticalRuler.innerHTML = '';
+            
+            // Draw horizontal ruler
+            const scale = currentTransform?.scale || 1;
+            const unitSize = 50 * scale; // Pixels per unit
+            
+            for (let i = 0; i < width; i += unitSize) {
+                const tick = document.createElement('div');
+                tick.className = 'ruler-tick major';
+                tick.style.left = i + 'px';
+                horizontalRuler.appendChild(tick);
+                
+                // Add minor ticks every 10 units
+                for (let j = unitSize / 5; j < unitSize; j += unitSize / 5) {
+                    if (i + j < width) {
+                        const minorTick = document.createElement('div');
+                        minorTick.className = 'ruler-tick minor';
+                        minorTick.style.left = (i + j) + 'px';
+                        horizontalRuler.appendChild(minorTick);
+                    }
+                }
+                
+                // Add label every major tick
+                if (i % (unitSize * 2) === 0 && i > 0) {
+                    const label = document.createElement('div');
+                    label.className = 'ruler-label';
+                    label.textContent = Math.round(i / unitSize);
+                    label.style.left = (i + 2) + 'px';
+                    horizontalRuler.appendChild(label);
+                }
+            }
+            
+            // Draw vertical ruler
+            for (let i = 0; i < height; i += unitSize) {
+                const tick = document.createElement('div');
+                tick.className = 'ruler-tick major';
+                tick.style.top = i + 'px';
+                verticalRuler.appendChild(tick);
+                
+                // Add minor ticks
+                for (let j = unitSize / 5; j < unitSize; j += unitSize / 5) {
+                    if (i + j < height) {
+                        const minorTick = document.createElement('div');
+                        minorTick.className = 'ruler-tick minor';
+                        minorTick.style.top = (i + j) + 'px';
+                        verticalRuler.appendChild(minorTick);
+                    }
+                }
+                
+                // Add label
+                if (i % (unitSize * 2) === 0 && i > 0) {
+                    const label = document.createElement('div');
+                    label.className = 'ruler-label';
+                    label.textContent = Math.round(i / unitSize);
+                    label.style.top = (i + 2) + 'px';
+                    verticalRuler.appendChild(label);
+                }
+            }
+            
+            // Setup drag handlers for creating guides
+            setupRulerDragHandlers(horizontalRuler, verticalRuler);
+        }
+
+        function setupRulerDragHandlers(horizontalRuler, verticalRuler) {
+            let isDragging = false;
+            let guideType = null;
+            let dragMoveHandler = null;
+            let dragEndHandler = null;
+            
+            // Handler for horizontal ruler
+            horizontalRuler.addEventListener('mousedown', function(e) {
+                if (!rulersVisible) return;
+                
+                const viewerContainer = document.querySelector('.viewer-container');
+                const viewerRect = viewerContainer.getBoundingClientRect();
+                const rulerHeight = 20;
+                const rulerWidth = 20;
+                const clickX = e.clientX - viewerRect.left;
+                
+                // If click is in the corner area (first 20px), don't handle it - let vertical ruler handle it
+                if (clickX < rulerWidth) {
+                    return;
+                }
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                isDragging = true;
+                guideType = 'horizontal';
+                const y = e.clientY - viewerRect.top - rulerHeight;
+                const guide = createGuide('horizontal', y);
+                if (guide) {
+                    startDraggingGuide(guide, e, 'horizontal');
+                }
+            });
+            
+            // Handler for vertical ruler
+            verticalRuler.addEventListener('mousedown', function(e) {
+                if (!rulersVisible) return;
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const viewerContainer = document.querySelector('.viewer-container');
+                const viewerRect = viewerContainer.getBoundingClientRect();
+                const rulerWidth = 20;
+                
+                isDragging = true;
+                guideType = 'vertical';
+                const x = e.clientX - viewerRect.left - rulerWidth;
+                const guide = createGuide('vertical', x);
+                if (guide) {
+                    startDraggingGuide(guide, e, 'vertical');
+                }
+            });
+            
+            dragMoveHandler = function(e) {
+                if (isDragging && currentDraggedGuide && guideType) {
+                    updateGuidePosition(currentDraggedGuide, e, guideType);
+                }
+            };
+            
+            dragEndHandler = function() {
+                if (isDragging) {
+                    isDragging = false;
+                    if (currentDraggedGuide) {
+                        currentDraggedGuide.style.opacity = '0.7';
+                    }
+                    currentDraggedGuide = null;
+                    guideType = null;
+                }
+            };
+            
+            document.addEventListener('mousemove', dragMoveHandler);
+            document.addEventListener('mouseup', dragEndHandler);
+        }
+
+        function createGuide(type, position) {
+            const guidesContainer = document.getElementById('guidesContainer');
+            if (!guidesContainer) return null;
+            
+            const guide = document.createElement('div');
+            guide.className = `guide-line ${type}`;
+            guide.id = `guide-${guideIdCounter++}`;
+            guide.dataset.type = type;
+            guide.dataset.position = position;
+            
+            // Add handle for deletion
+            const handle = document.createElement('div');
+            handle.className = 'guide-handle';
+            handle.title = 'Double-click to delete';
+            guide.appendChild(handle);
+            
+            guidesContainer.appendChild(guide);
+            guides.push({
+                id: guide.id,
+                type: type,
+                position: position
+            });
+            
+            // Double-click to delete
+            guide.addEventListener('dblclick', function() {
+                deleteGuide(guide.id);
+            });
+            
+            // Setup dragging
+            guide.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('guide-handle')) return;
+                startDraggingGuide(guide, e, type);
+                e.preventDefault();
+            });
+            
+            // Position the guide initially
+            updateGuidePosition(guide, null, type);
+            return guide;
+        }
+
+        function startDraggingGuide(guide, e, type) {
+            isDraggingGuide = true;
+            currentDraggedGuide = guide;
+            guide.style.opacity = '1';
+        }
+
+        function updateGuidePosition(guide, e, type) {
+            if (!guide) return;
+            
+            const viewerContainer = document.querySelector('.viewer-container');
+            if (!viewerContainer) return;
+            
+            const viewerRect = viewerContainer.getBoundingClientRect();
+            const rulerHeight = 20;
+            const rulerWidth = 20;
+            
+            if (type === 'horizontal') {
+                let y;
+                if (e && e.clientY !== undefined) {
+                    y = e.clientY - viewerRect.top - rulerHeight;
+                } else {
+                    y = parseFloat(guide.dataset.position) || 0;
+                }
+                guide.style.top = Math.max(0, y) + 'px';
+                guide.style.left = rulerWidth + 'px';
+                guide.style.width = (viewerRect.width - rulerWidth) + 'px';
+                guide.dataset.position = Math.max(0, y);
+            } else {
+                let x;
+                if (e && e.clientX !== undefined) {
+                    x = e.clientX - viewerRect.left - rulerWidth;
+                } else {
+                    x = parseFloat(guide.dataset.position) || 0;
+                }
+                guide.style.left = Math.max(0, x) + 'px';
+                guide.style.top = rulerHeight + 'px';
+                guide.style.height = (viewerRect.height - rulerHeight) + 'px';
+                guide.dataset.position = Math.max(0, x);
+            }
+        }
+
+        function updateGuidesPosition() {
+            if (!rulersVisible) return;
+            const allGuides = document.querySelectorAll('.guide-line');
+            allGuides.forEach(guide => {
+                const type = guide.dataset.type;
+                const pdfViewer = document.getElementById('pdfViewer');
+                const viewerContainer = document.querySelector('.viewer-container');
+                if (!pdfViewer || !viewerContainer) return;
+                
+                const viewerRect = viewerContainer.getBoundingClientRect();
+                const rulerHeight = 20;
+                const rulerWidth = 20;
+                
+                if (type === 'horizontal') {
+                    guide.style.top = guide.dataset.position + 'px';
+                    guide.style.left = rulerWidth + 'px';
+                    guide.style.width = (viewerRect.width - rulerWidth) + 'px';
+                } else {
+                    guide.style.left = guide.dataset.position + 'px';
+                    guide.style.top = rulerHeight + 'px';
+                    guide.style.height = (viewerRect.height - rulerHeight) + 'px';
+                }
+            });
+        }
+
+        function deleteGuide(guideId) {
+            const guide = document.getElementById(guideId);
+            if (guide) {
+                guide.remove();
+                guides = guides.filter(g => g.id !== guideId);
+            }
+        }
+
+        function clearAllGuides() {
+            const guidesContainer = document.getElementById('guidesContainer');
+            if (guidesContainer) {
+                guidesContainer.innerHTML = '';
+                guides = [];
+            }
+        }
+
+        // Redraw rulers on resize
+        window.addEventListener('resize', function() {
+            if (rulersVisible) {
+                drawRulers();
+                updateGuidesPosition();
+            }
+        });
+
+        // Keyboard shortcut for rulers (R key)
+        document.addEventListener('keydown', function(event) {
+            if ((event.key === 'r' || event.key === 'R') && !['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) {
+                event.preventDefault();
+                toggleRulers();
+            }
+        });
+
+        // Figma-like Spacing Measurements System
+        let spacingMeasurementActive = true;
+
+        function clearSpacingMeasurements() {
+            const spacingContainer = document.getElementById('spacingContainer');
+            if (spacingContainer) {
+                spacingContainer.innerHTML = '';
+            }
+        }
+
+        function showSpacingMeasurements() {
+            if (!spacingMeasurementActive || isPreviewMode) return;
+            
+            clearSpacingMeasurements();
+            
+            const selectedBoxes = Array.from(document.querySelectorAll('.draggable-text-box.selected, .draggable-image-box.selected'));
+            const allBoxes = Array.from(document.querySelectorAll('.draggable-text-box, .draggable-image-box'));
+            
+            if (selectedBoxes.length === 0) return;
+            
+            const spacingContainer = document.getElementById('spacingContainer');
+            if (!spacingContainer) return;
+            
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (!pdfViewer) return;
+            
+            // Show measurements between selected boxes
+            for (let i = 0; i < selectedBoxes.length; i++) {
+                for (let j = i + 1; j < selectedBoxes.length; j++) {
+                    showDistanceBetweenBoxes(selectedBoxes[i], selectedBoxes[j], spacingContainer);
+                }
+            }
+            
+            // Show measurements between selected and nearby boxes
+            if (selectedBoxes.length === 1) {
+                const selectedBox = selectedBoxes[0];
+                const selectedRect = selectedBox.getBoundingClientRect();
+                const viewerRect = pdfViewer.getBoundingClientRect();
+                
+                allBoxes.forEach(box => {
+                    if (box === selectedBox) return;
+                    if (box.classList.contains('selected')) return;
+                    
+                    const boxRect = box.getBoundingClientRect();
+                    
+                    // Check if boxes are horizontally or vertically aligned (within 50px threshold)
+                    const horizontalOverlap = !(selectedRect.right < boxRect.left || selectedRect.left > boxRect.right);
+                    const verticalOverlap = !(selectedRect.bottom < boxRect.top || selectedRect.top > boxRect.bottom);
+                    
+                    if (horizontalOverlap) {
+                        // Show vertical distance
+                        let distance = 0;
+                        let position = 'right';
+                        
+                        if (selectedRect.top > boxRect.bottom) {
+                            distance = selectedRect.top - boxRect.bottom;
+                            position = 'top';
+                        } else if (selectedRect.bottom < boxRect.top) {
+                            distance = boxRect.top - selectedRect.bottom;
+                            position = 'bottom';
+                        }
+                        
+                        if (distance > 0 && distance < 500) {
+                            showVerticalDistance(selectedBox, box, distance, spacingContainer, viewerRect, position);
+                        }
+                    }
+                    
+                    if (verticalOverlap) {
+                        // Show horizontal distance
+                        let distance = 0;
+                        let position = 'bottom';
+                        
+                        if (selectedRect.left > boxRect.right) {
+                            distance = selectedRect.left - boxRect.right;
+                            position = 'left';
+                        } else if (selectedRect.right < boxRect.left) {
+                            distance = boxRect.left - selectedRect.right;
+                            position = 'right';
+                        }
+                        
+                        if (distance > 0 && distance < 500) {
+                            showHorizontalDistance(selectedBox, box, distance, spacingContainer, viewerRect, position);
+                        }
+                    }
+                });
+            }
+        }
+
+        function showDistanceBetweenBoxes(box1, box2, container) {
+            const rect1 = box1.getBoundingClientRect();
+            const rect2 = box2.getBoundingClientRect();
+            const pdfViewer = document.getElementById('pdfViewer');
+            const viewerRect = pdfViewer.getBoundingClientRect();
+            
+            // Calculate center points
+            const center1 = {
+                x: rect1.left + rect1.width / 2 - viewerRect.left,
+                y: rect1.top + rect1.height / 2 - viewerRect.top
+            };
+            const center2 = {
+                x: rect2.left + rect2.width / 2 - viewerRect.left,
+                y: rect2.top + rect2.height / 2 - viewerRect.top
+            };
+            
+            const distance = Math.round(Math.sqrt(Math.pow(center2.x - center1.x, 2) + Math.pow(center2.y - center1.y, 2)));
+            
+            // Create label at midpoint
+            const midX = (center1.x + center2.x) / 2;
+            const midY = (center1.y + center2.y) / 2;
+            
+            const label = document.createElement('div');
+            label.className = 'spacing-label';
+            label.textContent = distance + 'px';
+            label.style.left = midX + 'px';
+            label.style.top = midY + 'px';
+            label.style.transform = 'translate(-50%, -50%)';
+            container.appendChild(label);
+        }
+
+        function showHorizontalDistance(box1, box2, distance, container, viewerRect, position) {
+            const rect1 = box1.getBoundingClientRect();
+            const rect2 = box2.getBoundingClientRect();
+            
+            let startX, endX, y;
+            
+            if (position === 'right') {
+                startX = rect1.right - viewerRect.left;
+                endX = rect2.left - viewerRect.left;
+                y = (Math.max(rect1.top, rect2.top) + Math.min(rect1.bottom, rect2.bottom)) / 2 - viewerRect.top;
+            } else {
+                startX = rect2.right - viewerRect.left;
+                endX = rect1.left - viewerRect.left;
+                y = (Math.max(rect1.top, rect2.top) + Math.min(rect1.bottom, rect2.bottom)) / 2 - viewerRect.top;
+            }
+            
+            // Create line
+            const line = document.createElement('div');
+            line.className = 'spacing-line horizontal';
+            line.style.left = startX + 'px';
+            line.style.top = y + 'px';
+            line.style.width = (endX - startX) + 'px';
+            container.appendChild(line);
+            
+            // Create label
+            const label = document.createElement('div');
+            label.className = 'spacing-label horizontal' + (position === 'right' ? ' right' : '');
+            label.textContent = Math.round(distance) + 'px';
+            label.style.left = ((startX + endX) / 2) + 'px';
+            label.style.top = y + 'px';
+            label.style.transform = 'translate(-50%, -50%)';
+            container.appendChild(label);
+        }
+
+        function showVerticalDistance(box1, box2, distance, container, viewerRect, position) {
+            const rect1 = box1.getBoundingClientRect();
+            const rect2 = box2.getBoundingClientRect();
+            
+            let startY, endY, x;
+            
+            if (position === 'bottom') {
+                startY = rect1.bottom - viewerRect.top;
+                endY = rect2.top - viewerRect.top;
+                x = (Math.max(rect1.left, rect2.left) + Math.min(rect1.right, rect2.right)) / 2 - viewerRect.left;
+            } else {
+                startY = rect2.bottom - viewerRect.top;
+                endY = rect1.top - viewerRect.top;
+                x = (Math.max(rect1.left, rect2.left) + Math.min(rect1.right, rect2.right)) / 2 - viewerRect.left;
+            }
+            
+            // Create line
+            const line = document.createElement('div');
+            line.className = 'spacing-line vertical';
+            line.style.left = x + 'px';
+            line.style.top = startY + 'px';
+            line.style.height = (endY - startY) + 'px';
+            container.appendChild(line);
+            
+            // Create label
+            const label = document.createElement('div');
+            label.className = 'spacing-label vertical' + (position === 'bottom' ? ' bottom' : '');
+            label.textContent = Math.round(distance) + 'px';
+            label.style.left = x + 'px';
+            label.style.top = ((startY + endY) / 2) + 'px';
+            label.style.transform = 'translate(-50%, -50%)';
+            container.appendChild(label);
+        }
+
+        // Update spacing measurements on selection change
+        const originalSelectBox = window.selectBox;
+        if (typeof selectBox === 'function') {
+            // Wrap selectBox to update measurements
+        }
+
+        // Listen for selection changes
+        document.addEventListener('click', function(e) {
+            setTimeout(() => {
+                if (!isPreviewMode) {
+                    showSpacingMeasurements();
+                }
+            }, 100);
+        });
+
+        // Update measurements during drag/resize
+        let measurementInterval = null;
+        
+        function startMeasurementUpdates() {
+            if (measurementInterval) return;
+            measurementInterval = setInterval(() => {
+                if (!isPreviewMode) {
+                    showSpacingMeasurements();
+                }
+            }, 50);
+        }
+
+        function stopMeasurementUpdates() {
+            if (measurementInterval) {
+                clearInterval(measurementInterval);
+                measurementInterval = null;
+            }
+        }
+
+        // Hook into mouse events for drag/resize
+        document.addEventListener('mousedown', function(e) {
+            if (e.target.closest('.draggable-text-box, .draggable-image-box, .resize-handle')) {
+                startMeasurementUpdates();
+            }
+        });
+
+        document.addEventListener('mouseup', function() {
+            stopMeasurementUpdates();
+            setTimeout(() => {
+                if (!isPreviewMode) {
+                    showSpacingMeasurements();
+                }
+            }, 100);
+        });
+
+        // Initial measurement display
+        setTimeout(() => {
+            if (!isPreviewMode) {
+                showSpacingMeasurements();
+            }
+        }, 500);
     </script>
 </body>
 </html>
