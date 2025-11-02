@@ -6334,6 +6334,13 @@ if (!sessionState.defaultFontFamily) {
                                         const lockIndicator = clonedViewer.querySelector('.pdf-lock-indicator');
                                         if (lockIndicator) lockIndicator.style.display = 'none';
                                         
+                                        // Hide rulers
+                                        const rulerContainer = clonedDoc.getElementById('rulerContainer');
+                                        if (rulerContainer) rulerContainer.style.display = 'none';
+                                        
+                                        const rulerToggleBtn = clonedDoc.getElementById('rulerToggleBtn');
+                                        if (rulerToggleBtn) rulerToggleBtn.style.display = 'none';
+                                        
                                         // Keep only text boxes and image boxes with their styling
                                         const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box, .draggable-image-box');
                                         allBoxes.forEach(box => {
@@ -6787,6 +6794,13 @@ if (!sessionState.defaultFontFamily) {
                             // Hide PDF controls (top right corner buttons)
                             const pdfControls = clonedViewer.querySelector('.pdf-controls');
                             if (pdfControls) pdfControls.style.display = 'none';
+                            
+                            // Hide rulers
+                            const rulerContainer = clonedDoc.getElementById('rulerContainer');
+                            if (rulerContainer) rulerContainer.style.display = 'none';
+                            
+                            const rulerToggleBtn = clonedDoc.getElementById('rulerToggleBtn');
+                            if (rulerToggleBtn) rulerToggleBtn.style.display = 'none';
                         }
                     }
                 });
