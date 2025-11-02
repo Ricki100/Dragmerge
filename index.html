@@ -1646,41 +1646,73 @@
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
             z-index: 500;
             pointer-events: none;
+            overflow: visible;
         }
 
         .ruler-horizontal,
         .ruler-vertical {
             background: #e8e8e8;
             border: 1px solid #ccc;
-            position: relative;
             font-size: 10px;
             color: #666;
+            cursor: row-resize !important;
+            pointer-events: auto !important;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         .ruler-horizontal {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 20px;
             border-bottom: 1px solid #999;
-            cursor: crosshair;
-            pointer-events: auto;
-            position: absolute;
-            left: 0;
-            top: 0;
-            z-index: 500;
+            cursor: row-resize !important;
+            z-index: 510 !important;
+            transition: background-color 0.2s;
+        }
+
+        .ruler-horizontal:hover {
+            background: #d0d0d0;
+        }
+
+        .ruler-horizontal *,
+        .ruler-horizontal::before,
+        .ruler-horizontal::after {
+            pointer-events: none !important;
+            cursor: row-resize !important;
+            user-select: none !important;
         }
 
         .ruler-vertical {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 20px;
             height: 100%;
             border-right: 1px solid #999;
-            cursor: crosshair;
-            pointer-events: auto;
-            position: absolute;
-            left: 0;
-            top: 0;
-            z-index: 501;
+            cursor: col-resize !important;
+            z-index: 511 !important;
+            transition: background-color 0.2s;
+        }
+
+        .ruler-vertical:hover {
+            background: #d0d0d0;
+        }
+
+        .ruler-vertical *,
+        .ruler-vertical::before,
+        .ruler-vertical::after {
+            pointer-events: none !important;
+            cursor: col-resize !important;
+            user-select: none !important;
         }
 
         .ruler-horizontal::before,
@@ -1706,6 +1738,8 @@
         .ruler-tick {
             position: absolute;
             background: #666;
+            pointer-events: none;
+            cursor: inherit !important;
         }
 
         .ruler-tick.major {
@@ -1738,6 +1772,8 @@
             color: #333;
             font-family: monospace;
             user-select: none;
+            pointer-events: none;
+            cursor: inherit !important;
         }
 
         .ruler-horizontal .ruler-label {
@@ -1809,29 +1845,34 @@
 
         /* Ruler toggle button */
         .ruler-toggle-btn {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 501;
-            background: rgba(0, 0, 0, 0.7);
+            position: relative;
+            z-index: 1;
+            background: #6c757d;
             color: white;
             border: none;
-            border-radius: 4px;
-            padding: 6px 12px;
+            border-radius: 0.25rem;
+            padding: 0.375rem 0.75rem;
             cursor: pointer;
-            font-size: 11px;
-            display: flex;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            display: inline-flex;
             align-items: center;
-            gap: 6px;
-            transition: all 0.3s ease;
+            justify-content: center;
+            gap: 0.375rem;
+            transition: all 0.15s ease-in-out;
+            vertical-align: middle;
+            height: calc(1.5em + 0.75rem + 2px);
         }
 
         .ruler-toggle-btn:hover {
-            background: rgba(0, 0, 0, 0.9);
+            background: #5a6268;
+            color: white;
         }
 
         .ruler-toggle-btn.active {
-            background: rgba(0, 123, 255, 0.9);
+            background: #007bff;
+            color: white;
         }
 
         /* Adjust viewer container for rulers */
@@ -1907,6 +1948,40 @@
             border-bottom-color: rgba(0, 123, 255, 0.9);
             top: auto;
             bottom: -8px;
+        }
+
+        /* Matching spacing indicator */
+        .spacing-label.matching {
+            background: rgba(76, 175, 80, 0.9);
+        }
+
+        .spacing-label.matching::before {
+            border-left-color: rgba(76, 175, 80, 0.9);
+            border-right-color: rgba(76, 175, 80, 0.9);
+            border-top-color: rgba(76, 175, 80, 0.9);
+            border-bottom-color: rgba(76, 175, 80, 0.9);
+        }
+
+        .spacing-label.matching.horizontal::before {
+            border-left-color: rgba(76, 175, 80, 0.9);
+        }
+
+        .spacing-label.matching.horizontal.right::before {
+            border-left-color: transparent;
+            border-right-color: rgba(76, 175, 80, 0.9);
+        }
+
+        .spacing-label.matching.vertical::before {
+            border-top-color: rgba(76, 175, 80, 0.9);
+        }
+
+        .spacing-label.matching.vertical.bottom::before {
+            border-top-color: transparent;
+            border-bottom-color: rgba(76, 175, 80, 0.9);
+        }
+
+        .spacing-line.matching {
+            background: #4caf50;
         }
 
         /* Thick Slanted Strikethrough Styling */
@@ -2360,6 +2435,11 @@
                 </div>
                 
                 <div class="download-buttons" style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 15px;">
+                    <button class="ruler-toggle-btn" onclick="toggleRulers()" title="Toggle Rulers (R)" id="rulerToggleBtn">
+                        <span>📏</span>
+                        <span>Rulers</span>
+                    </button>
+                    
                     <button id="screenshotBtn" class="btn btn-primary" onclick="downloadCurrentPdf()">
                         📄 Download Current PDF
                     </button>
@@ -2392,12 +2472,6 @@
                             <span class="lock-text">Lock PDF</span>
                         </button>
                     </div>
-                    
-                    <!-- Ruler Toggle Button -->
-                    <button class="ruler-toggle-btn" onclick="toggleRulers()" title="Toggle Rulers (R)" id="rulerToggleBtn">
-                        <span>📏</span>
-                        <span>Rulers</span>
-                    </button>
                     
                     <!-- Rulers Container -->
                     <div class="ruler-container" id="rulerContainer" style="display: none;">
@@ -5453,8 +5527,23 @@ if (!sessionState.defaultFontFamily) {
                     yOffset = currentY;
 
                     // Apply constrained position directly
-                    element.style.left = currentX + 'px';
-                    element.style.top = currentY + 'px';
+                    let finalX = currentX;
+                    let finalY = currentY;
+                    
+                    // Check for spacing snap - snap to matching spacing
+                    const snapResult = checkSpacingSnap(element, currentX, currentY, viewerRect);
+                    if (snapResult.snapped) {
+                        finalX = snapResult.x;
+                        finalY = snapResult.y;
+                    }
+                    
+                    element.style.left = finalX + 'px';
+                    element.style.top = finalY + 'px';
+                    
+                    // Update spacing measurements in real-time during drag
+                    if (!isPreviewMode && spacingMeasurementActive) {
+                        showSpacingMeasurements();
+                    }
                 }
             }
 
@@ -6341,6 +6430,44 @@ if (!sessionState.defaultFontFamily) {
                                         const rulerToggleBtn = clonedDoc.getElementById('rulerToggleBtn');
                                         if (rulerToggleBtn) rulerToggleBtn.style.display = 'none';
                                         
+                                        // Hide guides with strong CSS to ensure they don't appear
+                                        const guidesContainer = clonedDoc.getElementById('guidesContainer');
+                                        if (guidesContainer) {
+                                            guidesContainer.style.setProperty('display', 'none', 'important');
+                                            guidesContainer.style.setProperty('visibility', 'hidden', 'important');
+                                            guidesContainer.style.setProperty('opacity', '0', 'important');
+                                        }
+                                        
+                                        // Hide all individual guide lines
+                                        const allGuides = clonedDoc.querySelectorAll('.guide-line');
+                                        allGuides.forEach(guide => {
+                                            guide.style.setProperty('display', 'none', 'important');
+                                            guide.style.setProperty('visibility', 'hidden', 'important');
+                                            guide.style.setProperty('opacity', '0', 'important');
+                                        });
+                                        
+                                        // Hide spacing measurements
+                                        const spacingContainer = clonedDoc.getElementById('spacingContainer');
+                                        if (spacingContainer) {
+                                            spacingContainer.style.setProperty('display', 'none', 'important');
+                                            spacingContainer.style.setProperty('visibility', 'hidden', 'important');
+                                            spacingContainer.style.setProperty('opacity', '0', 'important');
+                                        }
+                                        
+                                        const allSpacingLabels = clonedDoc.querySelectorAll('.spacing-label');
+                                        allSpacingLabels.forEach(label => {
+                                            label.style.setProperty('display', 'none', 'important');
+                                            label.style.setProperty('visibility', 'hidden', 'important');
+                                            label.style.setProperty('opacity', '0', 'important');
+                                        });
+                                        
+                                        const allSpacingLines = clonedDoc.querySelectorAll('.spacing-line');
+                                        allSpacingLines.forEach(line => {
+                                            line.style.setProperty('display', 'none', 'important');
+                                            line.style.setProperty('visibility', 'hidden', 'important');
+                                            line.style.setProperty('opacity', '0', 'important');
+                                        });
+                                        
                                         // Keep only text boxes and image boxes with their styling
                                         const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box, .draggable-image-box');
                                         allBoxes.forEach(box => {
@@ -6587,6 +6714,51 @@ if (!sessionState.defaultFontFamily) {
                             const pdfControls = clonedViewer.querySelector('.pdf-controls');
                             if (pdfControls) pdfControls.style.display = 'none';
                             
+                            // Hide rulers
+                            const rulerContainer = clonedDoc.getElementById('rulerContainer');
+                            if (rulerContainer) rulerContainer.style.display = 'none';
+                            
+                            const rulerToggleBtn = clonedDoc.getElementById('rulerToggleBtn');
+                            if (rulerToggleBtn) rulerToggleBtn.style.display = 'none';
+                            
+                            // Hide guides with strong CSS to ensure they don't appear
+                            const guidesContainer = clonedDoc.getElementById('guidesContainer');
+                            if (guidesContainer) {
+                                guidesContainer.style.setProperty('display', 'none', 'important');
+                                guidesContainer.style.setProperty('visibility', 'hidden', 'important');
+                                guidesContainer.style.setProperty('opacity', '0', 'important');
+                            }
+                            
+                            // Hide all individual guide lines
+                            const allGuides = clonedDoc.querySelectorAll('.guide-line');
+                            allGuides.forEach(guide => {
+                                guide.style.setProperty('display', 'none', 'important');
+                                guide.style.setProperty('visibility', 'hidden', 'important');
+                                guide.style.setProperty('opacity', '0', 'important');
+                            });
+                            
+                            // Hide spacing measurements
+                            const spacingContainer = clonedDoc.getElementById('spacingContainer');
+                            if (spacingContainer) {
+                                spacingContainer.style.setProperty('display', 'none', 'important');
+                                spacingContainer.style.setProperty('visibility', 'hidden', 'important');
+                                spacingContainer.style.setProperty('opacity', '0', 'important');
+                            }
+                            
+                            const allSpacingLabels = clonedDoc.querySelectorAll('.spacing-label');
+                            allSpacingLabels.forEach(label => {
+                                label.style.setProperty('display', 'none', 'important');
+                                label.style.setProperty('visibility', 'hidden', 'important');
+                                label.style.setProperty('opacity', '0', 'important');
+                            });
+                            
+                            const allSpacingLines = clonedDoc.querySelectorAll('.spacing-line');
+                            allSpacingLines.forEach(line => {
+                                line.style.setProperty('display', 'none', 'important');
+                                line.style.setProperty('visibility', 'hidden', 'important');
+                                line.style.setProperty('opacity', '0', 'important');
+                            });
+                            
                             // Remove borders and backgrounds from text boxes for clean screenshot
                             const allBoxes = clonedViewer.querySelectorAll('.draggable-text-box');
                             allBoxes.forEach(box => {
@@ -6801,6 +6973,44 @@ if (!sessionState.defaultFontFamily) {
                             
                             const rulerToggleBtn = clonedDoc.getElementById('rulerToggleBtn');
                             if (rulerToggleBtn) rulerToggleBtn.style.display = 'none';
+                            
+                            // Hide guides with strong CSS to ensure they don't appear
+                            const guidesContainer = clonedDoc.getElementById('guidesContainer');
+                            if (guidesContainer) {
+                                guidesContainer.style.setProperty('display', 'none', 'important');
+                                guidesContainer.style.setProperty('visibility', 'hidden', 'important');
+                                guidesContainer.style.setProperty('opacity', '0', 'important');
+                            }
+                            
+                            // Hide all individual guide lines
+                            const allGuides = clonedDoc.querySelectorAll('.guide-line');
+                            allGuides.forEach(guide => {
+                                guide.style.setProperty('display', 'none', 'important');
+                                guide.style.setProperty('visibility', 'hidden', 'important');
+                                guide.style.setProperty('opacity', '0', 'important');
+                            });
+                            
+                            // Hide spacing measurements
+                            const spacingContainer = clonedDoc.getElementById('spacingContainer');
+                            if (spacingContainer) {
+                                spacingContainer.style.setProperty('display', 'none', 'important');
+                                spacingContainer.style.setProperty('visibility', 'hidden', 'important');
+                                spacingContainer.style.setProperty('opacity', '0', 'important');
+                            }
+                            
+                            const allSpacingLabels = clonedDoc.querySelectorAll('.spacing-label');
+                            allSpacingLabels.forEach(label => {
+                                label.style.setProperty('display', 'none', 'important');
+                                label.style.setProperty('visibility', 'hidden', 'important');
+                                label.style.setProperty('opacity', '0', 'important');
+                            });
+                            
+                            const allSpacingLines = clonedDoc.querySelectorAll('.spacing-line');
+                            allSpacingLines.forEach(line => {
+                                line.style.setProperty('display', 'none', 'important');
+                                line.style.setProperty('visibility', 'hidden', 'important');
+                                line.style.setProperty('opacity', '0', 'important');
+                            });
                         }
                     }
                 });
@@ -7738,6 +7948,12 @@ if (!sessionState.defaultFontFamily) {
                     }
                 }
                 
+                // Hide ruler toggle button in preview mode
+                const rulerToggleBtn = document.getElementById('rulerToggleBtn');
+                if (rulerToggleBtn) {
+                    rulerToggleBtn.style.display = 'none';
+                }
+                
                 // Clear spacing measurements
                 clearSpacingMeasurements();
                 
@@ -7786,6 +8002,12 @@ if (!sessionState.defaultFontFamily) {
                 
                 // Show all transform controls
                 showAllTransformControls();
+                
+                // Restore ruler toggle button
+                const rulerToggleBtn = document.getElementById('rulerToggleBtn');
+                if (rulerToggleBtn) {
+                    rulerToggleBtn.style.display = '';
+                }
                 
                 // Restore rulers and guides if they were visible before
                 if (rulersVisible) {
@@ -7971,79 +8193,112 @@ if (!sessionState.defaultFontFamily) {
             setupRulerDragHandlers(horizontalRuler, verticalRuler);
         }
 
+        // Global ruler drag state
+        let rulerDragState = {
+            isDragging: false,
+            guideType: null,
+            currentGuide: null
+        };
+
         function setupRulerDragHandlers(horizontalRuler, verticalRuler) {
-            let isDragging = false;
-            let guideType = null;
-            let dragMoveHandler = null;
-            let dragEndHandler = null;
+            if (!horizontalRuler || !verticalRuler) return;
             
-            // Handler for horizontal ruler
-            horizontalRuler.addEventListener('mousedown', function(e) {
+            // Remove existing handlers by cloning (cleans up old listeners)
+            const oldHorizontal = horizontalRuler.cloneNode(false);
+            oldHorizontal.id = horizontalRuler.id;
+            oldHorizontal.className = horizontalRuler.className;
+            oldHorizontal.innerHTML = horizontalRuler.innerHTML;
+            horizontalRuler.parentNode.replaceChild(oldHorizontal, horizontalRuler);
+            
+            const oldVertical = verticalRuler.cloneNode(false);
+            oldVertical.id = verticalRuler.id;
+            oldVertical.className = verticalRuler.className;
+            oldVertical.innerHTML = verticalRuler.innerHTML;
+            verticalRuler.parentNode.replaceChild(oldVertical, verticalRuler);
+            
+            // Handler for horizontal ruler - entire ruler is clickable
+            oldHorizontal.addEventListener('mousedown', function(e) {
                 if (!rulersVisible) return;
                 
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
                 const viewerContainer = document.querySelector('.viewer-container');
+                if (!viewerContainer) return;
+                
                 const viewerRect = viewerContainer.getBoundingClientRect();
                 const rulerHeight = 20;
-                const rulerWidth = 20;
-                const clickX = e.clientX - viewerRect.left;
                 
-                // If click is in the corner area (first 20px), don't handle it - let vertical ruler handle it
-                if (clickX < rulerWidth) {
-                    return;
+                rulerDragState.isDragging = true;
+                rulerDragState.guideType = 'horizontal';
+                const y = Math.max(0, e.clientY - viewerRect.top - rulerHeight);
+                
+                rulerDragState.currentGuide = createGuide('horizontal', y);
+                if (rulerDragState.currentGuide) {
+                    startDraggingGuide(rulerDragState.currentGuide, e, 'horizontal');
                 }
-                
-                e.preventDefault();
-                e.stopPropagation();
-                
-                isDragging = true;
-                guideType = 'horizontal';
-                const y = e.clientY - viewerRect.top - rulerHeight;
-                const guide = createGuide('horizontal', y);
-                if (guide) {
-                    startDraggingGuide(guide, e, 'horizontal');
-                }
-            });
+            }, true);
             
-            // Handler for vertical ruler
-            verticalRuler.addEventListener('mousedown', function(e) {
+            // Handler for vertical ruler - entire ruler is clickable  
+            oldVertical.addEventListener('mousedown', function(e) {
                 if (!rulersVisible) return;
                 
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
                 
                 const viewerContainer = document.querySelector('.viewer-container');
+                if (!viewerContainer) return;
+                
                 const viewerRect = viewerContainer.getBoundingClientRect();
                 const rulerWidth = 20;
                 
-                isDragging = true;
-                guideType = 'vertical';
-                const x = e.clientX - viewerRect.left - rulerWidth;
-                const guide = createGuide('vertical', x);
-                if (guide) {
-                    startDraggingGuide(guide, e, 'vertical');
+                rulerDragState.isDragging = true;
+                rulerDragState.guideType = 'vertical';
+                const x = Math.max(0, e.clientX - viewerRect.left - rulerWidth);
+                
+                rulerDragState.currentGuide = createGuide('vertical', x);
+                if (rulerDragState.currentGuide) {
+                    startDraggingGuide(rulerDragState.currentGuide, e, 'vertical');
                 }
-            });
-            
-            dragMoveHandler = function(e) {
-                if (isDragging && currentDraggedGuide && guideType) {
+            }, true);
+        }
+        
+        // Global mouse handlers for ruler dragging
+        document.addEventListener('mousemove', function(e) {
+            // Handle dragging guides from rulers
+            if (rulerDragState.isDragging && rulerDragState.currentGuide && rulerDragState.guideType) {
+                updateGuidePosition(rulerDragState.currentGuide, e, rulerDragState.guideType);
+            }
+            // Handle repositioning existing guides
+            if (isDraggingGuide && currentDraggedGuide) {
+                const guideType = currentDraggedGuide.dataset.type;
+                if (guideType) {
                     updateGuidePosition(currentDraggedGuide, e, guideType);
                 }
-            };
-            
-            dragEndHandler = function() {
-                if (isDragging) {
-                    isDragging = false;
-                    if (currentDraggedGuide) {
-                        currentDraggedGuide.style.opacity = '0.7';
-                    }
-                    currentDraggedGuide = null;
-                    guideType = null;
+            }
+        }, true);
+        
+        document.addEventListener('mouseup', function() {
+            // Handle ruler dragging end
+            if (rulerDragState.isDragging) {
+                rulerDragState.isDragging = false;
+                if (rulerDragState.currentGuide) {
+                    rulerDragState.currentGuide.style.opacity = '0.7';
                 }
-            };
-            
-            document.addEventListener('mousemove', dragMoveHandler);
-            document.addEventListener('mouseup', dragEndHandler);
-        }
+                rulerDragState.currentGuide = null;
+                rulerDragState.guideType = null;
+            }
+            // Handle existing guide dragging end
+            if (isDraggingGuide) {
+                isDraggingGuide = false;
+                if (currentDraggedGuide) {
+                    currentDraggedGuide.style.opacity = '0.7';
+                }
+                currentDraggedGuide = null;
+            }
+        }, true);
 
         function createGuide(type, position) {
             const guidesContainer = document.getElementById('guidesContainer');
@@ -8073,12 +8328,14 @@ if (!sessionState.defaultFontFamily) {
                 deleteGuide(guide.id);
             });
             
-            // Setup dragging
+            // Setup dragging - click anywhere on guide to reposition
             guide.addEventListener('mousedown', function(e) {
                 if (e.target.classList.contains('guide-handle')) return;
-                startDraggingGuide(guide, e, type);
+                const guideType = guide.dataset.type;
+                startDraggingGuide(guide, e, guideType);
                 e.preventDefault();
-            });
+                e.stopPropagation();
+            }, { capture: true });
             
             // Position the guide initially
             updateGuidePosition(guide, null, type);
@@ -8089,6 +8346,10 @@ if (!sessionState.defaultFontFamily) {
             isDraggingGuide = true;
             currentDraggedGuide = guide;
             guide.style.opacity = '1';
+            // Update position immediately on click to avoid jumping
+            if (e) {
+                updateGuidePosition(guide, e, type);
+            }
         }
 
         function updateGuidePosition(guide, e, type) {
@@ -8185,12 +8446,164 @@ if (!sessionState.defaultFontFamily) {
 
         // Figma-like Spacing Measurements System
         let spacingMeasurementActive = true;
+        const SPACING_SNAP_TOLERANCE = 3; // pixels - how close spacing needs to be to snap
 
         function clearSpacingMeasurements() {
             const spacingContainer = document.getElementById('spacingContainer');
             if (spacingContainer) {
                 spacingContainer.innerHTML = '';
             }
+        }
+
+        // Function to check if spacing should snap to match existing spacing
+        function checkSpacingSnap(draggedBox, x, y, viewerRect) {
+            const allBoxes = Array.from(document.querySelectorAll('.draggable-text-box, .draggable-image-box'));
+            
+            if (allBoxes.length < 3) {
+                return { snapped: false, x: x, y: y };
+            }
+            
+            // Get all boxes except the one being dragged
+            const otherBoxes = allBoxes.filter(box => box !== draggedBox);
+            if (otherBoxes.length < 2) {
+                return { snapped: false, x: x, y: y };
+            }
+            
+            // Calculate all existing spacings between other boxes (excluding dragged box)
+            const existingSpacings = new Set();
+            
+            for (let i = 0; i < otherBoxes.length; i++) {
+                for (let j = i + 1; j < otherBoxes.length; j++) {
+                    const rect1 = otherBoxes[i].getBoundingClientRect();
+                    const rect2 = otherBoxes[j].getBoundingClientRect();
+                    
+                    // Horizontal spacing
+                    const horizontalOverlap = !(rect1.right < rect2.left || rect1.left > rect2.right);
+                    if (horizontalOverlap) {
+                        let distance = 0;
+                        if (rect1.top > rect2.bottom) {
+                            distance = Math.round(rect1.top - rect2.bottom);
+                        } else if (rect1.bottom < rect2.top) {
+                            distance = Math.round(rect2.top - rect1.bottom);
+                        }
+                        if (distance > 0) {
+                            existingSpacings.add(distance);
+                        }
+                    }
+                    
+                    // Vertical spacing
+                    const verticalOverlap = !(rect1.bottom < rect2.top || rect1.top > rect2.bottom);
+                    if (verticalOverlap) {
+                        let distance = 0;
+                        if (rect1.left > rect2.right) {
+                            distance = Math.round(rect1.left - rect2.right);
+                        } else if (rect1.right < rect2.left) {
+                            distance = Math.round(rect2.left - rect1.right);
+                        }
+                        if (distance > 0) {
+                            existingSpacings.add(distance);
+                        }
+                    }
+                }
+            }
+            
+            if (existingSpacings.size === 0) {
+                return { snapped: false, x: x, y: y };
+            }
+            
+            // Calculate spacings from dragged box to other boxes
+            const draggedRect = {
+                left: x,
+                top: y,
+                right: x + draggedBox.offsetWidth,
+                bottom: y + draggedBox.offsetHeight,
+                width: draggedBox.offsetWidth,
+                height: draggedBox.offsetHeight
+            };
+            
+            let bestSnapX = x;
+            let bestSnapY = y;
+            let bestMatchDistance = Infinity;
+            let hasMatch = false;
+            
+            // Check horizontal spacing (vertical gaps)
+            for (const otherBox of otherBoxes) {
+                const otherRect = otherBox.getBoundingClientRect();
+                const relativeOtherRect = {
+                    left: otherRect.left - viewerRect.left,
+                    top: otherRect.top - viewerRect.top,
+                    right: otherRect.right - viewerRect.left,
+                    bottom: otherRect.bottom - viewerRect.top,
+                    width: otherRect.width,
+                    height: otherRect.height
+                };
+                
+                // Check horizontal overlap (vertical spacing)
+                const horizontalOverlap = !(draggedRect.right < relativeOtherRect.left || draggedRect.left > relativeOtherRect.right);
+                if (horizontalOverlap) {
+                    // Try spacing above other box
+                    const spaceAbove = relativeOtherRect.top - draggedRect.bottom;
+                    if (spaceAbove > 0) {
+                        for (const existingSpacing of existingSpacings) {
+                            const diff = Math.abs(spaceAbove - existingSpacing);
+                            if (diff <= SPACING_SNAP_TOLERANCE && diff < bestMatchDistance) {
+                                bestSnapY = relativeOtherRect.top - existingSpacing - draggedRect.height;
+                                bestMatchDistance = diff;
+                                hasMatch = true;
+                            }
+                        }
+                    }
+                    
+                    // Try spacing below other box
+                    const spaceBelow = draggedRect.top - relativeOtherRect.bottom;
+                    if (spaceBelow > 0) {
+                        for (const existingSpacing of existingSpacings) {
+                            const diff = Math.abs(spaceBelow - existingSpacing);
+                            if (diff <= SPACING_SNAP_TOLERANCE && diff < bestMatchDistance) {
+                                bestSnapY = relativeOtherRect.bottom + existingSpacing;
+                                bestMatchDistance = diff;
+                                hasMatch = true;
+                            }
+                        }
+                    }
+                }
+                
+                // Check vertical overlap (horizontal spacing)
+                const verticalOverlap = !(draggedRect.bottom < relativeOtherRect.top || draggedRect.top > relativeOtherRect.bottom);
+                if (verticalOverlap) {
+                    // Try spacing to the right of other box
+                    const spaceRight = draggedRect.left - relativeOtherRect.right;
+                    if (spaceRight > 0) {
+                        for (const existingSpacing of existingSpacings) {
+                            const diff = Math.abs(spaceRight - existingSpacing);
+                            if (diff <= SPACING_SNAP_TOLERANCE && diff < bestMatchDistance) {
+                                bestSnapX = relativeOtherRect.right + existingSpacing;
+                                bestMatchDistance = diff;
+                                hasMatch = true;
+                            }
+                        }
+                    }
+                    
+                    // Try spacing to the left of other box
+                    const spaceLeft = relativeOtherRect.left - draggedRect.right;
+                    if (spaceLeft > 0) {
+                        for (const existingSpacing of existingSpacings) {
+                            const diff = Math.abs(spaceLeft - existingSpacing);
+                            if (diff <= SPACING_SNAP_TOLERANCE && diff < bestMatchDistance) {
+                                bestSnapX = relativeOtherRect.left - existingSpacing - draggedRect.width;
+                                bestMatchDistance = diff;
+                                hasMatch = true;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return {
+                snapped: hasMatch,
+                x: bestSnapX,
+                y: bestSnapY
+            };
         }
 
         function showSpacingMeasurements() {
@@ -8201,74 +8614,133 @@ if (!sessionState.defaultFontFamily) {
             const selectedBoxes = Array.from(document.querySelectorAll('.draggable-text-box.selected, .draggable-image-box.selected'));
             const allBoxes = Array.from(document.querySelectorAll('.draggable-text-box, .draggable-image-box'));
             
-            if (selectedBoxes.length === 0) return;
+            if (allBoxes.length < 2) return;
             
             const spacingContainer = document.getElementById('spacingContainer');
             if (!spacingContainer) return;
             
             const pdfViewer = document.getElementById('pdfViewer');
             if (!pdfViewer) return;
+            const viewerRect = pdfViewer.getBoundingClientRect();
             
-            // Show measurements between selected boxes
-            for (let i = 0; i < selectedBoxes.length; i++) {
-                for (let j = i + 1; j < selectedBoxes.length; j++) {
-                    showDistanceBetweenBoxes(selectedBoxes[i], selectedBoxes[j], spacingContainer);
-                }
-            }
+            // Collect all horizontal and vertical gaps
+            const horizontalGaps = [];
+            const verticalGaps = [];
             
-            // Show measurements between selected and nearby boxes
-            if (selectedBoxes.length === 1) {
-                const selectedBox = selectedBoxes[0];
-                const selectedRect = selectedBox.getBoundingClientRect();
-                const viewerRect = pdfViewer.getBoundingClientRect();
-                
-                allBoxes.forEach(box => {
-                    if (box === selectedBox) return;
-                    if (box.classList.contains('selected')) return;
+            // Calculate all gaps between all boxes
+            for (let i = 0; i < allBoxes.length; i++) {
+                for (let j = i + 1; j < allBoxes.length; j++) {
+                    const box1 = allBoxes[i];
+                    const box2 = allBoxes[j];
+                    const rect1 = box1.getBoundingClientRect();
+                    const rect2 = box2.getBoundingClientRect();
                     
-                    const boxRect = box.getBoundingClientRect();
-                    
-                    // Check if boxes are horizontally or vertically aligned (within 50px threshold)
-                    const horizontalOverlap = !(selectedRect.right < boxRect.left || selectedRect.left > boxRect.right);
-                    const verticalOverlap = !(selectedRect.bottom < boxRect.top || selectedRect.top > boxRect.bottom);
-                    
+                    // Check horizontal alignment (vertical gaps)
+                    const horizontalOverlap = !(rect1.right < rect2.left || rect1.left > rect2.right);
                     if (horizontalOverlap) {
-                        // Show vertical distance
                         let distance = 0;
-                        let position = 'right';
+                        let position = 'top';
                         
-                        if (selectedRect.top > boxRect.bottom) {
-                            distance = selectedRect.top - boxRect.bottom;
+                        if (rect1.top > rect2.bottom) {
+                            distance = rect1.top - rect2.bottom;
                             position = 'top';
-                        } else if (selectedRect.bottom < boxRect.top) {
-                            distance = boxRect.top - selectedRect.bottom;
+                        } else if (rect1.bottom < rect2.top) {
+                            distance = rect2.top - rect1.bottom;
                             position = 'bottom';
                         }
                         
                         if (distance > 0 && distance < 500) {
-                            showVerticalDistance(selectedBox, box, distance, spacingContainer, viewerRect, position);
+                            verticalGaps.push({
+                                box1: box1,
+                                box2: box2,
+                                distance: Math.round(distance),
+                                position: position,
+                                viewerRect: viewerRect
+                            });
                         }
                     }
                     
+                    // Check vertical alignment (horizontal gaps)
+                    const verticalOverlap = !(rect1.bottom < rect2.top || rect1.top > rect2.bottom);
                     if (verticalOverlap) {
-                        // Show horizontal distance
                         let distance = 0;
-                        let position = 'bottom';
+                        let position = 'right';
                         
-                        if (selectedRect.left > boxRect.right) {
-                            distance = selectedRect.left - boxRect.right;
+                        if (rect1.left > rect2.right) {
+                            distance = rect1.left - rect2.right;
                             position = 'left';
-                        } else if (selectedRect.right < boxRect.left) {
-                            distance = boxRect.left - selectedRect.right;
+                        } else if (rect1.right < rect2.left) {
+                            distance = rect2.left - rect1.right;
                             position = 'right';
                         }
                         
                         if (distance > 0 && distance < 500) {
-                            showHorizontalDistance(selectedBox, box, distance, spacingContainer, viewerRect, position);
+                            horizontalGaps.push({
+                                box1: box1,
+                                box2: box2,
+                                distance: Math.round(distance),
+                                position: position,
+                                viewerRect: viewerRect
+                            });
                         }
                     }
-                });
+                }
             }
+            
+            // Group gaps by matching distances (within 1px tolerance)
+            function groupMatchingGaps(gaps) {
+                const groups = {};
+                gaps.forEach(gap => {
+                    const key = gap.distance;
+                    if (!groups[key]) {
+                        groups[key] = [];
+                    }
+                    groups[key].push(gap);
+                });
+                
+                // Find distances that appear more than once
+                const matchingGroups = {};
+                Object.keys(groups).forEach(distance => {
+                    if (groups[distance].length > 1) {
+                        matchingGroups[distance] = groups[distance];
+                    }
+                });
+                
+                return { allGaps: gaps, matchingGroups: matchingGroups };
+            }
+            
+            const horizontalGroups = groupMatchingGaps(horizontalGaps);
+            const verticalGroups = groupMatchingGaps(verticalGaps);
+            
+            // Show horizontal distances with matching indicators
+            horizontalGaps.forEach(gap => {
+                const isMatching = horizontalGroups.matchingGroups[gap.distance] && 
+                                  horizontalGroups.matchingGroups[gap.distance].length > 1;
+                showHorizontalDistance(
+                    gap.box1, 
+                    gap.box2, 
+                    gap.distance, 
+                    spacingContainer, 
+                    gap.viewerRect, 
+                    gap.position,
+                    isMatching
+                );
+            });
+            
+            // Show vertical distances with matching indicators
+            verticalGaps.forEach(gap => {
+                const isMatching = verticalGroups.matchingGroups[gap.distance] && 
+                                  verticalGroups.matchingGroups[gap.distance].length > 1;
+                showVerticalDistance(
+                    gap.box1, 
+                    gap.box2, 
+                    gap.distance, 
+                    spacingContainer, 
+                    gap.viewerRect, 
+                    gap.position,
+                    isMatching
+                );
+            });
         }
 
         function showDistanceBetweenBoxes(box1, box2, container) {
@@ -8302,7 +8774,7 @@ if (!sessionState.defaultFontFamily) {
             container.appendChild(label);
         }
 
-        function showHorizontalDistance(box1, box2, distance, container, viewerRect, position) {
+        function showHorizontalDistance(box1, box2, distance, container, viewerRect, position, isMatching = false) {
             const rect1 = box1.getBoundingClientRect();
             const rect2 = box2.getBoundingClientRect();
             
@@ -8320,7 +8792,7 @@ if (!sessionState.defaultFontFamily) {
             
             // Create line
             const line = document.createElement('div');
-            line.className = 'spacing-line horizontal';
+            line.className = 'spacing-line horizontal' + (isMatching ? ' matching' : '');
             line.style.left = startX + 'px';
             line.style.top = y + 'px';
             line.style.width = (endX - startX) + 'px';
@@ -8328,15 +8800,15 @@ if (!sessionState.defaultFontFamily) {
             
             // Create label
             const label = document.createElement('div');
-            label.className = 'spacing-label horizontal' + (position === 'right' ? ' right' : '');
-            label.textContent = Math.round(distance) + 'px';
+            label.className = 'spacing-label horizontal' + (position === 'right' ? ' right' : '') + (isMatching ? ' matching' : '');
+            label.textContent = (isMatching ? '=' : '') + Math.round(distance) + 'px';
             label.style.left = ((startX + endX) / 2) + 'px';
             label.style.top = y + 'px';
             label.style.transform = 'translate(-50%, -50%)';
             container.appendChild(label);
         }
 
-        function showVerticalDistance(box1, box2, distance, container, viewerRect, position) {
+        function showVerticalDistance(box1, box2, distance, container, viewerRect, position, isMatching = false) {
             const rect1 = box1.getBoundingClientRect();
             const rect2 = box2.getBoundingClientRect();
             
@@ -8354,7 +8826,7 @@ if (!sessionState.defaultFontFamily) {
             
             // Create line
             const line = document.createElement('div');
-            line.className = 'spacing-line vertical';
+            line.className = 'spacing-line vertical' + (isMatching ? ' matching' : '');
             line.style.left = x + 'px';
             line.style.top = startY + 'px';
             line.style.height = (endY - startY) + 'px';
@@ -8362,8 +8834,8 @@ if (!sessionState.defaultFontFamily) {
             
             // Create label
             const label = document.createElement('div');
-            label.className = 'spacing-label vertical' + (position === 'bottom' ? ' bottom' : '');
-            label.textContent = Math.round(distance) + 'px';
+            label.className = 'spacing-label vertical' + (position === 'bottom' ? ' bottom' : '') + (isMatching ? ' matching' : '');
+            label.textContent = (isMatching ? '=' : '') + Math.round(distance) + 'px';
             label.style.left = x + 'px';
             label.style.top = ((startY + endY) / 2) + 'px';
             label.style.transform = 'translate(-50%, -50%)';
@@ -8376,14 +8848,8 @@ if (!sessionState.defaultFontFamily) {
             // Wrap selectBox to update measurements
         }
 
-        // Listen for selection changes
-        document.addEventListener('click', function(e) {
-            setTimeout(() => {
-                if (!isPreviewMode) {
-                    showSpacingMeasurements();
-                }
-            }, 100);
-        });
+        // Listen for selection changes - but don't show measurements (only show during drag)
+        // Removed automatic measurement display on click - measurements only show during drag
 
         // Update measurements during drag/resize
         let measurementInterval = null;
@@ -8413,19 +8879,11 @@ if (!sessionState.defaultFontFamily) {
 
         document.addEventListener('mouseup', function() {
             stopMeasurementUpdates();
-            setTimeout(() => {
-                if (!isPreviewMode) {
-                    showSpacingMeasurements();
-                }
-            }, 100);
+            // Clear measurements when drag ends - measurements only appear during drag
+            clearSpacingMeasurements();
         });
 
-        // Initial measurement display
-        setTimeout(() => {
-            if (!isPreviewMode) {
-                showSpacingMeasurements();
-            }
-        }, 500);
+        // Don't show initial measurements - only show during drag operations
     </script>
 </body>
 </html>
