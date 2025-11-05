@@ -2258,10 +2258,34 @@
                     </div>
                     
                     <div class="form-group">
-                    <label class="file-input" for="csvFile">
-                        <input type="file" id="csvFile" accept=".csv,text/csv">
-                            <div id="csvLabel">📊 Click to select CSV file</div>
-                    </label>
+                        <div style="margin-bottom: 8px;">
+                            <label style="font-size: 12px; font-weight: bold; color: #333; margin-bottom: 5px; display: block;">Data Source:</label>
+                            <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                                <button type="button" id="csvModeToggle" data-mode="url" class="btn btn-sm" style="flex: 1; padding: 5px; font-size: 11px; background: #007bff; color: white; border: none; border-radius: 4px;">
+                                    🌐 Google Sheets URL
+                                </button>
+                                <button type="button" id="csvFileModeToggle" data-mode="file" class="btn btn-sm" style="flex: 1; padding: 5px; font-size: 11px; background: #6c757d; color: white; border: none; border-radius: 4px;">
+                                    📁 Upload CSV File
+                                </button>
+                            </div>
+                        </div>
+                        <!-- URL Input (Default) -->
+                        <div id="csvUrlInputContainer">
+                            <label style="font-size: 12px; font-weight: bold; color: #333; margin-bottom: 5px; display: block;">Google Sheets URL:</label>
+                            <input type="url" id="csvUrlInput" placeholder="https://docs.google.com/spreadsheets/d/..." 
+                                style="width: 100%; padding: 8px; font-size: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                            <button type="button" id="loadSheetsBtn" style="width: 100%; margin-top: 8px; padding: 8px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                📊 Load from Google Sheets
+                            </button>
+                            <div id="csvUrlStatus" style="font-size: 11px; color: #666; margin-top: 5px;"></div>
+                        </div>
+                        <!-- File Input (Hidden by default) -->
+                        <div id="csvFileInputContainer" style="display: none;">
+                            <label class="file-input" for="csvFile">
+                                <input type="file" id="csvFile" accept=".csv,text/csv">
+                                <div id="csvLabel">📊 Click to select CSV file</div>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -3702,6 +3726,63 @@ if (!sessionState.defaultFontFamily) {
                         this.style.borderColor = '';
                     }
                     applyLiveFormatting(); // Apply formatting immediately
+                });
+            }
+
+            // CSV mode toggle handlers
+            const csvModeToggle = document.getElementById('csvModeToggle');
+            const csvFileModeToggle = document.getElementById('csvFileModeToggle');
+            const csvUrlInputContainer = document.getElementById('csvUrlInputContainer');
+            const csvFileInputContainer = document.getElementById('csvFileInputContainer');
+            
+            if (csvModeToggle && csvFileModeToggle) {
+                csvModeToggle.addEventListener('click', function() {
+                    csvUrlInputContainer.style.display = 'block';
+                    csvFileInputContainer.style.display = 'none';
+                    csvModeToggle.style.background = '#007bff';
+                    csvModeToggle.style.color = 'white';
+                    csvFileModeToggle.style.background = '#6c757d';
+                    csvFileModeToggle.style.color = 'white';
+                });
+                
+                csvFileModeToggle.addEventListener('click', function() {
+                    csvUrlInputContainer.style.display = 'none';
+                    csvFileInputContainer.style.display = 'block';
+                    csvFileModeToggle.style.background = '#007bff';
+                    csvFileModeToggle.style.color = 'white';
+                    csvModeToggle.style.background = '#6c757d';
+                    csvModeToggle.style.color = 'white';
+                });
+            }
+
+            // Google Sheets URL loader
+            const loadSheetsBtn = document.getElementById('loadSheetsBtn');
+            const csvUrlInput = document.getElementById('csvUrlInput');
+            
+            async function handleLoadSheets() {
+                const url = csvUrlInput.value.trim();
+                if (!url) {
+                    alert('Please enter a Google Sheets URL');
+                    return;
+                }
+                
+                try {
+                    const data = await loadCSVFromGoogleSheets(url);
+                    processCSVData(data, 'Google Sheets');
+                } catch (error) {
+                    alert('Failed to load Google Sheets: ' + error.message);
+                }
+            }
+            
+            if (loadSheetsBtn) {
+                loadSheetsBtn.addEventListener('click', handleLoadSheets);
+            }
+            
+            if (csvUrlInput) {
+                csvUrlInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        handleLoadSheets();
+                    }
                 });
             }
 
@@ -7216,6 +7297,200 @@ if (!sessionState.defaultFontFamily) {
         }
 
 
+
+        // Convert Google Sheets URL to CSV export URL
+        function convertGoogleSheetsUrlToCsv(url) {
+            try {
+                // Remove any trailing slashes and whitespace
+                url = url.trim();
+                
+                // Handle different Google Sheets URL formats
+                // Pattern 1: https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/edit
+                // Pattern 2: https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}
+                // Pattern 3: https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/edit#gid={GID}
+                let spreadsheetId = null;
+                let gid = '0';
+                
+                // Try to extract spreadsheet ID - handle various URL formats
+                const patterns = [
+                    /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/,  // Standard format
+                    /\/d\/([a-zA-Z0-9-_]+)/,                // Short format
+                ];
+                
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        spreadsheetId = match[1];
+                        break;
+                    }
+                }
+                
+                if (!spreadsheetId) {
+                    throw new Error('Invalid Google Sheets URL format. Please use a URL like: https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit');
+                }
+                
+                // Extract GID if present (for specific sheet) - check both # and & formats
+                const gidMatch = url.match(/[#&]gid=(\d+)/);
+                if (gidMatch) {
+                    gid = gidMatch[1];
+                }
+                
+                // Construct CSV export URL - Google Sheets CSV export format
+                // Note: For public sheets, this should work directly
+                // Remove usp=sharing as it may cause 400 errors
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
+                
+                console.log('Converted URL:', url, 'to CSV URL:', csvUrl);
+                return csvUrl;
+            } catch (error) {
+                console.error('Error converting Google Sheets URL:', error);
+                throw new Error('Invalid Google Sheets URL. Please make sure the sheet is shared publicly (Anyone with the link can view) and use the format: https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit');
+            }
+        }
+
+        // Fetch CSV data from Google Sheets URL
+        async function loadCSVFromGoogleSheets(url) {
+            const statusDiv = document.getElementById('csvUrlStatus');
+            statusDiv.textContent = 'Loading...';
+            statusDiv.style.color = '#007bff';
+            
+            try {
+                // Convert to CSV export URL
+                const csvUrl = convertGoogleSheetsUrlToCsv(url);
+                console.log('Fetching CSV from:', csvUrl);
+                
+                // Fetch the CSV data with proper headers
+                // Note: Google Sheets CSV export may have CORS restrictions
+                // If direct fetch fails, we might need a proxy
+                const response = await fetch(csvUrl, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Accept': 'text/csv',
+                    }
+                });
+                
+                if (!response.ok) {
+                    // Try to get more details about the error
+                    let errorText = '';
+                    try {
+                        errorText = await response.text();
+                        console.log('Error response:', errorText);
+                    } catch (e) {
+                        // Ignore if we can't read error text
+                    }
+                    
+                    if (response.status === 403) {
+                        throw new Error('Access denied. Please make sure the Google Sheet is shared publicly:\n1. Open your Google Sheet\n2. Click "Share"\n3. Change to "Anyone with the link" can view\n4. Copy the link and try again');
+                    } else if (response.status === 404) {
+                        throw new Error('Sheet not found. Please check the URL and make sure the sheet exists and is accessible.');
+                    } else if (response.status === 400) {
+                        throw new Error('Invalid request. The Google Sheet URL format may be incorrect. Please ensure:\n1. The sheet is shared publicly\n2. The URL is in the format: https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit\n3. Try copying the "Share" link directly from Google Sheets');
+                    } else {
+                        throw new Error(`Failed to load sheet (${response.status}): ${response.statusText || 'Unknown error'}. Please ensure the sheet is shared publicly.`);
+                    }
+                }
+                
+                const csvText = await response.text();
+                
+                // Check if the response is actually CSV or an HTML error page
+                if (csvText.trim().startsWith('<!DOCTYPE') || csvText.trim().startsWith('<html')) {
+                    throw new Error('Received HTML instead of CSV. The sheet may not be publicly accessible. Please ensure the sheet is shared with "Anyone with the link" can view.');
+                }
+                
+                if (!csvText || csvText.trim().length === 0) {
+                    throw new Error('The sheet appears to be empty or could not be loaded.');
+                }
+                
+                // Parse CSV using PapaParse
+                return new Promise((resolve, reject) => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            console.log('CSV parsing complete:', results);
+                            if (results.errors.length > 0) {
+                                console.error('CSV parsing errors:', results.errors);
+                                const errorMsg = results.errors[0].message || 'Error parsing CSV data';
+                                reject(new Error(errorMsg));
+                                return;
+                            }
+                            
+                            if (!results.data || results.data.length === 0) {
+                                reject(new Error('No data found in the sheet.'));
+                                return;
+                            }
+                            
+                            resolve(results.data);
+                        },
+                        error: function(error) {
+                            console.error('CSV parsing error:', error);
+                            reject(new Error('Error parsing CSV data: ' + error.message));
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading from Google Sheets:', error);
+                statusDiv.textContent = 'Error: ' + error.message;
+                statusDiv.style.color = '#dc3545';
+                throw error;
+            }
+        }
+
+        // Process CSV data (shared function for both file and URL)
+        function processCSVData(data, sourceName = 'Google Sheets') {
+            // Store CSV data in session state and global variable
+            sessionState.csv = sourceName;
+            sessionState.csvRows = data;
+            csvData = data;
+            
+            // Add columns property to csvData for compatibility with MERGE-ONLINE
+            if (data && data.length > 0) {
+                csvData.columns = Object.keys(data[0]);
+                sessionState.csvColumns = Object.keys(data[0]);
+            }
+            
+            currentRecord = 0;
+            
+            // Display preview
+            displayCSVPreview(data);
+            
+            // Show record navigation
+            showRecordNavigation();
+            
+            // Update status/label
+            const statusDiv = document.getElementById('csvUrlStatus');
+            if (statusDiv) {
+                statusDiv.textContent = `✓ Loaded ${data.length} rows from ${sourceName}`;
+                statusDiv.style.color = '#28a745';
+            }
+            
+            const csvLabel = document.getElementById('csvLabel');
+            if (csvLabel && sourceName !== 'Google Sheets') {
+                csvLabel.textContent = sourceName;
+            }
+            
+            // Update box editor if a box is selected
+            if (sessionState.selectedBox) {
+                updateBoxEditorValues(sessionState.selectedBox);
+            }
+            
+            // Update all text boxes with CSV data
+            updateAllBoxesWithCSVData();
+            
+            // Update download button state
+            updateDownloadButtonState();
+            
+            // Update records info
+            updateRecordsInfo();
+            
+            // Initialize page navigation
+            updatePageNavigation();
+            
+            // Update create records button state
+            updateCreateRecordsButtonState();
+        }
 
         function parseCSVFile(file) {
             console.log('parseCSVFile function called with file:', file);
