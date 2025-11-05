@@ -2439,9 +2439,15 @@
 
         <div class="main-content">
             <div class="content-header">
-                <div class="preview-controls" style="margin-bottom: 15px;">
+                <div class="preview-controls" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
                     <button id="previewModeBtn" class="btn btn-outline-primary" onclick="togglePreviewMode()" style="font-weight: 500;" title="Toggle Preview Mode - See exactly what your PDF will look like when downloaded (Press P key)">
                         Preview Mode
+                    </button>
+                    <button id="undoBtn" class="btn btn-outline-secondary" onclick="undoAction()" disabled title="Undo (Ctrl+Z)" style="font-weight: 500;">
+                        ↶ Undo
+                    </button>
+                    <button id="redoBtn" class="btn btn-outline-secondary" onclick="redoAction()" disabled title="Redo (Ctrl+Y)" style="font-weight: 500;">
+                        ↷ Redo
                     </button>
                 </div>
                 
@@ -2623,6 +2629,210 @@
             boxes: [],
             selectedBox: null
         };
+
+        // Undo/Redo system
+        let undoHistory = [];
+        let redoHistory = [];
+        const MAX_HISTORY = 50; // Limit history size
+
+        // Save current state for undo/redo
+        function saveUndoState(action = '') {
+            // Deep clone the boxes array
+            const stateCopy = JSON.parse(JSON.stringify({
+                boxes: sessionState.boxes.map(box => ({
+                    ...box,
+                    // Include all box properties
+                    id: box.id,
+                    boxId: box.boxId,
+                    x: box.x,
+                    y: box.y,
+                    width: box.width,
+                    height: box.height,
+                    boxType: box.boxType,
+                    csvColumn: box.csvColumn,
+                    fieldKey: box.fieldKey,
+                    staticText: box.staticText,
+                    fontFamily: box.fontFamily,
+                    fontSize: box.fontSize,
+                    color: box.color,
+                    textAlign: box.textAlign,
+                    bold: box.bold,
+                    italic: box.italic,
+                    underline: box.underline,
+                    strikethrough: box.strikethrough,
+                    imageUrl: box.imageUrl,
+                    boxIndex: box.boxIndex
+                })),
+                action: action,
+                timestamp: Date.now()
+            }));
+            
+            undoHistory.push(stateCopy);
+            
+            // Limit history size
+            if (undoHistory.length > MAX_HISTORY) {
+                undoHistory.shift();
+            }
+            
+            // Clear redo history when new action is performed
+            redoHistory = [];
+            
+            // Update button states
+            updateUndoRedoButtons();
+        }
+
+        // Restore state from history
+        function restoreState(state) {
+            if (!state || !state.boxes) return;
+            
+            // Remove all existing boxes from DOM
+            sessionState.boxes.forEach(box => {
+                if (box.element && box.element.parentNode) {
+                    box.element.parentNode.removeChild(box.element);
+                }
+            });
+            
+            // Clear session state boxes
+            sessionState.boxes = [];
+            
+            // Restore boxes from state
+            state.boxes.forEach(boxData => {
+                // Recreate box elements
+                if (boxData.boxType === 'text') {
+                    const textBox = document.createElement('div');
+                    textBox.className = 'draggable-text-box';
+                    textBox.id = 'textBox_' + boxData.id;
+                    textBox.style.cssText = `
+                        position: absolute;
+                        left: ${boxData.x}px;
+                        top: ${boxData.y}px;
+                        width: ${boxData.width}px;
+                        height: ${boxData.height}px;
+                        min-width: 80px;
+                        min-height: 25px;
+                        background: transparent;
+                        border: none;
+                        padding: 5px;
+                        cursor: move;
+                        pointer-events: auto;
+                        z-index: 20;
+                        font-family: '${boxData.fontFamily || 'Arial'}', Arial, sans-serif;
+                        font-size: ${boxData.fontSize || 16}px;
+                        color: ${boxData.color || '#000'};
+                        text-align: ${boxData.textAlign || 'center'};
+                        user-select: none;
+                        box-sizing: border-box;
+                        overflow: hidden;
+                        box-shadow: none;
+                        transition: all 0.1s ease;
+                        display: block;
+                        line-height: 1.2;
+                    `;
+                    
+                    // Set text content
+                    if (boxData.csvColumn && sessionState.csvRows && sessionState.csvRows.length > 0) {
+                        const recordIndex = boxData.boxIndex || 0;
+                        const record = sessionState.csvRows[recordIndex];
+                        textBox.textContent = record ? record[boxData.csvColumn] || boxData.staticText || '' : boxData.staticText || '';
+                    } else {
+                        textBox.textContent = boxData.staticText || '';
+                    }
+                    
+                    textBox.contentEditable = false;
+                    
+                    // Apply formatting
+                    if (boxData.bold) textBox.style.fontWeight = 'bold';
+                    if (boxData.italic) textBox.style.fontStyle = 'italic';
+                    if (boxData.underline) textBox.style.textDecoration = 'underline';
+                    if (boxData.strikethrough) {
+                        textBox.classList.add('text-strikethrough');
+                        textBox.style.overflow = 'visible';
+                        updateStrikethroughWrapper(textBox, true);
+                    }
+                    
+                    // Add to overlay container
+                    const overlayContainer = document.getElementById('overlayContainer');
+                    if (overlayContainer) {
+                        overlayContainer.appendChild(textBox);
+                    }
+                    
+                    // Make draggable
+                    makeDraggable(textBox);
+                    
+                    // Restore box data
+                    boxData.element = textBox;
+                    sessionState.boxes.push(boxData);
+                }
+                // Add image box restoration if needed
+            });
+            
+            // Update box editor if needed
+            if (sessionState.selectedBox) {
+                updateBoxEditorValues(sessionState.selectedBox);
+            }
+        }
+
+        // Undo action
+        function undoAction() {
+            if (undoHistory.length === 0) return;
+            
+            // Save current state to redo history
+            const currentState = JSON.parse(JSON.stringify({
+                boxes: sessionState.boxes.map(box => ({
+                    ...box
+                })),
+                action: '',
+                timestamp: Date.now()
+            }));
+            redoHistory.push(currentState);
+            
+            // Get previous state
+            const previousState = undoHistory.pop();
+            
+            // Restore previous state
+            restoreState(previousState);
+            
+            // Update button states
+            updateUndoRedoButtons();
+        }
+
+        // Redo action
+        function redoAction() {
+            if (redoHistory.length === 0) return;
+            
+            // Save current state to undo history
+            const currentState = JSON.parse(JSON.stringify({
+                boxes: sessionState.boxes.map(box => ({
+                    ...box
+                })),
+                action: '',
+                timestamp: Date.now()
+            }));
+            undoHistory.push(currentState);
+            
+            // Get next state
+            const nextState = redoHistory.pop();
+            
+            // Restore next state
+            restoreState(nextState);
+            
+            // Update button states
+            updateUndoRedoButtons();
+        }
+
+        // Update undo/redo button states
+        function updateUndoRedoButtons() {
+            const undoBtn = document.getElementById('undoBtn');
+            const redoBtn = document.getElementById('redoBtn');
+            
+            if (undoBtn) {
+                undoBtn.disabled = undoHistory.length === 0;
+            }
+            
+            if (redoBtn) {
+                redoBtn.disabled = redoHistory.length === 0;
+            }
+        }
 
         // Enhanced box management system
         let boxCounter = 0;
@@ -3556,6 +3766,9 @@ if (!sessionState.defaultFontFamily) {
             console.log('Current applyMode:', applyMode);
             console.log('Selected box:', sessionState.selectedBox);
             
+            // Save undo state before applying formatting
+            saveUndoState('Apply Formatting');
+            
             // Get formatting values from the form
             const fontFamily = document.getElementById('formatAllFontFamily').value;
             const fontSize = document.getElementById('formatAllFontSize').value;
@@ -3806,6 +4019,9 @@ if (!sessionState.defaultFontFamily) {
 
             // Setup keyboard shortcuts for box management
             setupKeyboardShortcuts();
+            
+            // Initialize undo/redo button states
+            updateUndoRedoButtons();
         });
 
         // Simple Multiple Records Management
@@ -3933,6 +4149,9 @@ if (!sessionState.defaultFontFamily) {
             
             const totalBoxes = textBoxes.length * recordsCount;
             alert(`Created ${totalBoxes} text boxes for ${recordsCount} records!`);
+            
+            // Save undo state after creating boxes
+            saveUndoState('Create Text Boxes');
             
             // Update download button state to enable downloads
             updateDownloadButtonState();
@@ -5230,8 +5449,8 @@ if (!sessionState.defaultFontFamily) {
         function deleteSelectedBox() {
             if (!sessionState.selectedBox) return;
 
-            // Save undo state before deleting (placeholder)
-            // saveUndoState('Delete Box');
+            // Save undo state before deleting
+            saveUndoState('Delete Box');
 
             const selectedItem = sessionState.selectedBox;
             
@@ -5349,6 +5568,19 @@ if (!sessionState.defaultFontFamily) {
         // Keyboard shortcuts for box management
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', function(e) {
+                // Undo/Redo shortcuts
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                    e.preventDefault();
+                    undoAction();
+                    return;
+                }
+                
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                    e.preventDefault();
+                    redoAction();
+                    return;
+                }
+                
                 // Delete key to delete selected box
                 if (e.key === 'Delete' || e.key === 'Backspace') {
                     if (sessionState.selectedBox) {
@@ -5672,6 +5904,9 @@ if (!sessionState.defaultFontFamily) {
                         sessionState.selectedBox.y = parseInt(element.style.top);
                     }
                     
+                    // Save undo state after resizing
+                    saveUndoState('Resize Box');
+                    
                 } else if (isDragging) {
                     initialX = currentX;
                     initialY = currentY;
@@ -5685,6 +5920,9 @@ if (!sessionState.defaultFontFamily) {
                         sessionState.selectedBox.x = parseInt(element.style.left);
                         sessionState.selectedBox.y = parseInt(element.style.top);
                     }
+                    
+                    // Save undo state after dragging
+                    saveUndoState('Move Box');
                 }
             }
         }
