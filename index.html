@@ -2248,6 +2248,32 @@
                     </button>
                 </div>
 
+                <!-- Browser Storage Auto-Save -->
+                <div class="section" style="margin-bottom: 20px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; background: #f8f9fa;">
+                    <label style="font-size: 12px; font-weight: bold; color: #333; margin-bottom: 8px; display: block;">
+                        <i class="fas fa-save"></i> Browser Storage Auto-Save
+                    </label>
+                    <div id="storageStatus" style="font-size: 11px; color: #666; margin-bottom: 8px;">
+                        Auto-saving enabled
+                    </div>
+                    <div style="display: flex; gap: 5px; flex-direction: column;">
+                        <button type="button" id="storageSaveBtn" onclick="saveToLocalStorage()" style="width: 100%; padding: 8px; background: #34a853; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                            💾 Save State Now
+                        </button>
+                        <button type="button" id="storageRestoreBtn" onclick="restoreFromLocalStorage()" style="width: 100%; padding: 8px; background: #ea4335; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; margin-top: 5px;">
+                            📥 Restore Saved State
+                        </button>
+                        <button type="button" id="storageClearBtn" onclick="clearSavedState()" style="width: 100%; padding: 6px; background: #ffc107; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 10px; margin-top: 5px;">
+                            🗑️ Clear Saved Data
+                        </button>
+                    </div>
+                    <div id="storageSaveStatus" style="font-size: 10px; color: #666; margin-top: 8px; text-align: center;"></div>
+                    <div style="font-size: 9px; color: #999; margin-top: 8px; text-align: center;">
+                        Auto-saves every 30 seconds<br>
+                        <span style="font-size: 8px;">Works offline with browser storage</span>
+                    </div>
+                </div>
+
                 <!-- File Uploads -->
                 <div class="section">
                     <div class="form-group">
@@ -2439,9 +2465,15 @@
 
         <div class="main-content">
             <div class="content-header">
-                <div class="preview-controls" style="margin-bottom: 15px;">
+                <div class="preview-controls" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
                     <button id="previewModeBtn" class="btn btn-outline-primary" onclick="togglePreviewMode()" style="font-weight: 500;" title="Toggle Preview Mode - See exactly what your PDF will look like when downloaded (Press P key)">
                         Preview Mode
+                    </button>
+                    <button id="undoBtn" class="btn btn-outline-secondary" onclick="undoAction()" disabled title="Undo (Ctrl+Z)" style="font-weight: 500;">
+                        ↶ Undo
+                    </button>
+                    <button id="redoBtn" class="btn btn-outline-secondary" onclick="redoAction()" disabled title="Redo (Ctrl+Y)" style="font-weight: 500;">
+                        ↷ Redo
                     </button>
                 </div>
                 
@@ -2604,6 +2636,12 @@
         // Show landing page by default
         document.addEventListener('DOMContentLoaded', function() {
             showLanding();
+            // Start auto-save with localStorage
+            startAutoSave();
+            // Check for saved state after a short delay
+            setTimeout(() => {
+                checkLocalStorageForRestore();
+            }, 2000);
         });
 
         // Initialize PDF.js
@@ -2623,6 +2661,680 @@
             boxes: [],
             selectedBox: null
         };
+
+        // Browser Storage Auto-Save System
+        let autoSaveInterval = null;
+        const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
+
+
+        // Save to localStorage
+        function saveToLocalStorage() {
+            try {
+                const stateToSave = {
+                    version: '1.0',
+                    timestamp: Date.now(),
+                    templatePdfBase64: sessionState.templatePdfBytes ? 
+                        btoa(String.fromCharCode(...new Uint8Array(sessionState.templatePdfBytes))) : null,
+                    csvRows: sessionState.csvRows,
+                    csvColumns: sessionState.csvColumns,
+                    boxes: sessionState.boxes.map(box => {
+                        // Get current position from DOM element if available
+                        let x = box.x;
+                        let y = box.y;
+                        let width = box.width;
+                        let height = box.height;
+                        
+                        if (box.element) {
+                            x = parseFloat(box.element.style.left) || box.x || 0;
+                            y = parseFloat(box.element.style.top) || box.y || 0;
+                            width = parseFloat(box.element.style.width) || box.width || 120;
+                            height = parseFloat(box.element.style.height) || box.height || 40;
+                        }
+                        
+                        return {
+                            id: box.id,
+                            boxId: box.boxId,
+                            x: x,
+                            y: y,
+                            width: width,
+                            height: height,
+                            boxType: box.boxType,
+                            csvColumn: box.csvColumn,
+                            fieldKey: box.fieldKey,
+                            staticText: box.staticText,
+                            fontFamily: box.fontFamily,
+                            fontSize: box.fontSize,
+                            color: box.color,
+                            textAlign: box.textAlign,
+                            bold: box.bold,
+                            italic: box.italic,
+                            underline: box.underline,
+                            strikethrough: box.strikethrough,
+                            imageUrl: box.imageUrl,
+                            boxIndex: box.boxIndex
+                        };
+                    }),
+                    currentRecord: currentRecord,
+                    pdfLocked: pdfLocked,
+                    currentTransform: currentTransform
+                };
+
+                localStorage.setItem('datamerge_autosave', JSON.stringify(stateToSave));
+                updateStorageStatus('Saved to browser storage', 'success');
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+                if (error.name === 'QuotaExceededError') {
+                    updateStorageStatus('Storage full. Please clear some space.', 'error');
+                } else {
+                    updateStorageStatus('Save failed: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Restore from localStorage
+        function restoreFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem('datamerge_autosave');
+                if (!savedData) {
+                    updateStorageStatus('No saved data found', 'error');
+                    return;
+                }
+
+                if (!confirm('This will replace your current work. Continue?')) {
+                    return;
+                }
+
+                const savedState = JSON.parse(savedData);
+                restoreStateFromData(savedState);
+                updateStorageStatus('Restored from browser storage', 'success');
+            } catch (error) {
+                console.error('Error restoring from localStorage:', error);
+                updateStorageStatus('Restore failed: ' + error.message, 'error');
+            }
+        }
+
+        // Check localStorage for restore on load
+        function checkLocalStorageForRestore() {
+            const savedData = localStorage.getItem('datamerge_autosave');
+            if (savedData) {
+                try {
+                    const savedState = JSON.parse(savedData);
+                    const age = Date.now() - savedState.timestamp;
+                    if (age < 86400000) { // 24 hours
+                        setTimeout(() => {
+                            if (confirm('Found a recent save from ' + new Date(savedState.timestamp).toLocaleString() + '. Restore it?')) {
+                                restoreStateFromData(savedState);
+                            }
+                        }, 1000);
+                    }
+                } catch (e) {
+                    console.error('Error checking localStorage:', e);
+                }
+            }
+        }
+
+        // Update storage status display
+        function updateStorageStatus(message, type = 'info') {
+            const statusEl = document.getElementById('storageStatus');
+            if (statusEl) {
+                statusEl.textContent = message;
+                statusEl.style.color = type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#666';
+            }
+            
+            const saveStatusEl = document.getElementById('storageSaveStatus');
+            if (saveStatusEl && type !== 'info') {
+                saveStatusEl.textContent = message;
+                saveStatusEl.style.color = type === 'success' ? '#28a745' : '#dc3545';
+                setTimeout(() => {
+                    saveStatusEl.textContent = '';
+                }, 3000);
+            }
+        }
+
+        // Shared function to restore state from data object
+        async function restoreStateFromData(savedState) {
+            // Restore PDF if available (must be done first)
+            if (savedState.templatePdfBase64) {
+                try {
+                    const pdfBytes = Uint8Array.from(atob(savedState.templatePdfBase64), c => c.charCodeAt(0));
+                    sessionState.templatePdfBytes = pdfBytes;
+                    
+                    // Create a file object from the bytes
+                    const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const pdfFile = new File([pdfBlob], 'restored_template.pdf', { type: 'application/pdf' });
+                    await loadPdf(pdfFile);
+                    
+                    // Wait for PDF to be fully rendered
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } catch (e) {
+                    console.error('Error restoring PDF:', e);
+                }
+            }
+
+            // Restore CSV data
+            if (savedState.csvRows) {
+                sessionState.csvRows = savedState.csvRows;
+                sessionState.csvColumns = savedState.csvColumns;
+                csvData = savedState.csvRows;
+                if (csvData && csvData.length > 0) {
+                    csvData.columns = savedState.csvColumns;
+                }
+                displayCSVPreview(savedState.csvRows);
+                showRecordNavigation();
+            }
+
+            // Wait a bit more to ensure overlay container is ready
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Restore boxes (must be done after PDF is loaded)
+            if (savedState.boxes && savedState.boxes.length > 0) {
+                // Clear existing boxes
+                sessionState.boxes.forEach(box => {
+                    if (box.element && box.element.parentNode) {
+                        box.element.parentNode.removeChild(box.element);
+                    }
+                });
+                sessionState.boxes = [];
+
+                // Ensure overlay container exists
+                if (!document.getElementById('overlayContainer')) {
+                    initEditor();
+                }
+
+                // Wait for overlay container to be ready
+                await new Promise(resolve => {
+                    const checkContainer = () => {
+                        const container = document.getElementById('overlayContainer');
+                        if (container) {
+                            resolve();
+                        } else {
+                            setTimeout(checkContainer, 50);
+                        }
+                    };
+                    checkContainer();
+                });
+
+                // Restore boxes with their exact positions
+                savedState.boxes.forEach(boxData => {
+                    if (boxData.boxType === 'text') {
+                        addTextBoxFromData(boxData);
+                    } else if (boxData.boxType === 'image') {
+                        addImageBoxFromData(boxData);
+                    }
+                });
+
+                // Update all boxes with CSV data after restoration
+                setTimeout(() => {
+                    updateAllBoxesWithCSVData();
+                }, 100);
+            }
+
+            // Restore other state
+            if (savedState.currentRecord !== undefined) {
+                currentRecord = savedState.currentRecord;
+            }
+            if (savedState.pdfLocked !== undefined) {
+                pdfLocked = savedState.pdfLocked;
+            }
+            if (savedState.currentTransform) {
+                currentTransform = savedState.currentTransform;
+            }
+
+            updateDownloadButtonState();
+            updateRecordsInfo();
+        }
+
+        // Helper function to add text box from saved data
+        function addTextBoxFromData(boxData) {
+            // Ensure editor is initialized
+            if (!document.getElementById('overlayContainer')) {
+                initEditor();
+            }
+
+            const textBox = document.createElement('div');
+            textBox.className = 'draggable-text-box';
+            textBox.id = 'textBox_' + boxData.id;
+            textBox.boxId = boxData.boxId || boxData.id;
+            
+            // Update boxCounter to avoid conflicts
+            if (boxData.id > boxCounter) {
+                boxCounter = boxData.id;
+            }
+            
+            // Use exact saved positions
+            const savedX = boxData.x || 0;
+            const savedY = boxData.y || 0;
+            const savedWidth = boxData.width || 120;
+            const savedHeight = boxData.height || 40;
+            
+            textBox.style.cssText = `
+                position: absolute;
+                left: ${savedX}px;
+                top: ${savedY}px;
+                width: ${savedWidth}px;
+                height: ${savedHeight}px;
+                min-width: 80px;
+                min-height: 25px;
+                background: transparent;
+                border: none;
+                padding: 5px;
+                cursor: move;
+                pointer-events: auto;
+                z-index: 20;
+                font-family: '${boxData.fontFamily || sessionState.defaultFontFamily || 'Arial'}', Arial, sans-serif;
+                font-size: ${boxData.fontSize || 16}px;
+                color: ${boxData.color || '#000000'};
+                text-align: ${boxData.textAlign || 'center'};
+                font-weight: ${boxData.bold ? 'bold' : 'normal'};
+                font-style: ${boxData.italic ? 'italic' : 'normal'};
+                text-decoration: ${boxData.underline ? 'underline' : 'none'};
+                user-select: none;
+                box-sizing: border-box;
+                overflow: hidden;
+                box-shadow: none;
+                transition: none;
+                display: block;
+                line-height: 1.2;
+            `;
+            
+            // Set text content
+            if (boxData.staticText) {
+                textBox.textContent = boxData.staticText;
+            } else if (boxData.csvColumn && sessionState.csvRows && sessionState.csvRows.length > 0) {
+                const recordIndex = boxData.boxIndex !== undefined ? boxData.boxIndex % sessionState.csvRows.length : 0;
+                const recordData = sessionState.csvRows[recordIndex];
+                textBox.textContent = recordData ? (recordData[boxData.csvColumn] || '') : '';
+            }
+
+            textBox.contentEditable = false;
+
+            // Add click handler for selection
+            textBox.addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
+                    box.classList.remove('selected');
+                });
+                textBox.classList.add('selected');
+                sessionState.selectedBox = textBox;
+                currentBoxId = textBox.boxId || boxData.boxId || boxData.id;
+                updateBoxEditor();
+                updateBoxEditorValues(textBox);
+                const boxDataObj = sessionState.boxes.find(b => b.element === textBox);
+                if (boxDataObj) {
+                    showRecordInfo(boxDataObj);
+                }
+            });
+
+            // Add to overlay container
+            const overlayContainer = document.getElementById('overlayContainer');
+            if (overlayContainer) {
+                overlayContainer.appendChild(textBox);
+            }
+
+            // Make it draggable (with a small delay to ensure DOM is ready)
+            setTimeout(() => {
+                makeDraggable(textBox);
+            }, 50);
+
+            // Create box data object with exact saved positions
+            const restoredBoxData = {
+                id: boxData.id,
+                boxId: boxData.boxId || boxData.id,
+                element: textBox,
+                x: savedX,
+                y: savedY,
+                width: savedWidth,
+                height: savedHeight,
+                boxType: 'text',
+                csvColumn: boxData.csvColumn,
+                fieldKey: boxData.fieldKey,
+                staticText: boxData.staticText,
+                fontFamily: boxData.fontFamily || 'Arial',
+                fontSize: boxData.fontSize || 16,
+                color: boxData.color || '#000000',
+                textAlign: boxData.textAlign || 'center',
+                bold: boxData.bold || false,
+                italic: boxData.italic || false,
+                underline: boxData.underline || false,
+                strikethrough: boxData.strikethrough || false,
+                imageUrl: boxData.imageUrl,
+                boxIndex: boxData.boxIndex
+            };
+
+            sessionState.boxes.push(restoredBoxData);
+        }
+
+        // Helper function to add image box from saved data
+        function addImageBoxFromData(boxData) {
+            // Ensure editor is initialized
+            if (!document.getElementById('overlayContainer')) {
+                initEditor();
+            }
+
+            const imageBox = document.createElement('div');
+            imageBox.className = 'draggable-image-box';
+            
+            // Update boxCounter to avoid conflicts
+            if (boxData.id > boxCounter) {
+                boxCounter = boxData.id;
+            }
+            
+            // Use exact saved positions
+            const savedX = boxData.x || 0;
+            const savedY = boxData.y || 0;
+            const savedWidth = boxData.width || 100;
+            const savedHeight = boxData.height || 100;
+            
+            imageBox.style.cssText = `
+                position: absolute;
+                left: ${savedX}px;
+                top: ${savedY}px;
+                width: ${savedWidth}px;
+                height: ${savedHeight}px;
+                min-width: 40px;
+                min-height: 30px;
+                background: transparent;
+                border: 2px dashed #007bff;
+                cursor: move;
+                pointer-events: auto;
+                z-index: 10;
+                overflow: hidden;
+                box-sizing: border-box;
+                transition: none;
+                transform-origin: top left;
+            `;
+
+            // Add custom properties
+            imageBox.boxId = boxData.boxId || boxData.id;
+            imageBox.boxType = 'image';
+            imageBox.fieldKey = boxData.csvColumn || boxData.fieldKey;
+            imageBox.imageSource = 'csv';
+            imageBox.imageUrl = boxData.imageUrl;
+
+            // Load image if URL is available
+            if (boxData.imageUrl && boxData.imageUrl.trim() !== '') {
+                loadImageFromUrl(boxData.imageUrl, imageBox);
+            }
+
+            // Add click handler for selection
+            imageBox.addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
+                    box.classList.remove('selected');
+                });
+                imageBox.classList.add('selected');
+                sessionState.selectedBox = imageBox;
+                currentBoxId = imageBox.boxId;
+                updateBoxEditor();
+                updateBoxEditorValues(imageBox);
+                const boxDataObj = sessionState.boxes.find(b => b.element === imageBox);
+                if (boxDataObj) {
+                    showRecordInfo(boxDataObj);
+                }
+            });
+
+            // Add to overlay container
+            const overlayContainer = document.getElementById('overlayContainer');
+            if (overlayContainer) {
+                overlayContainer.appendChild(imageBox);
+            }
+
+            // Make it draggable (with a small delay to ensure DOM is ready)
+            setTimeout(() => {
+                makeDraggable(imageBox);
+            }, 50);
+
+            // Create box data object with exact saved positions
+            const restoredBoxData = {
+                id: boxData.id,
+                boxId: boxData.boxId || boxData.id,
+                element: imageBox,
+                x: savedX,
+                y: savedY,
+                width: savedWidth,
+                height: savedHeight,
+                boxType: 'image',
+                csvColumn: boxData.csvColumn,
+                fieldKey: boxData.fieldKey,
+                imageUrl: boxData.imageUrl,
+                boxIndex: boxData.boxIndex
+            };
+
+            sessionState.boxes.push(restoredBoxData);
+        }
+
+        // Clear saved state
+        function clearSavedState() {
+            if (confirm('This will delete all saved data. Continue?')) {
+                localStorage.removeItem('datamerge_autosave');
+                updateStorageStatus('Saved data cleared', 'success');
+            }
+        }
+
+        // Start auto-save interval
+        function startAutoSave() {
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+            }
+            autoSaveInterval = setInterval(() => {
+                if (sessionState.boxes.length > 0 || sessionState.csvRows.length > 0) {
+                    saveToLocalStorage();
+                }
+            }, AUTO_SAVE_INTERVAL);
+        }
+
+        // Stop auto-save
+        function stopAutoSave() {
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+                autoSaveInterval = null;
+            }
+        }
+
+
+        // Undo/Redo system
+        let undoHistory = [];
+        let redoHistory = [];
+        const MAX_HISTORY = 50; // Limit history size
+
+        // Save current state for undo/redo
+        function saveUndoState(action = '') {
+            // Deep clone the boxes array
+            const stateCopy = JSON.parse(JSON.stringify({
+                boxes: sessionState.boxes.map(box => ({
+                    ...box,
+                    // Include all box properties
+                    id: box.id,
+                    boxId: box.boxId,
+                    x: box.x,
+                    y: box.y,
+                    width: box.width,
+                    height: box.height,
+                    boxType: box.boxType,
+                    csvColumn: box.csvColumn,
+                    fieldKey: box.fieldKey,
+                    staticText: box.staticText,
+                    fontFamily: box.fontFamily,
+                    fontSize: box.fontSize,
+                    color: box.color,
+                    textAlign: box.textAlign,
+                    bold: box.bold,
+                    italic: box.italic,
+                    underline: box.underline,
+                    strikethrough: box.strikethrough,
+                    imageUrl: box.imageUrl,
+                    boxIndex: box.boxIndex
+                })),
+                action: action,
+                timestamp: Date.now()
+            }));
+            
+            undoHistory.push(stateCopy);
+            
+            // Limit history size
+            if (undoHistory.length > MAX_HISTORY) {
+                undoHistory.shift();
+            }
+            
+            // Clear redo history when new action is performed
+            redoHistory = [];
+            
+            // Update button states
+            updateUndoRedoButtons();
+        }
+
+        // Restore state from history
+        function restoreState(state) {
+            if (!state || !state.boxes) return;
+            
+            // Remove all existing boxes from DOM
+            sessionState.boxes.forEach(box => {
+                if (box.element && box.element.parentNode) {
+                    box.element.parentNode.removeChild(box.element);
+                }
+            });
+            
+            // Clear session state boxes
+            sessionState.boxes = [];
+            
+            // Restore boxes from state
+            state.boxes.forEach(boxData => {
+                // Recreate box elements
+                if (boxData.boxType === 'text') {
+                    const textBox = document.createElement('div');
+                    textBox.className = 'draggable-text-box';
+                    textBox.id = 'textBox_' + boxData.id;
+                    textBox.style.cssText = `
+                        position: absolute;
+                        left: ${boxData.x}px;
+                        top: ${boxData.y}px;
+                        width: ${boxData.width}px;
+                        height: ${boxData.height}px;
+                        min-width: 80px;
+                        min-height: 25px;
+                        background: transparent;
+                        border: none;
+                        padding: 5px;
+                        cursor: move;
+                        pointer-events: auto;
+                        z-index: 20;
+                        font-family: '${boxData.fontFamily || 'Arial'}', Arial, sans-serif;
+                        font-size: ${boxData.fontSize || 16}px;
+                        color: ${boxData.color || '#000'};
+                        text-align: ${boxData.textAlign || 'center'};
+                        user-select: none;
+                        box-sizing: border-box;
+                        overflow: hidden;
+                        box-shadow: none;
+                        transition: all 0.1s ease;
+                        display: block;
+                        line-height: 1.2;
+                    `;
+                    
+                    // Set text content
+                    if (boxData.csvColumn && sessionState.csvRows && sessionState.csvRows.length > 0) {
+                        const recordIndex = boxData.boxIndex || 0;
+                        const record = sessionState.csvRows[recordIndex];
+                        textBox.textContent = record ? record[boxData.csvColumn] || boxData.staticText || '' : boxData.staticText || '';
+                    } else {
+                        textBox.textContent = boxData.staticText || '';
+                    }
+                    
+                    textBox.contentEditable = false;
+                    
+                    // Apply formatting
+                    if (boxData.bold) textBox.style.fontWeight = 'bold';
+                    if (boxData.italic) textBox.style.fontStyle = 'italic';
+                    if (boxData.underline) textBox.style.textDecoration = 'underline';
+                    if (boxData.strikethrough) {
+                        textBox.classList.add('text-strikethrough');
+                        textBox.style.overflow = 'visible';
+                        updateStrikethroughWrapper(textBox, true);
+                    }
+                    
+                    // Add to overlay container
+                    const overlayContainer = document.getElementById('overlayContainer');
+                    if (overlayContainer) {
+                        overlayContainer.appendChild(textBox);
+                    }
+                    
+                    // Make draggable
+                    makeDraggable(textBox);
+                    
+                    // Restore box data
+                    boxData.element = textBox;
+                    sessionState.boxes.push(boxData);
+                }
+                // Add image box restoration if needed
+            });
+            
+            // Update box editor if needed
+            if (sessionState.selectedBox) {
+                updateBoxEditorValues(sessionState.selectedBox);
+            }
+        }
+
+        // Undo action
+        function undoAction() {
+            if (undoHistory.length === 0) return;
+            
+            // Save current state to redo history
+            const currentState = JSON.parse(JSON.stringify({
+                boxes: sessionState.boxes.map(box => ({
+                    ...box
+                })),
+                action: '',
+                timestamp: Date.now()
+            }));
+            redoHistory.push(currentState);
+            
+            // Get previous state
+            const previousState = undoHistory.pop();
+            
+            // Restore previous state
+            restoreState(previousState);
+            
+            // Update button states
+            updateUndoRedoButtons();
+        }
+
+        // Redo action
+        function redoAction() {
+            if (redoHistory.length === 0) return;
+            
+            // Save current state to undo history
+            const currentState = JSON.parse(JSON.stringify({
+                boxes: sessionState.boxes.map(box => ({
+                    ...box
+                })),
+                action: '',
+                timestamp: Date.now()
+            }));
+            undoHistory.push(currentState);
+            
+            // Get next state
+            const nextState = redoHistory.pop();
+            
+            // Restore next state
+            restoreState(nextState);
+            
+            // Update button states
+            updateUndoRedoButtons();
+        }
+
+        // Update undo/redo button states
+        function updateUndoRedoButtons() {
+            const undoBtn = document.getElementById('undoBtn');
+            const redoBtn = document.getElementById('redoBtn');
+            
+            if (undoBtn) {
+                undoBtn.disabled = undoHistory.length === 0;
+            }
+            
+            if (redoBtn) {
+                redoBtn.disabled = redoHistory.length === 0;
+            }
+        }
 
         // Enhanced box management system
         let boxCounter = 0;
@@ -3556,6 +4268,9 @@ if (!sessionState.defaultFontFamily) {
             console.log('Current applyMode:', applyMode);
             console.log('Selected box:', sessionState.selectedBox);
             
+            // Save undo state before applying formatting
+            saveUndoState('Apply Formatting');
+            
             // Get formatting values from the form
             const fontFamily = document.getElementById('formatAllFontFamily').value;
             const fontSize = document.getElementById('formatAllFontSize').value;
@@ -3806,6 +4521,9 @@ if (!sessionState.defaultFontFamily) {
 
             // Setup keyboard shortcuts for box management
             setupKeyboardShortcuts();
+            
+            // Initialize undo/redo button states
+            updateUndoRedoButtons();
         });
 
         // Simple Multiple Records Management
@@ -3933,6 +4651,9 @@ if (!sessionState.defaultFontFamily) {
             
             const totalBoxes = textBoxes.length * recordsCount;
             alert(`Created ${totalBoxes} text boxes for ${recordsCount} records!`);
+            
+            // Save undo state after creating boxes
+            saveUndoState('Create Text Boxes');
             
             // Update download button state to enable downloads
             updateDownloadButtonState();
@@ -5230,8 +5951,8 @@ if (!sessionState.defaultFontFamily) {
         function deleteSelectedBox() {
             if (!sessionState.selectedBox) return;
 
-            // Save undo state before deleting (placeholder)
-            // saveUndoState('Delete Box');
+            // Save undo state before deleting
+            saveUndoState('Delete Box');
 
             const selectedItem = sessionState.selectedBox;
             
@@ -5349,6 +6070,19 @@ if (!sessionState.defaultFontFamily) {
         // Keyboard shortcuts for box management
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', function(e) {
+                // Undo/Redo shortcuts
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                    e.preventDefault();
+                    undoAction();
+                    return;
+                }
+                
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                    e.preventDefault();
+                    redoAction();
+                    return;
+                }
+                
                 // Delete key to delete selected box
                 if (e.key === 'Delete' || e.key === 'Backspace') {
                     if (sessionState.selectedBox) {
@@ -5478,52 +6212,84 @@ if (!sessionState.defaultFontFamily) {
             }, 100);
         }
 
+        // Global drag state for boxes (shared across all draggable elements)
+        let boxDragState = {
+            activeElement: null,
+            isDragging: false,
+            isResizing: false,
+            currentX: 0,
+            currentY: 0,
+            initialX: 0,
+            initialY: 0,
+            xOffset: 0,
+            yOffset: 0,
+            initialWidth: 0,
+            initialHeight: 0,
+            resizeHandle: ''
+        };
+
+        // Initialize document-level listeners once
+        let boxDragListenersInitialized = false;
+        function initBoxDragListeners() {
+            if (boxDragListenersInitialized) return;
+            boxDragListenersInitialized = true;
+            
+            document.addEventListener('mousemove', function(e) {
+                if (boxDragState.activeElement) {
+                    handleBoxDragMove(e);
+                }
+            });
+            
+            document.addEventListener('mouseup', function(e) {
+                if (boxDragState.activeElement) {
+                    handleBoxDragEnd(e);
+                }
+            });
+        }
+
         // Simple drag functionality for text boxes
         function makeDraggable(element) {
-            let isDragging = false;
-            let isResizing = false;
-            let currentX;
-            let currentY;
-            let initialX;
-            let initialY;
-            let xOffset = 0;
-            let yOffset = 0;
-            let initialWidth;
-            let initialHeight;
-            let resizeHandle = '';
+            // Check if element already has drag functionality enabled
+            if (element.dataset.draggableEnabled === 'true') {
+                return; // Already initialized, skip
+            }
+            
+            // Mark as enabled
+            element.dataset.draggableEnabled = 'true';
+            
+            // Initialize document-level listeners if not already done
+            initBoxDragListeners();
 
-            // Add resize handles
-            addResizeHandles(element);
+            // Add resize handles (only if not already added)
+            if (!element.querySelector('.resize-handle')) {
+                addResizeHandles(element);
+            }
 
             // Use mousedown on the element itself
-            element.addEventListener('mousedown', dragStart);
-            
-            // Use document-level events for better drag handling
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('mouseup', dragEnd);
-
-            function dragStart(e) {
+            element.addEventListener('mousedown', function dragStart(e) {
                 // Prevent event from bubbling to PDF viewer
                 e.stopPropagation();
                 
                 // Check if clicking on resize handle
                 if (e.target.classList.contains('resize-handle')) {
-                    isResizing = true;
-                    isDragging = false;
-                    resizeHandle = e.target.dataset.handle;
-                    initialWidth = element.offsetWidth;
-                    initialHeight = element.offsetHeight;
-                    initialX = e.clientX;
-                    initialY = e.clientY;
+                    boxDragState.activeElement = element;
+                    boxDragState.isResizing = true;
+                    boxDragState.isDragging = false;
+                    boxDragState.resizeHandle = e.target.dataset.handle;
+                    boxDragState.initialWidth = element.offsetWidth;
+                    boxDragState.initialHeight = element.offsetHeight;
+                    boxDragState.initialX = e.clientX;
+                    boxDragState.initialY = e.clientY;
                     element.style.cursor = 'nwse-resize';
                     element.classList.add('resizing');
                     return;
                 }
 
                 // Normal dragging
-                if (e.target === element) {
-                    isDragging = true;
-                    isResizing = false;
+                if (e.target === element || e.target.closest('.draggable-text-box, .draggable-image-box') === element) {
+                    boxDragState.activeElement = element;
+                    boxDragState.isDragging = true;
+                    boxDragState.isResizing = false;
                     
                     // Get current position (accounting for any existing transform)
                     const currentLeft = parseInt(element.style.left) || 0;
@@ -5533,160 +6299,177 @@ if (!sessionState.defaultFontFamily) {
                     element.style.transform = 'translate(0px, 0px)';
                     
                     // Initialize drag tracking
-                    initialX = e.clientX - currentLeft;
-                    initialY = e.clientY - currentTop;
-                    xOffset = currentLeft;
-                    yOffset = currentTop;
+                    boxDragState.initialX = e.clientX - currentLeft;
+                    boxDragState.initialY = e.clientY - currentTop;
+                    boxDragState.xOffset = currentLeft;
+                    boxDragState.yOffset = currentTop;
                     
                     element.style.cursor = 'grabbing';
                     element.style.zIndex = '30';
                 }
-            }
+            });
+        }
 
-            function drag(e) {
-                if (isResizing) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const deltaX = e.clientX - initialX;
-                    const deltaY = e.clientY - initialY;
-                    
-                    // Get the PDF viewer container for boundary constraints
-                    const pdfViewer = document.getElementById('pdfViewer');
-                    const viewerRect = pdfViewer.getBoundingClientRect();
-                    const elementRect = element.getBoundingClientRect();
-                    
-                    // Calculate new dimensions and positions with constraints
-                    let newWidth = initialWidth;
-                    let newHeight = initialHeight;
-                    let newLeft = parseInt(element.style.left) || 0;
-                    let newTop = parseInt(element.style.top) || 0;
-                    
-                    // Handle right edge resize
-                    if (resizeHandle.includes('e')) {
-                        newWidth = Math.max(20, initialWidth + deltaX);
-                        // Constrain to viewer width
-                        const maxWidth = viewerRect.width - newLeft;
-                        newWidth = Math.min(newWidth, maxWidth);
-                    }
-                    
-                    // Handle left edge resize
-                    if (resizeHandle.includes('w')) {
-                        const proposedWidth = Math.max(20, initialWidth - deltaX);
-                        const proposedLeft = newLeft + (initialWidth - proposedWidth);
-                        
-                        // Constrain to viewer boundaries
-                        if (proposedLeft >= 0 && proposedLeft + proposedWidth <= viewerRect.width) {
-                            newWidth = proposedWidth;
-                            newLeft = proposedLeft;
-                        }
-                    }
-                    
-                    // Handle bottom edge resize
-                    if (resizeHandle.includes('s')) {
-                        newHeight = Math.max(10, initialHeight + deltaY);
-                        // Constrain to viewer height
-                        const maxHeight = viewerRect.height - newTop;
-                        newHeight = Math.min(newHeight, maxHeight);
-                    }
-                    
-                    // Handle top edge resize
-                    if (resizeHandle.includes('n')) {
-                        const proposedHeight = Math.max(10, initialHeight - deltaY);
-                        const proposedTop = newTop + (initialHeight - proposedHeight);
-                        
-                        // Constrain to viewer boundaries
-                        if (proposedTop >= 0 && proposedTop + proposedHeight <= viewerRect.height) {
-                            newHeight = proposedHeight;
-                            newTop = proposedTop;
-                        }
-                    }
-                    
-                    // Apply the constrained values
-                    element.style.width = newWidth + 'px';
-                    element.style.height = newHeight + 'px';
-                    element.style.left = newLeft + 'px';
-                    element.style.top = newTop + 'px';
-                    
-                    // Update font size based on box size
-                    updateTextSize(element);
-                } else if (isDragging) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    currentX = e.clientX - initialX;
-                    currentY = e.clientY - initialY;
-                    xOffset = currentX;
-                    yOffset = currentY;
-
-                    // Get the PDF viewer container for boundary constraints
-                    const pdfViewer = document.getElementById('pdfViewer');
-                    const viewerRect = pdfViewer.getBoundingClientRect();
-                    const elementRect = element.getBoundingClientRect();
-                    
-                    // Constrain dragging within viewer boundaries
-                    const maxX = viewerRect.width - elementRect.width;
-                    const maxY = viewerRect.height - elementRect.height;
-                    
-                    currentX = Math.max(0, Math.min(currentX, maxX));
-                    currentY = Math.max(0, Math.min(currentY, maxY));
-                    
-                    xOffset = currentX;
-                    yOffset = currentY;
-
-                    // Apply constrained position directly
-                    let finalX = currentX;
-                    let finalY = currentY;
-                    
-                    // Check for spacing snap - snap to matching spacing
-                    const snapResult = checkSpacingSnap(element, currentX, currentY, viewerRect);
-                    if (snapResult.snapped) {
-                        finalX = snapResult.x;
-                        finalY = snapResult.y;
-                    }
-                    
-                    element.style.left = finalX + 'px';
-                    element.style.top = finalY + 'px';
-                    
-                    // Update spacing measurements in real-time during drag
-                    if (!isPreviewMode && spacingMeasurementActive) {
-                        showSpacingMeasurements();
-                    }
-                }
-            }
-
-            function dragEnd(e) {
-                // Prevent event from bubbling to PDF viewer
+        // Global drag move handler
+        function handleBoxDragMove(e) {
+            const element = boxDragState.activeElement;
+            if (!element) return;
+            
+            if (boxDragState.isResizing) {
+                e.preventDefault();
                 e.stopPropagation();
+                const deltaX = e.clientX - boxDragState.initialX;
+                const deltaY = e.clientY - boxDragState.initialY;
                 
-                if (isResizing) {
-                    isResizing = false;
-                    element.style.cursor = 'move';
-                    element.style.zIndex = '20';
-                    resizeHandle = '';
-                    element.classList.remove('resizing');
+                // Get the PDF viewer container for boundary constraints
+                const pdfViewer = document.getElementById('pdfViewer');
+                const viewerRect = pdfViewer.getBoundingClientRect();
+                const elementRect = element.getBoundingClientRect();
+                
+                // Calculate new dimensions and positions with constraints
+                let newWidth = boxDragState.initialWidth;
+                let newHeight = boxDragState.initialHeight;
+                let newLeft = parseInt(element.style.left) || 0;
+                let newTop = parseInt(element.style.top) || 0;
+                
+                // Handle right edge resize
+                if (boxDragState.resizeHandle.includes('e')) {
+                    newWidth = Math.max(20, boxDragState.initialWidth + deltaX);
+                    // Constrain to viewer width
+                    const maxWidth = viewerRect.width - newLeft;
+                    newWidth = Math.min(newWidth, maxWidth);
+                }
+                
+                // Handle left edge resize
+                if (boxDragState.resizeHandle.includes('w')) {
+                    const proposedWidth = Math.max(20, boxDragState.initialWidth - deltaX);
+                    const proposedLeft = newLeft + (boxDragState.initialWidth - proposedWidth);
                     
-                    // Update the box data in session state
-                    if (sessionState.selectedBox && sessionState.selectedBox.element === element) {
-                        sessionState.selectedBox.width = parseInt(element.style.width);
-                        sessionState.selectedBox.height = parseInt(element.style.height);
-                        sessionState.selectedBox.x = parseInt(element.style.left);
-                        sessionState.selectedBox.y = parseInt(element.style.top);
-                    }
-                    
-                } else if (isDragging) {
-                    initialX = currentX;
-                    initialY = currentY;
-                    isDragging = false;
-                    element.style.cursor = 'move';
-                    element.style.zIndex = '20';
-                    clearSnapGuides();
-                    
-                    // Update the box data in session state
-                    if (sessionState.selectedBox && sessionState.selectedBox.element === element) {
-                        sessionState.selectedBox.x = parseInt(element.style.left);
-                        sessionState.selectedBox.y = parseInt(element.style.top);
+                    // Constrain to viewer boundaries
+                    if (proposedLeft >= 0 && proposedLeft + proposedWidth <= viewerRect.width) {
+                        newWidth = proposedWidth;
+                        newLeft = proposedLeft;
                     }
                 }
+                
+                // Handle bottom edge resize
+                if (boxDragState.resizeHandle.includes('s')) {
+                    newHeight = Math.max(10, boxDragState.initialHeight + deltaY);
+                    // Constrain to viewer height
+                    const maxHeight = viewerRect.height - newTop;
+                    newHeight = Math.min(newHeight, maxHeight);
+                }
+                
+                // Handle top edge resize
+                if (boxDragState.resizeHandle.includes('n')) {
+                    const proposedHeight = Math.max(10, boxDragState.initialHeight - deltaY);
+                    const proposedTop = newTop + (boxDragState.initialHeight - proposedHeight);
+                    
+                    // Constrain to viewer boundaries
+                    if (proposedTop >= 0 && proposedTop + proposedHeight <= viewerRect.height) {
+                        newHeight = proposedHeight;
+                        newTop = proposedTop;
+                    }
+                }
+                
+                // Apply the constrained values
+                element.style.width = newWidth + 'px';
+                element.style.height = newHeight + 'px';
+                element.style.left = newLeft + 'px';
+                element.style.top = newTop + 'px';
+                
+                // Update font size based on box size
+                updateTextSize(element);
+            } else if (boxDragState.isDragging) {
+                e.preventDefault();
+                e.stopPropagation();
+                boxDragState.currentX = e.clientX - boxDragState.initialX;
+                boxDragState.currentY = e.clientY - boxDragState.initialY;
+                boxDragState.xOffset = boxDragState.currentX;
+                boxDragState.yOffset = boxDragState.currentY;
+
+                // Get the PDF viewer container for boundary constraints
+                const pdfViewer = document.getElementById('pdfViewer');
+                const viewerRect = pdfViewer.getBoundingClientRect();
+                const elementRect = element.getBoundingClientRect();
+                
+                // Constrain dragging within viewer boundaries
+                const maxX = viewerRect.width - elementRect.width;
+                const maxY = viewerRect.height - elementRect.height;
+                
+                boxDragState.currentX = Math.max(0, Math.min(boxDragState.currentX, maxX));
+                boxDragState.currentY = Math.max(0, Math.min(boxDragState.currentY, maxY));
+                
+                boxDragState.xOffset = boxDragState.currentX;
+                boxDragState.yOffset = boxDragState.currentY;
+
+                // Apply constrained position directly
+                let finalX = boxDragState.currentX;
+                let finalY = boxDragState.currentY;
+                
+                // Check for spacing snap - snap to matching spacing
+                const snapResult = checkSpacingSnap(element, boxDragState.currentX, boxDragState.currentY, viewerRect);
+                if (snapResult.snapped) {
+                    finalX = snapResult.x;
+                    finalY = snapResult.y;
+                }
+                
+                element.style.left = finalX + 'px';
+                element.style.top = finalY + 'px';
+                
+                // Update spacing measurements in real-time during drag
+                if (!isPreviewMode && spacingMeasurementActive) {
+                    showSpacingMeasurements();
+                }
             }
+        }
+
+        // Global drag end handler
+        function handleBoxDragEnd(e) {
+            const element = boxDragState.activeElement;
+            if (!element) return;
+            
+            // Prevent event from bubbling to PDF viewer
+            e.stopPropagation();
+            
+            if (boxDragState.isResizing) {
+                boxDragState.isResizing = false;
+                element.style.cursor = 'move';
+                element.style.zIndex = '20';
+                boxDragState.resizeHandle = '';
+                element.classList.remove('resizing');
+                
+                // Update the box data in session state
+                if (sessionState.selectedBox && sessionState.selectedBox.element === element) {
+                    sessionState.selectedBox.width = parseInt(element.style.width);
+                    sessionState.selectedBox.height = parseInt(element.style.height);
+                    sessionState.selectedBox.x = parseInt(element.style.left);
+                    sessionState.selectedBox.y = parseInt(element.style.top);
+                }
+                
+                // Save undo state after resizing
+                saveUndoState('Resize Box');
+                
+            } else if (boxDragState.isDragging) {
+                boxDragState.initialX = boxDragState.currentX;
+                boxDragState.initialY = boxDragState.currentY;
+                boxDragState.isDragging = false;
+                element.style.cursor = 'move';
+                element.style.zIndex = '20';
+                clearSnapGuides();
+                
+                // Update the box data in session state
+                if (sessionState.selectedBox && sessionState.selectedBox.element === element) {
+                    sessionState.selectedBox.x = parseInt(element.style.left);
+                    sessionState.selectedBox.y = parseInt(element.style.top);
+                }
+                
+                // Save undo state after dragging
+                saveUndoState('Move Box');
+            }
+            
+            // Clear active element
+            boxDragState.activeElement = null;
         }
 
         function addResizeHandles(element) {
