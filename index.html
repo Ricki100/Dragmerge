@@ -2267,9 +2267,9 @@
                             🗑️ Clear Saved Data
                         </button>
                     </div>
-                    <div id="storageSaveStatus" style="font-size: 10px; color: #666; margin-top: 8px; text-align: center;"></div>
+                    <div id="storageSaveStatus" style="font-size: 12px; color: #28a745; font-weight: 600; margin-top: 8px; text-align: center; min-height: 16px;"></div>
                     <div style="font-size: 9px; color: #999; margin-top: 8px; text-align: center;">
-                        Auto-saves every 30 seconds<br>
+                        Auto-saves every 10 seconds<br>
                         <span style="font-size: 8px;">Works offline with browser storage</span>
                     </div>
                 </div>
@@ -2664,29 +2664,43 @@
 
         // Browser Storage Auto-Save System
         let autoSaveInterval = null;
-        const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
+        const AUTO_SAVE_INTERVAL = 10000; // 10 seconds
+        let cachedPdfBase64 = null; // Cache PDF base64 to avoid re-converting every save
+        let lastPdfBytesHash = null; // Track if PDF has changed
 
 
         // Save to localStorage
         function saveToLocalStorage() {
             try {
-                // Convert PDF bytes to base64 in chunks to avoid "too many arguments" error
+                // Efficiently convert PDF bytes to base64 only if PDF has changed
                 let templatePdfBase64 = null;
                 if (sessionState.templatePdfBytes) {
-                    try {
-                        const bytes = new Uint8Array(sessionState.templatePdfBytes);
-                        const chunkSize = 8192; // Process in 8KB chunks
-                        let binaryString = '';
-                        for (let i = 0; i < bytes.length; i += chunkSize) {
-                            const chunk = bytes.slice(i, i + chunkSize);
-                            binaryString += String.fromCharCode.apply(null, chunk);
+                    // Create a simple hash to check if PDF has changed (first 100 bytes + length)
+                    const bytes = new Uint8Array(sessionState.templatePdfBytes);
+                    const currentHash = bytes.length + '_' + Array.from(bytes.slice(0, 100)).join(',');
+                    
+                    // Only convert if PDF has changed or cache is empty
+                    if (currentHash !== lastPdfBytesHash || !cachedPdfBase64) {
+                        try {
+                            const chunkSize = 8192; // Process in 8KB chunks
+                            let binaryString = '';
+                            for (let i = 0; i < bytes.length; i += chunkSize) {
+                                const chunk = bytes.slice(i, i + chunkSize);
+                                binaryString += String.fromCharCode.apply(null, chunk);
+                            }
+                            cachedPdfBase64 = btoa(binaryString);
+                            lastPdfBytesHash = currentHash;
+                        } catch (convertError) {
+                            console.error('Error converting PDF to base64:', convertError);
+                            cachedPdfBase64 = null;
+                            lastPdfBytesHash = null;
                         }
-                        templatePdfBase64 = btoa(binaryString);
-                    } catch (convertError) {
-                        console.error('Error converting PDF to base64:', convertError);
-                        // Continue without PDF data if conversion fails
-                        templatePdfBase64 = null;
                     }
+                    templatePdfBase64 = cachedPdfBase64;
+                } else {
+                    // Clear cache if no PDF
+                    cachedPdfBase64 = null;
+                    lastPdfBytesHash = null;
                 }
                 
                 const stateToSave = {
@@ -2739,6 +2753,8 @@
 
                 localStorage.setItem('datamerge_autosave', JSON.stringify(stateToSave));
                 updateStorageStatus('Saved to browser storage', 'success');
+                // Show green "Saved" indicator
+                showSavedIndicator();
             } catch (error) {
                 console.error('Error saving to localStorage:', error);
                 if (error.name === 'QuotaExceededError') {
@@ -2788,6 +2804,26 @@
                 } catch (e) {
                     console.error('Error checking localStorage:', e);
                 }
+            }
+        }
+
+        // Show green "Saved" indicator
+        function showSavedIndicator() {
+            const saveStatusEl = document.getElementById('storageSaveStatus');
+            if (saveStatusEl) {
+                saveStatusEl.textContent = 'Saved';
+                saveStatusEl.style.color = '#28a745';
+                saveStatusEl.style.fontWeight = '600';
+                // Keep it visible for 2 seconds, then fade out
+                setTimeout(() => {
+                    saveStatusEl.style.transition = 'opacity 0.5s';
+                    saveStatusEl.style.opacity = '0';
+                    setTimeout(() => {
+                        saveStatusEl.textContent = '';
+                        saveStatusEl.style.opacity = '1';
+                        saveStatusEl.style.transition = '';
+                    }, 500);
+                }, 2000);
             }
         }
 
@@ -2966,35 +3002,7 @@
 
             textBox.contentEditable = false;
 
-            // Add click handler for selection
-            textBox.addEventListener('click', function(e) {
-                e.stopPropagation();
-                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
-                    box.classList.remove('selected');
-                });
-                textBox.classList.add('selected');
-                sessionState.selectedBox = textBox;
-                currentBoxId = textBox.boxId || boxData.boxId || boxData.id;
-                updateBoxEditor();
-                updateBoxEditorValues(textBox);
-                const boxDataObj = sessionState.boxes.find(b => b.element === textBox);
-                if (boxDataObj) {
-                    showRecordInfo(boxDataObj);
-                }
-            });
-
-            // Add to overlay container
-            const overlayContainer = document.getElementById('overlayContainer');
-            if (overlayContainer) {
-                overlayContainer.appendChild(textBox);
-            }
-
-            // Make it draggable (with a small delay to ensure DOM is ready)
-            setTimeout(() => {
-                makeDraggable(textBox);
-            }, 50);
-
-            // Create box data object with exact saved positions
+            // Create box data object first (needed for click handler)
             const restoredBoxData = {
                 id: boxData.id,
                 boxId: boxData.boxId || boxData.id,
@@ -3019,7 +3027,38 @@
                 boxIndex: boxData.boxIndex
             };
 
+            // Add to session state before adding to DOM
             sessionState.boxes.push(restoredBoxData);
+
+            // Add to overlay container
+            const overlayContainer = document.getElementById('overlayContainer');
+            if (overlayContainer) {
+                overlayContainer.appendChild(textBox);
+            }
+
+            // Add click handler for selection (use box data object, not DOM element)
+            textBox.addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
+                    box.classList.remove('selected');
+                });
+                textBox.classList.add('selected');
+                sessionState.selectedBox = restoredBoxData; // Use box data object
+                currentBoxId = textBox.boxId || boxData.boxId || boxData.id;
+                updateBoxEditor();
+                updateBoxEditorValues(restoredBoxData);
+                showRecordInfo(restoredBoxData);
+            });
+
+            // Apply strikethrough wrapper if needed
+            if (boxData.strikethrough) {
+                updateStrikethroughWrapper(textBox, true);
+            }
+
+            // Make it draggable and add resize handles immediately
+            makeDraggable(textBox);
+            addResizeHandles(textBox);
+
         }
 
         // Helper function to add image box from saved data
@@ -3074,35 +3113,7 @@
                 loadImageFromUrl(boxData.imageUrl, imageBox);
             }
 
-            // Add click handler for selection
-            imageBox.addEventListener('click', function(e) {
-                e.stopPropagation();
-                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
-                    box.classList.remove('selected');
-                });
-                imageBox.classList.add('selected');
-                sessionState.selectedBox = imageBox;
-                currentBoxId = imageBox.boxId;
-                updateBoxEditor();
-                updateBoxEditorValues(imageBox);
-                const boxDataObj = sessionState.boxes.find(b => b.element === imageBox);
-                if (boxDataObj) {
-                    showRecordInfo(boxDataObj);
-                }
-            });
-
-            // Add to overlay container
-            const overlayContainer = document.getElementById('overlayContainer');
-            if (overlayContainer) {
-                overlayContainer.appendChild(imageBox);
-            }
-
-            // Make it draggable (with a small delay to ensure DOM is ready)
-            setTimeout(() => {
-                makeDraggable(imageBox);
-            }, 50);
-
-            // Create box data object with exact saved positions
+            // Create box data object first (needed for click handler)
             const restoredBoxData = {
                 id: boxData.id,
                 boxId: boxData.boxId || boxData.id,
@@ -3118,7 +3129,32 @@
                 boxIndex: boxData.boxIndex
             };
 
+            // Add to session state before adding to DOM
             sessionState.boxes.push(restoredBoxData);
+
+            // Add to overlay container
+            const overlayContainer = document.getElementById('overlayContainer');
+            if (overlayContainer) {
+                overlayContainer.appendChild(imageBox);
+            }
+
+            // Add click handler for selection (use box data object, not DOM element)
+            imageBox.addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.querySelectorAll('.draggable-image-box, .draggable-text-box').forEach(box => {
+                    box.classList.remove('selected');
+                });
+                imageBox.classList.add('selected');
+                sessionState.selectedBox = restoredBoxData; // Use box data object
+                currentBoxId = imageBox.boxId;
+                updateBoxEditor();
+                updateBoxEditorValues(restoredBoxData);
+                showRecordInfo(restoredBoxData);
+            });
+
+            // Enable drag and resize using the same system as normal box creation
+            enableDragResize(imageBox);
+            addResizeHandles(imageBox);
         }
 
         // Clear saved state
@@ -3135,9 +3171,24 @@
                 clearInterval(autoSaveInterval);
             }
             autoSaveInterval = setInterval(() => {
-                if (sessionState.boxes.length > 0 || sessionState.csvRows.length > 0) {
-                    saveToLocalStorage();
-                }
+                // Always attempt to save (even if no boxes/CSV, to save PDF state, etc.)
+                // Use setTimeout to make save non-blocking and avoid UI freezing
+                setTimeout(() => {
+                    try {
+                        saveToLocalStorage();
+                    } catch (error) {
+                        console.error('Auto-save error:', error);
+                        // Still show indicator even if save fails, so user knows it's trying
+                        const saveStatusEl = document.getElementById('storageSaveStatus');
+                        if (saveStatusEl) {
+                            saveStatusEl.textContent = 'Save failed';
+                            saveStatusEl.style.color = '#dc3545';
+                            setTimeout(() => {
+                                saveStatusEl.textContent = '';
+                            }, 2000);
+                        }
+                    }
+                }, 0);
             }, AUTO_SAVE_INTERVAL);
         }
 
