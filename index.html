@@ -2703,12 +2703,17 @@
                     lastPdfBytesHash = null;
                 }
                 
+                // Get current Google Sheets URL from input field
+                const csvUrlInput = document.getElementById('csvUrlInput');
+                const savedGoogleSheetsUrl = csvUrlInput ? csvUrlInput.value.trim() : null;
+                
                 const stateToSave = {
                     version: '1.0',
                     timestamp: Date.now(),
                     templatePdfBase64: templatePdfBase64,
                     csvRows: sessionState.csvRows,
                     csvColumns: sessionState.csvColumns,
+                    googleSheetsUrl: savedGoogleSheetsUrl, // Save the Google Sheets URL
                     boxes: sessionState.boxes.map(box => {
                         // Get current position from DOM element if available
                         let x = box.x;
@@ -2865,8 +2870,32 @@
                 }
             }
 
-            // Restore CSV data
-            if (savedState.csvRows) {
+            // Restore Google Sheets URL and load data if URL exists
+            if (savedState.googleSheetsUrl && savedState.googleSheetsUrl.trim() !== '') {
+                const csvUrlInput = document.getElementById('csvUrlInput');
+                if (csvUrlInput) {
+                    csvUrlInput.value = savedState.googleSheetsUrl;
+                    // Automatically load the Google Sheets data
+                    try {
+                        const data = await loadCSVFromGoogleSheets(savedState.googleSheetsUrl);
+                        processCSVData(data, 'Google Sheets');
+                    } catch (error) {
+                        console.error('Error loading saved Google Sheets URL:', error);
+                        // If loading fails, still restore CSV data if available
+                        if (savedState.csvRows) {
+                            sessionState.csvRows = savedState.csvRows;
+                            sessionState.csvColumns = savedState.csvColumns;
+                            csvData = savedState.csvRows;
+                            if (csvData && csvData.length > 0) {
+                                csvData.columns = savedState.csvColumns;
+                            }
+                            displayCSVPreview(savedState.csvRows);
+                            showRecordNavigation();
+                        }
+                    }
+                }
+            } else if (savedState.csvRows) {
+                // Restore CSV data if no URL (from file upload)
                 sessionState.csvRows = savedState.csvRows;
                 sessionState.csvColumns = savedState.csvColumns;
                 csvData = savedState.csvRows;
@@ -3208,11 +3237,22 @@
 
         // Save current state for undo/redo
         function saveUndoState(action = '') {
-            // Deep clone the boxes array
+            // First, update ALL boxes in sessionState with current DOM positions
+            // This ensures we capture the exact current state
+            sessionState.boxes.forEach(box => {
+                if (box.element) {
+                    box.x = parseFloat(box.element.style.left) || box.x || 0;
+                    box.y = parseFloat(box.element.style.top) || box.y || 0;
+                    box.width = parseFloat(box.element.style.width) || box.width || 120;
+                    box.height = parseFloat(box.element.style.height) || box.height || 40;
+                }
+            });
+            
+            // Deep clone the boxes array with current positions
             const stateCopy = JSON.parse(JSON.stringify({
                 boxes: sessionState.boxes.map(box => ({
                     ...box,
-                    // Include all box properties
+                    // Include all box properties with current DOM values
                     id: box.id,
                     boxId: box.boxId,
                     x: box.x,
@@ -3254,92 +3294,49 @@
 
         // Restore state from history
         function restoreState(state) {
-            if (!state || !state.boxes) return;
+            if (!state || !state.boxes) {
+                console.warn('restoreState: Invalid state or no boxes');
+                return;
+            }
             
-            // Remove all existing boxes from DOM
-            sessionState.boxes.forEach(box => {
-                if (box.element && box.element.parentNode) {
-                    box.element.parentNode.removeChild(box.element);
+            try {
+                // Ensure overlay container exists
+                if (!document.getElementById('overlayContainer')) {
+                    initEditor();
                 }
-            });
-            
-            // Clear session state boxes
-            sessionState.boxes = [];
-            
-            // Restore boxes from state
-            state.boxes.forEach(boxData => {
-                // Recreate box elements
-                if (boxData.boxType === 'text') {
-                    const textBox = document.createElement('div');
-                    textBox.className = 'draggable-text-box';
-                    textBox.id = 'textBox_' + boxData.id;
-                    textBox.style.cssText = `
-                        position: absolute;
-                        left: ${boxData.x}px;
-                        top: ${boxData.y}px;
-                        width: ${boxData.width}px;
-                        height: ${boxData.height}px;
-                        min-width: 80px;
-                        min-height: 25px;
-                        background: transparent;
-                        border: none;
-                        padding: 5px;
-                        cursor: move;
-                        pointer-events: auto;
-                        z-index: 20;
-                        font-family: '${boxData.fontFamily || 'Arial'}', Arial, sans-serif;
-                        font-size: ${boxData.fontSize || 16}px;
-                        color: ${boxData.color || '#000'};
-                        text-align: ${boxData.textAlign || 'center'};
-                        user-select: none;
-                        box-sizing: border-box;
-                        overflow: hidden;
-                        box-shadow: none;
-                        transition: all 0.1s ease;
-                        display: block;
-                        line-height: 1.2;
-                    `;
-                    
-                    // Set text content
-                    if (boxData.csvColumn && sessionState.csvRows && sessionState.csvRows.length > 0) {
-                        const recordIndex = boxData.boxIndex || 0;
-                        const record = sessionState.csvRows[recordIndex];
-                        textBox.textContent = record ? record[boxData.csvColumn] || boxData.staticText || '' : boxData.staticText || '';
-                    } else {
-                        textBox.textContent = boxData.staticText || '';
+                
+                // Remove all existing boxes from DOM
+                sessionState.boxes.forEach(box => {
+                    if (box.element && box.element.parentNode) {
+                        box.element.parentNode.removeChild(box.element);
                     }
-                    
-                    textBox.contentEditable = false;
-                    
-                    // Apply formatting
-                    if (boxData.bold) textBox.style.fontWeight = 'bold';
-                    if (boxData.italic) textBox.style.fontStyle = 'italic';
-                    if (boxData.underline) textBox.style.textDecoration = 'underline';
-                    if (boxData.strikethrough) {
-                        textBox.classList.add('text-strikethrough');
-                        textBox.style.overflow = 'visible';
-                        updateStrikethroughWrapper(textBox, true);
+                });
+                
+                // Clear session state boxes
+                sessionState.boxes = [];
+                sessionState.selectedBox = null;
+                
+                // Restore boxes from state using helper functions
+                state.boxes.forEach(boxData => {
+                    if (boxData.boxType === 'text') {
+                        addTextBoxFromData(boxData);
+                    } else if (boxData.boxType === 'image') {
+                        addImageBoxFromData(boxData);
                     }
-                    
-                    // Add to overlay container
-                    const overlayContainer = document.getElementById('overlayContainer');
-                    if (overlayContainer) {
-                        overlayContainer.appendChild(textBox);
-                    }
-                    
-                    // Make draggable
-                    makeDraggable(textBox);
-                    
-                    // Restore box data
-                    boxData.element = textBox;
-                    sessionState.boxes.push(boxData);
+                });
+                
+                // Update all boxes with CSV data after restoration
+                setTimeout(() => {
+                    updateAllBoxesWithCSVData();
+                }, 50);
+                
+                // Update box editor if needed
+                if (sessionState.selectedBox) {
+                    updateBoxEditorValues(sessionState.selectedBox);
                 }
-                // Add image box restoration if needed
-            });
-            
-            // Update box editor if needed
-            if (sessionState.selectedBox) {
-                updateBoxEditorValues(sessionState.selectedBox);
+            } catch (error) {
+                console.error('Error in restoreState:', error);
+                alert('Error restoring state: ' + error.message);
             }
         }
 
@@ -3347,10 +3344,39 @@
         function undoAction() {
             if (undoHistory.length === 0) return;
             
-            // Save current state to redo history
+            // First, update ALL boxes in sessionState with current DOM positions
+            sessionState.boxes.forEach(box => {
+                if (box.element) {
+                    box.x = parseFloat(box.element.style.left) || box.x || 0;
+                    box.y = parseFloat(box.element.style.top) || box.y || 0;
+                    box.width = parseFloat(box.element.style.width) || box.width || 120;
+                    box.height = parseFloat(box.element.style.height) || box.height || 40;
+                }
+            });
+            
+            // Save current state to redo history (exclude element property)
             const currentState = JSON.parse(JSON.stringify({
                 boxes: sessionState.boxes.map(box => ({
-                    ...box
+                    id: box.id,
+                    boxId: box.boxId,
+                    x: box.x,
+                    y: box.y,
+                    width: box.width,
+                    height: box.height,
+                    boxType: box.boxType,
+                    csvColumn: box.csvColumn,
+                    fieldKey: box.fieldKey,
+                    staticText: box.staticText,
+                    fontFamily: box.fontFamily,
+                    fontSize: box.fontSize,
+                    color: box.color,
+                    textAlign: box.textAlign,
+                    bold: box.bold,
+                    italic: box.italic,
+                    underline: box.underline,
+                    strikethrough: box.strikethrough,
+                    imageUrl: box.imageUrl,
+                    boxIndex: box.boxIndex
                 })),
                 action: '',
                 timestamp: Date.now()
@@ -3371,10 +3397,39 @@
         function redoAction() {
             if (redoHistory.length === 0) return;
             
-            // Save current state to undo history
+            // First, update ALL boxes in sessionState with current DOM positions
+            sessionState.boxes.forEach(box => {
+                if (box.element) {
+                    box.x = parseFloat(box.element.style.left) || box.x || 0;
+                    box.y = parseFloat(box.element.style.top) || box.y || 0;
+                    box.width = parseFloat(box.element.style.width) || box.width || 120;
+                    box.height = parseFloat(box.element.style.height) || box.height || 40;
+                }
+            });
+            
+            // Save current state to undo history (exclude element property)
             const currentState = JSON.parse(JSON.stringify({
                 boxes: sessionState.boxes.map(box => ({
-                    ...box
+                    id: box.id,
+                    boxId: box.boxId,
+                    x: box.x,
+                    y: box.y,
+                    width: box.width,
+                    height: box.height,
+                    boxType: box.boxType,
+                    csvColumn: box.csvColumn,
+                    fieldKey: box.fieldKey,
+                    staticText: box.staticText,
+                    fontFamily: box.fontFamily,
+                    fontSize: box.fontSize,
+                    color: box.color,
+                    textAlign: box.textAlign,
+                    bold: box.bold,
+                    italic: box.italic,
+                    underline: box.underline,
+                    strikethrough: box.strikethrough,
+                    imageUrl: box.imageUrl,
+                    boxIndex: box.boxIndex
                 })),
                 action: '',
                 timestamp: Date.now()
@@ -6292,9 +6347,14 @@ if (!sessionState.defaultFontFamily) {
             initialY: 0,
             xOffset: 0,
             yOffset: 0,
+            startX: 0,
+            startY: 0,
+            startWidth: 0,
+            startHeight: 0,
             initialWidth: 0,
             initialHeight: 0,
-            resizeHandle: ''
+            resizeHandle: '',
+            undoStateSaved: false // Track if we've saved undo state for this drag/resize
         };
 
         // Initialize document-level listeners once
@@ -6341,6 +6401,9 @@ if (!sessionState.defaultFontFamily) {
                 
                 // Check if clicking on resize handle
                 if (e.target.classList.contains('resize-handle')) {
+                    // Save undo state BEFORE starting to resize (capture current state)
+                    saveUndoState('Resize Box');
+                    
                     boxDragState.activeElement = element;
                     boxDragState.isResizing = true;
                     boxDragState.isDragging = false;
@@ -6349,6 +6412,12 @@ if (!sessionState.defaultFontFamily) {
                     boxDragState.initialHeight = element.offsetHeight;
                     boxDragState.initialX = e.clientX;
                     boxDragState.initialY = e.clientY;
+                    
+                    // Store initial size to check if box actually resized
+                    boxDragState.startWidth = element.offsetWidth;
+                    boxDragState.startHeight = element.offsetHeight;
+                    boxDragState.undoStateSaved = true; // We saved it on mousedown
+                    
                     element.style.cursor = 'nwse-resize';
                     element.classList.add('resizing');
                     return;
@@ -6356,6 +6425,9 @@ if (!sessionState.defaultFontFamily) {
 
                 // Normal dragging
                 if (e.target === element || e.target.closest('.draggable-text-box, .draggable-image-box') === element) {
+                    // Save undo state BEFORE starting to drag (capture current state)
+                    saveUndoState('Move Box');
+                    
                     boxDragState.activeElement = element;
                     boxDragState.isDragging = true;
                     boxDragState.isResizing = false;
@@ -6372,6 +6444,11 @@ if (!sessionState.defaultFontFamily) {
                     boxDragState.initialY = e.clientY - currentTop;
                     boxDragState.xOffset = currentLeft;
                     boxDragState.yOffset = currentTop;
+                    
+                    // Store initial position to check if box actually moved
+                    boxDragState.startX = currentLeft;
+                    boxDragState.startY = currentTop;
+                    boxDragState.undoStateSaved = true; // We saved it on mousedown
                     
                     element.style.cursor = 'grabbing';
                     element.style.zIndex = '30';
@@ -6452,6 +6529,7 @@ if (!sessionState.defaultFontFamily) {
             } else if (boxDragState.isDragging) {
                 e.preventDefault();
                 e.stopPropagation();
+                
                 boxDragState.currentX = e.clientX - boxDragState.initialX;
                 boxDragState.currentY = e.clientY - boxDragState.initialY;
                 boxDragState.xOffset = boxDragState.currentX;
@@ -6508,16 +6586,35 @@ if (!sessionState.defaultFontFamily) {
                 boxDragState.resizeHandle = '';
                 element.classList.remove('resizing');
                 
-                // Update the box data in session state
-                if (sessionState.selectedBox && sessionState.selectedBox.element === element) {
-                    sessionState.selectedBox.width = parseInt(element.style.width);
-                    sessionState.selectedBox.height = parseInt(element.style.height);
-                    sessionState.selectedBox.x = parseInt(element.style.left);
-                    sessionState.selectedBox.y = parseInt(element.style.top);
+                // Check if box actually resized
+                const finalWidth = parseFloat(element.style.width) || 0;
+                const finalHeight = parseFloat(element.style.height) || 0;
+                const resized = (Math.abs(finalWidth - boxDragState.startWidth) > 1 || Math.abs(finalHeight - boxDragState.startHeight) > 1);
+                
+                // If box didn't resize and we saved undo state, remove it
+                if (!resized && boxDragState.undoStateSaved && undoHistory.length > 0) {
+                    undoHistory.pop();
+                    updateUndoRedoButtons();
                 }
                 
-                // Save undo state after resizing
-                saveUndoState('Resize Box');
+                boxDragState.undoStateSaved = false; // Reset flag
+                
+                // Update the box data in session state for the resized box
+                const boxData = sessionState.boxes.find(box => box.element === element);
+                if (boxData) {
+                    boxData.width = finalWidth;
+                    boxData.height = finalHeight;
+                    boxData.x = parseFloat(element.style.left) || boxData.x;
+                    boxData.y = parseFloat(element.style.top) || boxData.y;
+                }
+                
+                // Also update selectedBox if it's the same element
+                if (sessionState.selectedBox && sessionState.selectedBox.element === element) {
+                    sessionState.selectedBox.width = boxData.width;
+                    sessionState.selectedBox.height = boxData.height;
+                    sessionState.selectedBox.x = boxData.x;
+                    sessionState.selectedBox.y = boxData.y;
+                }
                 
             } else if (boxDragState.isDragging) {
                 boxDragState.initialX = boxDragState.currentX;
@@ -6527,14 +6624,31 @@ if (!sessionState.defaultFontFamily) {
                 element.style.zIndex = '20';
                 clearSnapGuides();
                 
-                // Update the box data in session state
-                if (sessionState.selectedBox && sessionState.selectedBox.element === element) {
-                    sessionState.selectedBox.x = parseInt(element.style.left);
-                    sessionState.selectedBox.y = parseInt(element.style.top);
+                // Check if box actually moved
+                const finalX = parseFloat(element.style.left) || 0;
+                const finalY = parseFloat(element.style.top) || 0;
+                const moved = (Math.abs(finalX - boxDragState.startX) > 1 || Math.abs(finalY - boxDragState.startY) > 1);
+                
+                // If box didn't move and we saved undo state, remove it
+                if (!moved && boxDragState.undoStateSaved && undoHistory.length > 0) {
+                    undoHistory.pop();
+                    updateUndoRedoButtons();
                 }
                 
-                // Save undo state after dragging
-                saveUndoState('Move Box');
+                boxDragState.undoStateSaved = false; // Reset flag
+                
+                // Update the box data in session state for the moved box
+                const boxData = sessionState.boxes.find(box => box.element === element);
+                if (boxData) {
+                    boxData.x = finalX;
+                    boxData.y = finalY;
+                }
+                
+                // Also update selectedBox if it's the same element
+                if (sessionState.selectedBox && sessionState.selectedBox.element === element) {
+                    sessionState.selectedBox.x = boxData.x;
+                    sessionState.selectedBox.y = boxData.y;
+                }
             }
             
             // Clear active element
